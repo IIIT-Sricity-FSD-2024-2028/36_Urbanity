@@ -4,8 +4,7 @@
 
 Citizen:
   definition:
-    A resident of the city who reports civic issues and requests urban services
-    related to public infrastructure and municipal facilities.
+    A resident of the city who reports civic issues and requests urban services related to public infrastructure and municipal facilities.
   examples:
     - A resident reporting a pothole on a public road.
     - A citizen requesting repair of a malfunctioning streetlight.
@@ -15,8 +14,7 @@ Citizen:
 
 ServiceRequest:
   definition:
-    A formal submission raised by a citizen to report an urban issue or request
-    action from the municipal authorities.
+    A formal submission raised by a citizen to report an urban issue or request action from the municipal authorities.
   examples:
     - A request to fix a broken drainage system.
     - A complaint about uncollected garbage in a neighborhood.
@@ -26,8 +24,7 @@ ServiceRequest:
 
 ServiceCategory:
   definition:
-    A classification that groups service requests based on the type of
-    urban service or infrastructure involved.
+    A classification that groups service requests based on the type of urban service or infrastructure involved.
   examples:
     - Roads and Transportation
     - Water Supply
@@ -38,8 +35,7 @@ ServiceCategory:
 
 ServicePriority:
   definition:
-    The urgency level assigned to a service request indicating how quickly
-    it must be addressed based on impact and severity.
+    The urgency level assigned to a service request indicates how quickly it must be addressed based on impact and severity.
   examples:
     - High priority for a fallen electric pole.
     - Low priority for cosmetic road damage.
@@ -49,8 +45,7 @@ ServicePriority:
 
 ServiceStatus:
   definition:
-    The current stage of a service request representing its progress
-    from submission to resolution.
+    The current stage of a service request represents its progress from submission to resolution.
   examples:
     - Submitted
     - In Progress
@@ -62,8 +57,7 @@ ServiceStatus:
 
 IssueSupport:
   definition:
-    An action performed by a citizen to indicate agreement, concern,
-    or shared impact regarding an existing service request.
+   Citizens add their support to an existing complaint or service request to show they agree or are also affected.
   examples:
     - Multiple residents supporting a road damage complaint.
     - Citizens endorsing a garbage collection issue in their area.
@@ -73,8 +67,7 @@ IssueSupport:
 
 DepartmentOfficer:
   definition:
-    An authorized municipal official responsible for reviewing, assigning,
-    and monitoring service requests within a specific department.
+    An authorized municipal official responsible for reviewing, assigning, and monitoring service requests within a specific department.
   examples:
     - An officer assigning a road repair request to a field worker.
     - An officer updating the status of a resolved complaint.
@@ -84,8 +77,7 @@ DepartmentOfficer:
 
 Assignment:
   definition:
-    The act of allocating a service request to a responsible field worker
-    or team for on-site action.
+    The act of allocating a service request to a responsible field worker or team for on-site action.
   examples:
     - Assigning a sanitation request to a cleaning crew.
     - Assigning a road repair request to a maintenance worker.
@@ -95,8 +87,7 @@ Assignment:
 
 FieldWorker:
   definition:
-    A ground-level municipal worker who physically inspects, verifies,
-    and resolves assigned service requests on-site.
+    A ground-level municipal worker who physically inspects, verifies, and resolves assigned service requests on-site.
   examples:
     - A worker repairing a damaged streetlight.
     - A worker inspecting a water leakage complaint.
@@ -106,8 +97,7 @@ FieldWorker:
 
 Verification:
   definition:
-    The process of confirming the validity and severity of a service request
-    through inspection or evidence before resolution begins.
+    The process of confirming the validity and severity of a service request through inspection or evidence before resolution begins.
   examples:
     - A field worker confirming a reported water leak.
     - An officer rejecting a duplicate complaint after verification.
@@ -117,8 +107,7 @@ Verification:
 
 ResolutionReport:
   definition:
-    A formal record submitted after completing work on a service request,
-    describing the actions taken and outcome achieved.
+    A formal record submitted after completing work on a service request, describing the actions taken and outcome achieved.
   examples:
     - Report confirming pothole repair completion.
     - Report stating an issue was invalid after inspection.
@@ -128,8 +117,7 @@ ResolutionReport:
 
 Escalation:
   definition:
-    The act of forwarding a service request to higher authority when
-    resolution exceeds expected time or requires special intervention.
+    The act of forwarding a service request to a higher authority when resolution exceeds the expected time or requires special intervention.
   examples:
     - Escalating an unresolved road repair to the department head.
     - Escalating repeated complaints with high citizen support.
@@ -139,8 +127,7 @@ Escalation:
 
 DepartmentHead:
   definition:
-    The senior authority of a municipal department responsible for oversight,
-    performance monitoring, and resolution escalation decisions.
+    The senior authority of a municipal department responsible for oversight, performance monitoring, and resolution escalation decisions.
   examples:
     - Reviewing delayed or highly supported service requests.
     - Approving high-priority urban issue resolutions.
@@ -150,8 +137,7 @@ DepartmentHead:
 
 ServiceArea:
   definition:
-    A defined geographic or administrative zone within the city used
-    to organize and manage service requests.
+    A defined geographic or administrative zone within the city used to organize and manage service requests.
   examples:
     - Ward 12
     - Central Business District
@@ -161,8 +147,7 @@ ServiceArea:
 
 Feedback:
   definition:
-    A response provided by a citizen after resolution of a service request,
-    reflecting satisfaction or concerns about the service delivered.
+    A response provided by a citizen after resolution of a service request, reflecting satisfaction or concerns about the service delivered.
   examples:
     - Rating streetlight repair as satisfactory.
     - Commenting on delayed waste collection.
@@ -172,11 +157,11 @@ Feedback:
 
 SystemAdministrator:
   definition:
-    An authority responsible for managing system configuration, access control,
-    and overall platform governance.
+    An authority responsible for managing system configuration, access control, and overall platform governance.
   examples:
     - Managing department configurations.
     - Assigning administrative privileges.
   aliases:
     - Platform Admin
     - System Controller
+
