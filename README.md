@@ -22,11 +22,10 @@ This project aims to build a **Smart City Urban Service Request & Issue Manageme
 ## Planned Features (Actor-wise)
 
 ### Citizen
-- Register and log in to the platform
 - Raise a service request/complaint with category, description, and location
 - Upload images or supporting details for better clarity
 - Track the progress of submitted requests
-- Receive notifications on status updates
+- Support or upvote existing complaints to avoid duplicate reporting
 - Provide feedback after issue resolution
 
 ---
