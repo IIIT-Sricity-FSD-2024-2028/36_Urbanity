@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URBANITY - Officer Portal</title>
+  <link rel="stylesheet" href="../global.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="../mockData.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h1>URBANITY</h1>
+        <p>OFFICER PORTAL</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#" data-page="dashboard" class="nav-link active">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="validate-assign" class="nav-link">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>Validate & Assign</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="verify-resolution" class="nav-link">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <polyline points="17 11 19 13 23 9"></polyline>
+              </svg>
+              <span>Verify Resolution</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="reopened-issues" class="nav-link">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <polyline points="23 20 23 14 17 14"></polyline>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+              </svg>
+              <span>Reopened Issues</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="field-workers" class="nav-link">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>Field Workers</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="profile" class="nav-link">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Profile</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sign-out-btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <h2>Department Officer Portal</h2>
+        <div class="header-right">
+          <!-- Notifications -->
+          <div class="dropdown">
+            <button class="notification-btn" id="notificationBtn">
+              <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span class="notification-badge" id="notificationBadge">3</span>
+            </button>
+            <div class="dropdown-menu" id="notificationDropdown">
+              <div class="dropdown-header">
+                <h3>Notifications</h3>
+                <span class="dropdown-badge"><span id="unreadCount">3</span> New</span>
+              </div>
+              <div class="notification-list" id="notificationList">
+                <!-- Notifications will be inserted here -->
+              </div>
+              <div class="dropdown-footer">
+                <button>View All Notifications</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile -->
+          <div class="dropdown">
+            <div class="user-info" id="userInfoBtn">
+              <div class="user-details">
+                <div class="user-name">Officer Smith</div>
+                <div class="user-email">officer@urbanity.gov</div>
+              </div>
+              <div class="user-avatar">S</div>
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div class="dropdown-menu profile-dropdown" id="profileDropdown">
+              <button class="profile-menu-item" id="viewProfileBtn">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                View Profile
+              </button>
+              <button class="profile-menu-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Help & Support
+              </button>
+              <div class="profile-dropdown-divider"></div>
+              <div class="profile-signout-wrap">
+                <button class="profile-sign-out">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content">
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page active">
+          <div class="page-intro">
+            <h1 class="page-title">Department Management</h1>
+            <p class="page-subtitle">Manage and assign complaints to field workers.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #dbeafe; color: #1e40af;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">12</div>
+              <div class="stat-label">New Complaints</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #fef3c7; color: #92400e;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">8</div>
+              <div class="stat-label">In Progress</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #d1fae5; color: #065f46;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">24</div>
+              <div class="stat-label">Resolved Today</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #fee2e2; color: #991b1b;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <polyline points="23 20 23 14 17 14"></polyline>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">3</div>
+              <div class="stat-label">Reopened</div>
+            </div>
+          </div>
+
+          <div class="complaints-section">
+            <div class="section-header">
+              <h3 class="section-title">Recent Complaints</h3>
+            </div>
+            <table class="complaints-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Issue</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Reported By</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardComplaintsRows">
+                <tr>
+                  <td>#1234</td>
+                  <td>Pothole on Main Street</td>
+                  <td><span class="category-badge category-roads">Roads</span></td>
+                  <td><span class="priority-badge priority-high">High</span></td>
+                  <td><span class="status-badge status-new">New</span></td>
+                  <td>John Smith</td>
+                  <td>2/17/2026</td>
+                </tr>
+                <tr>
+                  <td>#1235</td>
+                  <td>Streetlight Not Working</td>
+                  <td><span class="category-badge category-electricity">Electricity</span></td>
+                  <td><span class="priority-badge priority-medium">Medium</span></td>
+                  <td><span class="status-badge status-assigned">Assigned</span></td>
+                  <td>Jane Smith</td>
+                  <td>2/17/2026</td>
+                </tr>
+                <tr>
+                  <td>#1236</td>
+                  <td>Water Leakage</td>
+                  <td><span class="category-badge category-water">Water</span></td>
+                  <td><span class="priority-badge priority-high">High</span></td>
+                  <td><span class="status-badge status-in-progress">In Progress</span></td>
+                  <td>Bob Johnson</td>
+                  <td>2/16/2026</td>
+                </tr>
+                <tr>
+                  <td>#1237</td>
+                  <td>Garbage Not Collected</td>
+                  <td><span class="category-badge category-sanitation">Sanitation</span></td>
+                  <td><span class="priority-badge priority-medium">Medium</span></td>
+                  <td><span class="status-badge status-pending-verification">Pending Verification</span></td>
+                  <td>Alice Brown</td>
+                  <td>2/16/2026</td>
+                </tr>
+                <tr>
+                  <td>#1238</td>
+                  <td>Broken Pavement</td>
+                  <td><span class="category-badge category-roads">Roads</span></td>
+                  <td><span class="priority-badge priority-low">Low</span></td>
+                  <td><span class="status-badge status-reopened">Reopened</span></td>
+                  <td>Charlie Davis</td>
+                  <td>2/15/2026</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Validate & Assign Page -->
+        <div id="validate-assign" class="page">
+          <div class="page-intro">
+            <h1 class="page-title">Validate &amp; Assign Issues</h1>
+            <p class="page-subtitle">Review new complaints and assign them to field workers.</p>
+          </div>
+
+          <div class="filters-card">
+            <div class="filter-grid">
+              <div class="filter-group">
+                <label class="filter-label" for="categoryFilter">Category</label>
+                <select class="filter-input" id="categoryFilter" aria-label="Category filter">
+                  <option value="all">All</option>
+                  <option value="roads">Roads</option>
+                  <option value="sanitation">Sanitation</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label" for="statusFilter">Status</label>
+                <select class="filter-input" id="statusFilter" aria-label="Status filter">
+                  <option value="all">All</option>
+                  <option value="new">New</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="complaints-section">
+            <div class="section-header">
+              <h3 class="section-title">Pending Complaints</h3>
+            </div>
+            <table class="complaints-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Issue</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Date</th>
+                  <th>Priority</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="validateAssignRows">
+                <tr data-category="roads" data-status="new">
+                  <td>#1234</td>
+                  <td>Pothole on Main Street</td>
+                  <td><span class="category-badge category-roads">Roads</span></td>
+                  <td>Main St, Block A</td>
+                  <td>2/17/2026</td>
+                  <td><span class="priority-badge priority-high">High</span></td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1234)">View</button>
+                    <button class="action-btn btn-primary" onclick="assignWorker(1234)">Validate</button>
+                    <button class="action-btn btn-reject" onclick="verifyResolution(1234, false)">Reject</button>
+                  </td>
+                </tr>
+                <tr data-category="roads" data-status="pending">
+                  <td>#1239</td>
+                  <td>Street Sign Damaged</td>
+                  <td><span class="category-badge category-roads">Roads</span></td>
+                  <td>Park Ave, Block F</td>
+                  <td>2/17/2026</td>
+                  <td><span class="priority-badge priority-medium">Medium</span></td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1239)">View</button>
+                    <button class="action-btn btn-primary" onclick="assignWorker(1239)">Validate</button>
+                    <button class="action-btn btn-reject" onclick="verifyResolution(1239, false)">Reject</button>
+                  </td>
+                </tr>
+                <tr data-category="sanitation" data-status="pending">
+                  <td>#1240</td>
+                  <td>Illegal Dumping</td>
+                  <td><span class="category-badge category-sanitation">Sanitation</span></td>
+                  <td>5th Street, Block H</td>
+                  <td>2/17/2026</td>
+                  <td><span class="priority-badge priority-high">High</span></td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1240)">View</button>
+                    <button class="action-btn btn-primary" onclick="assignWorker(1240)">Validate</button>
+                    <button class="action-btn btn-reject" onclick="verifyResolution(1240, false)">Reject</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Verify Resolution Page -->
+        <div id="verify-resolution" class="page">
+          <div class="page-intro">
+            <h1 class="page-title">Verify Resolution</h1>
+            <p class="page-subtitle">Review and verify completed complaints from field workers.</p>
+          </div>
+
+          <div class="complaints-section">
+            <div class="section-header">
+              <h3 class="section-title">Pending Verification</h3>
+            </div>
+            <table class="complaints-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Issue</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Date</th>
+                  <th>Priority</th>
+                  <th>Assigned To</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="verifyResolutionRows">
+                <tr>
+                  <td>#1237</td>
+                  <td>Garbage Not Collected</td>
+                  <td><span class="category-badge category-sanitation">Sanitation</span></td>
+                  <td>Green Park, Block D</td>
+                  <td>2/16/2026</td>
+                  <td><span class="priority-badge priority-medium">Medium</span></td>
+                  <td>Worker C</td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1237)">View</button>
+                    <button class="action-btn btn-success" onclick="verifyResolution(1237, true)">Verify</button>
+                    <button class="action-btn btn-reject" onclick="verifyResolution(1237, false)">Reject</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1241</td>
+                  <td>Park Bench Broken</td>
+                  <td><span class="category-badge category-parks">Parks</span></td>
+                  <td>Central Park, Block B</td>
+                  <td>2/15/2026</td>
+                  <td><span class="priority-badge priority-low">Low</span></td>
+                  <td>Worker D</td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1241)">View</button>
+                    <button class="action-btn btn-success" onclick="verifyResolution(1241, true)">Verify</button>
+                    <button class="action-btn btn-reject" onclick="verifyResolution(1241, false)">Reject</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Reopened Issues Page -->
+        <div id="reopened-issues" class="page">
+          <div class="page-intro">
+            <h1 class="page-title">Reopened Issues</h1>
+            <p class="page-subtitle">Handle complaints that have been reopened by citizens.</p>
+          </div>
+
+          <div class="complaints-section">
+            <div class="section-header">
+              <h3 class="section-title">Reopened Complaints</h3>
+            </div>
+            <table class="complaints-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Issue</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Priority</th>
+                  <th>Previous Worker</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reopenedIssuesRows">
+                <tr>
+                  <td>#1238</td>
+                  <td>Broken Pavement</td>
+                  <td><span class="category-badge category-roads">Roads</span></td>
+                  <td>Oak Street, Block E</td>
+                  <td><span class="priority-badge priority-low">Low</span></td>
+                  <td>Worker A</td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1238)">View</button>
+                    <button class="action-btn btn-reassign" onclick="assignWorker(1238)">Reassign</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1242</td>
+                  <td>Street Light Flickering</td>
+                  <td><span class="category-badge category-electricity">Electricity</span></td>
+                  <td>Elm Ave, Block C</td>
+                  <td><span class="priority-badge priority-medium">Medium</span></td>
+                  <td>Worker B</td>
+                  <td>
+                    <button class="action-btn btn-view" onclick="viewComplaint(1242)">View</button>
+                    <button class="action-btn btn-reassign" onclick="assignWorker(1242)">Reassign</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Field Workers Page -->
+        <div id="field-workers" class="page">
+          <div class="page-intro">
+            <h1 class="page-title">Field Workers</h1>
+            <p class="page-subtitle">Manage and monitor field worker assignments and performance.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #dbeafe; color: #2563eb;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">3</div>
+              <div class="stat-label">Active Workers</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #fff7ed; color: #f97316;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">6</div>
+              <div class="stat-label">Total Assigned</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: #dcfce7; color: #16a34a;">
+                  <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6L9 17l-5-5"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="stat-value">10</div>
+              <div class="stat-label">Completed Today</div>
+            </div>
+          </div>
+
+          <div class="complaints-section">
+            <div class="section-header">
+              <h3 class="section-title">Field Worker List</h3>
+            </div>
+            <table class="complaints-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Specialization</th>
+                  <th>Status</th>
+                  <th>Assigned</th>
+                  <th>Completed Today</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>W001</td>
+                  <td>Worker A</td>
+                  <td>Roads &amp; Infrastructure</td>
+                  <td><span class="status-badge status-active">Active</span></td>
+                  <td>3</td>
+                  <td>5</td>
+                  <td>+1-234-567-9001</td>
+                </tr>
+                <tr>
+                  <td>W002</td>
+                  <td>Worker B</td>
+                  <td>Electricity</td>
+                  <td><span class="status-badge status-active">Active</span></td>
+                  <td>2</td>
+                  <td>3</td>
+                  <td>+1-234-567-9002</td>
+                </tr>
+                <tr>
+                  <td>W003</td>
+                  <td>Worker C</td>
+                  <td>Sanitation</td>
+                  <td><span class="status-badge status-on-leave">On Leave</span></td>
+                  <td>0</td>
+                  <td>0</td>
+                  <td>+1-234-567-9003</td>
+                </tr>
+                <tr>
+                  <td>W004</td>
+                  <td>Worker D</td>
+                  <td>Parks &amp; Recreation</td>
+                  <td><span class="status-badge status-active">Active</span></td>
+                  <td>1</td>
+                  <td>2</td>
+                  <td>+1-234-567-9004</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profile" class="page">
+          <!-- Page Header -->
+          <div style="margin-bottom: 32px;">
+            <h1 style="font-size: 30px; font-weight: 600; color: #111827; margin-bottom: 4px;">My Profile</h1>
+            <p style="font-size: 14px; color: #6b7280;">Manage your personal information and view your statistics.</p>
+          </div>
+
+          <div class="profile-container">
+            <!-- Left Column -->
+            <div class="profile-left">
+              <!-- Profile Card -->
+              <div class="profile-card">
+                <div class="profile-avatar-large">S</div>
+                <h2 class="profile-name" id="profileName">Officer Smith</h2>
+                <p class="profile-designation" id="profileDesignation">Department Officer</p>
+                <p class="profile-department" id="profileDepartment">Public Works Department</p>
+                <button class="edit-profile-btn" onclick="openEditProfile()">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Edit Profile
+                </button>
+              </div>
+
+              <!-- Performance Stats -->
+              <div class="performance-stats-card">
+                <h3 class="performance-stats-title">Performance Stats</h3>
+                <div class="stats-list">
+                  <div class="stat-item">
+                    <p class="stat-item-label">Total Complaints Handled</p>
+                    <p class="stat-item-value">156</p>
+                  </div>
+                  <div class="stat-item">
+                    <p class="stat-item-label">Assigned This Month</p>
+                    <p class="stat-item-value">24</p>
+                  </div>
+                  <div class="stat-item">
+                    <p class="stat-item-label">Resolved This Month</p>
+                    <p class="stat-item-value">32</p>
+                  </div>
+                  <div class="stat-item">
+                    <p class="stat-item-label">Average Resolution Time</p>
+                    <p class="stat-item-value">2.5 days</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+              <!-- Personal Information -->
+              <div class="profile-info-card">
+                <div class="profile-info-header">
+                  <h3 class="profile-info-title">Personal Information</h3>
+                  <button class="edit-btn-small" onclick="openEditProfile()">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                  </button>
+                </div>
+
+                <div class="profile-info-grid">
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-blue">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Full Name</p>
+                      <p class="profile-info-text" id="infoName">Officer Smith</p>
+                    </div>
+                  </div>
+
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-green">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Email Address</p>
+                      <p class="profile-info-text" id="infoEmail">officer@urbanity.gov</p>
+                    </div>
+                  </div>
+
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-orange">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Phone Number</p>
+                      <p class="profile-info-text" id="infoPhone">+1-234-567-8900</p>
+                    </div>
+                  </div>
+
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-purple">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Office Location</p>
+                      <p class="profile-info-text" id="infoLocation">District Office, Block A</p>
+                    </div>
+                  </div>
+
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-cyan">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Join Date</p>
+                      <p class="profile-info-text">January 15, 2024</p>
+                    </div>
+                  </div>
+
+                  <div class="profile-info-row">
+                    <div class="profile-icon profile-icon-red">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5z"></path>
+                      </svg>
+                    </div>
+                    <div class="profile-info-content">
+                      <p class="profile-info-label">Employee ID</p>
+                      <p class="profile-info-text">OFF-2024-001</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Account Security -->
+              <div class="account-security-card">
+                <h3 class="security-title">Account Security</h3>
+                <div class="security-list">
+                  <div class="security-item">
+                    <div class="security-item-content">
+                      <h4>Password</h4>
+                      <p>Last changed 30 days ago</p>
+                    </div>
+                    <button class="security-btn-gray">Change Password</button>
+                  </div>
+                  <div class="security-item">
+                    <div class="security-item-content">
+                      <h4>Two-Factor Authentication</h4>
+                      <p>Add an extra layer of security</p>
+                    </div>
+                    <button class="security-btn-blue">Enable</button>
+                  </div>
+                  <div class="security-item">
+                    <div class="security-item-content">
+                      <h4>Active Sessions</h4>
+                      <p>Manage your active sessions</p>
+                    </div>
+                    <button class="security-btn-gray">View Sessions</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Complaint Details Modal -->
+  <div class="modal-overlay" id="complaintModal">
+    <div class="modal complaint-modal-design">
+      <div class="modal-header">
+        <h3 class="modal-title">Complaint Details</h3>
+        <button class="modal-close" onclick="closeModal('complaintModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <div class="modal-info-grid">
+            <div class="modal-info-item">
+              <span class="modal-info-label">Complaint ID</span>
+              <span class="modal-info-value" id="modalComplaintId">#1242</span>
+            </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label">Date Submitted</span>
+              <span class="modal-info-value" id="modalComplaintDate">N/A</span>
+            </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label">Category</span>
+              <span class="modal-info-value" id="modalComplaintCategory"><span class="category-badge category-roads">Other</span></span>
+            </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label">Priority</span>
+              <span class="modal-info-value" id="modalComplaintPriority"><span class="priority-badge priority-medium">Medium</span></span>
+            </div>
+            <div class="modal-info-item" style="grid-column: span 2;">
+              <span class="modal-info-label">Issue</span>
+              <span class="modal-info-value" id="modalComplaintTitle">N/A</span>
+            </div>
+            <div class="modal-info-item" style="grid-column: span 2;">
+              <span class="modal-info-label">Description</span>
+              <span class="modal-info-value" id="modalComplaintDescription">N/A</span>
+            </div>
+            <div class="modal-info-item" style="grid-column: span 2;">
+              <span class="modal-info-label">Location</span>
+              <span class="modal-info-value" id="modalComplaintLocation">N/A</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h4 class="modal-section-title">Citizen Information</h4>
+          <div class="modal-info-grid">
+            <div class="modal-info-item">
+              <span class="modal-info-label">Name</span>
+              <span class="modal-info-value" id="modalCitizenName">N/A</span>
+            </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label">Contact</span>
+              <span class="modal-info-value" id="modalCitizenContact">N/A</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h4 class="modal-section-title">Assignment</h4>
+          <div class="modal-info-grid">
+            <div class="modal-info-item" style="grid-column: span 2;">
+              <span class="modal-info-label">Assigned Worker</span>
+              <span class="modal-info-value" id="modalAssignmentInfo">Not assigned yet</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h4 class="modal-section-title">Complaint Media</h4>
+          <div id="modalComplaintMedia" class="modal-info-value">No media attached.</div>
+        </div>
+
+        <div class="modal-section">
+          <h4 class="modal-section-title">Resolution Proof</h4>
+          <div id="modalResolutionMedia" class="modal-info-value">No proof uploaded.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn modal-close-btn" onclick="closeModal('complaintModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Worker Modal -->
+  <div class="modal-overlay" id="assignWorkerModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Assign Field Worker</h3>
+        <button class="modal-close" onclick="closeModal('assignWorkerModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <h4 class="modal-section-title">Select a Worker</h4>
+          <div class="worker-list">
+            <div class="worker-item" onclick="selectWorker(this, 'Worker A - John Doe')">
+              <div class="worker-header">
+                <span class="worker-name">Worker A - John Doe</span>
+                <span class="worker-badge">Available</span>
+              </div>
+              <div class="worker-info">Active Tasks: 3 | Completed: 45</div>
+            </div>
+            <div class="worker-item" onclick="selectWorker(this, 'Worker B - Jane Smith')">
+              <div class="worker-header">
+                <span class="worker-name">Worker B - Jane Smith</span>
+                <span class="worker-badge">Available</span>
+              </div>
+              <div class="worker-info">Active Tasks: 2 | Completed: 52</div>
+            </div>
+            <div class="worker-item" onclick="selectWorker(this, 'Worker D - Sarah Williams')">
+              <div class="worker-header">
+                <span class="worker-name">Worker D - Sarah Williams</span>
+                <span class="worker-badge">Available</span>
+              </div>
+              <div class="worker-info">Active Tasks: 1 | Completed: 41</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn btn-secondary" onclick="closeModal('assignWorkerModal')">Cancel</button>
+        <button class="action-btn btn-primary" onclick="confirmAssignment()">Assign Worker</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal edit-modal">
+      <div class="modal-header" style="height: 76.667px; padding-bottom: 0.667px;">
+        <h3 class="modal-title" style="font-size: 20px; font-weight: 700; color: #101828;">Edit Profile</h3>
+        <button class="modal-close" onclick="closeModal('editProfileModal')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <form id="editProfileForm">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#155DFC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <input type="text" class="form-input" id="editName" placeholder="John Doe" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A63E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+              </div>
+              <input type="email" class="form-input" id="editEmail" placeholder="johndoe@email.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9810FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+              </div>
+              <input type="tel" class="form-input" id="editPhone" placeholder="+1 (555) 123-4567" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Office Location</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-orange">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F54900" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
+              <input type="text" class="form-input" id="editLocation" placeholder="123 Main Street, Springfield, ST 12345" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer-edit">
+        <button class="btn-cancel" onclick="closeModal('editProfileModal')">Cancel</button>
+        <button class="btn-save" onclick="saveProfile()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10.1333 2C10.485 2.00501 10.8205 2.14878 11.0667 2.4L13.6 4.93333C13.8512 5.17951 13.995 5.51497 14 5.86667V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V3.33333C2 2.97971 2.14048 2.64057 2.39052 2.39052C2.64057 2.14048 2.97971 2 3.33333 2H10.1333Z" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11.3333 14V9.33333C11.3333 9.15652 11.2631 8.98695 11.1381 8.86193C11.013 8.73691 10.8435 8.66667 10.6667 8.66667H5.33333C5.15652 8.66667 4.98695 8.73691 4.86193 8.86193C4.7369 8.98695 4.66667 9.15652 4.66667 9.33333V14" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4.66667 2V4.66667C4.66667 4.84348 4.7369 5.01305 4.86193 5.13807C4.98695 5.2631 5.15652 5.33333 5.33333 5.33333H10" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
