@@ -1,0 +1,370 @@
+:root {
+  --brand-primary: #0a1929;
+  --brand-accent: #3b9eff;
+  --surface-bg: #f9fafb;
+  --surface-card: #ffffff;
+  --text-primary: #111827;
+  --text-muted: #6b7280;
+  --border-subtle: #e5e7eb;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --shadow-soft: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(59, 158, 255, 0.22);
+}
+
+.form-feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+}
+
+.form-feedback-error {
+  background: #fff4f4;
+  border-color: #f6d3d3;
+  color: #9f1239;
+}
+
+.form-feedback-success {
+  background: #f0fdf4;
+  border-color: #ccefd8;
+  color: #166534;
+}
+
+.urbanity-toast-host {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.urbanity-toast {
+  pointer-events: auto;
+  border-radius: 10px;
+  border: 1px solid;
+  padding: 10px 12px;
+  font-size: 13px;
+  max-width: min(360px, calc(100vw - 32px));
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+}
+
+.urbanity-toast-info {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.urbanity-toast-success {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.urbanity-toast-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.urbanity-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  padding: 12px;
+}
+
+.urbanity-dialog-panel {
+  width: min(92vw, 440px);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.24);
+}
+
+.urbanity-dialog-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.urbanity-dialog-message {
+  margin: 0 0 12px 0;
+  color: #475569;
+}
+
+.urbanity-dialog-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.urbanity-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.urbanity-dialog-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.urbanity-dialog-btn-cancel {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.urbanity-dialog-btn-confirm {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+@media (max-width: 1024px) {
+  .app-container {
+    display: block !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .sidebar-header,
+  .sidebar-logo {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 16px !important;
+  }
+
+  .sidebar-nav {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 10px 12px !important;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .sidebar-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .nav-item,
+  .nav-button,
+  .sidebar-nav a {
+    width: auto !important;
+    min-width: max-content;
+  }
+
+  .signout-btn,
+  .sign-out-btn,
+  .sign-out-button,
+  .sidebar-footer {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    min-height: auto !important;
+  }
+
+  .header {
+    height: auto !important;
+    padding: 14px 16px !important;
+  }
+
+  .header-inner {
+    height: auto !important;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-actions,
+  .header-right {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .avatar-button,
+  .user-info {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .page-content,
+  .content-area {
+    padding: 16px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-table,
+  .complaints-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid,
+  .profile-stats-grid,
+  .worker-profile-stats-grid,
+  .modal-info-grid,
+  .filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .page-title,
+  .page-heading,
+  .dashboard-section-title {
+    font-size: 24px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .header,
+  .header-inner,
+  .header-right,
+  .header-actions {
+    gap: 8px !important;
+  }
+
+  .page-content,
+  .content-area,
+  .card-content,
+  .card-header,
+  .modal-body,
+  .modal-footer {
+    padding: 12px !important;
+  }
+
+  .dropdown-menu,
+  .notification-dropdown,
+  .notification-panel,
+  .profile-dropdown {
+    min-width: 0 !important;
+    width: min(100vw - 16px, 360px) !important;
+    max-width: calc(100vw - 16px) !important;
+    right: 8px !important;
+    left: auto !important;
+  }
+
+  .modal {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px !important;
+  }
+
+  .modal-grid,
+  .modal-info-grid,
+  .filter-grid,
+  .profile-info-grid,
+  .profile-container {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-section-header,
+  .page-header-with-action,
+  .hero-buttons,
+  .form-options,
+  .modal-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  table,
+  .dashboard-table,
+  .complaints-table,
+  .data-table {
+    min-width: 640px;
+  }
+
+  .table-container,
+  .complaints-table-wrapper {
+    overflow-x: auto !important;
+  }
+
+  .btn,
+  .action-btn,
+  .mini-action,
+  .view-all-btn,
+  .edit-profile-btn,
+  .modal-button,
+  .modal-btn {
+    width: 100%;
+  }
+}
