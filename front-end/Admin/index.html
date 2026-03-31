@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URBANITY - Admin Portal</title>
+    <link rel="stylesheet" href="../global.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="../mockData.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">URBANITY</h1>
+        <p class="sidebar-subtitle">ADMIN PORTAL</p>
+      </div>
+      <div class="sidebar-divider"></div>
+      
+      <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="navigateTo('dashboard')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('system-issues')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>System Issues</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('escalated-issues')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Escalated Issues</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('users-roles')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Users & Roles</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('system-settings')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24m0-14.14l-4.24 4.24m-5.66 5.66L4.93 19.07" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>System Settings</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('activity-monitor')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Activity Monitor</span>
+        </button>
+        
+        <button class="nav-item" onclick="navigateTo('profile')">
+          <svg class="nav-icon" viewBox="0 0 24 24">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Profile</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="signout-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 12.75L15.75 9L12 5.25" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15.75 9H6.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <h2 class="header-title">Admin Service Portal</h2>
+        <div class="header-right">
+          <button class="notification-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="notification-badge"></span>
+          </button>
+          
+          <div class="dropdown">
+            <div class="user-profile" onclick="toggleDropdown()">
+              <div class="user-avatar">A</div>
+              <div class="user-info">
+                <div class="user-name">Admin User</div>
+                <div class="user-email">admin@urbanity.gov</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" stroke-width="1.33">
+                <path d="M4 6L8 10L12 6"/>
+              </svg>
+            </div>
+            <div class="dropdown-menu" id="profileDropdown">
+              <button class="dropdown-item" onclick="navigateTo('profile'); closeDropdown();">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>View Profile</span>
+              </button>
+
+              <button class="dropdown-item" onclick="closeDropdown();">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42m12.72-12.72l1.42-1.42"></path>
+                </svg>
+                <span>Help & Support</span>
+              </button>
+
+              <div class="dropdown-separator"></div>
+
+              <div class="dropdown-signout-wrap">
+                <button class="dropdown-signout" onclick="closeDropdown();">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content" id="pageContent">
+        <!-- Dashboard Content (Default) -->
+        <div id="page-dashboard">
+          <div class="page-header-with-action">
+            <div>
+              <h1 class="page-title">System Overview</h1>
+              <p class="page-description">Real-time status of system administration and control</p>
+            </div>
+            <button class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              CREATE NEW ISSUE
+            </button>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="flex items-center gap-4">
+                <div style="padding: 12px; border-radius: 8px; background-color: #dbeafe;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-value">28</div>
+                  <div class="stat-label" style="margin-top: 4px;">Total Issues</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="flex items-center gap-4">
+                <div style="padding: 12px; border-radius: 8px; background-color: #dcfce7;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-value">18</div>
+                  <div class="stat-label" style="margin-top: 4px;">Resolved</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="flex items-center gap-4">
+                <div style="padding: 12px; border-radius: 8px; background-color: #fed7aa;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-value">5</div>
+                  <div class="stat-label" style="margin-top: 4px;">Pending</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="flex items-center gap-4">
+                <div style="padding: 12px; border-radius: 8px; background-color: #e9d5ff;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-value">5</div>
+                  <div class="stat-label" style="margin-top: 4px;">Escalated</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content Grid -->
+          <div class="grid-3" style="grid-template-columns: 2fr 1fr; margin-bottom: 24px;">
+            <!-- System Activity Map -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">System Activity Map</h3>
+              </div>
+              <div class="card-content">
+                <div style="background-color: #f9fafb; border-radius: 8px; height: 384px; display: flex; align-items: center; justify-content: center;">
+                  <div style="text-align: center;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2" style="margin: 0 auto 12px;">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    <p style="color: #9ca3af; font-size: 14px;">Activity visualization coming soon</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Updates -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Recent Updates</h3>
+              </div>
+              <div class="card-content">
+                <div>
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; margin-bottom: 16px;">
+                    <div class="flex items-start justify-between mb-2">
+                      <h4 class="font-medium" style="font-size: 14px; color: #111827;">Database connection timeout</h4>
+                      <span class="badge badge-orange" style="text-transform: uppercase; font-size: 11px;">PENDING</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                      <span style="color: #ef4444;">•</span>
+                      <span>System</span>
+                    </div>
+                    <p class="text-xs" style="color: #9ca3af; margin-top: 4px;">2/11/2026</p>
+                  </div>
+
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; margin-bottom: 16px;">
+                    <div class="flex items-start justify-between mb-2">
+                      <h4 class="font-medium" style="font-size: 14px; color: #111827;">Critical security vulnerability</h4>
+                      <span class="badge badge-red" style="text-transform: uppercase; font-size: 11px;">ESCALATED</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                      <span style="color: #ef4444;">•</span>
+                      <span>Security</span>
+                    </div>
+                    <p class="text-xs" style="color: #9ca3af; margin-top: 4px;">2/10/2026</p>
+                  </div>
+
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; margin-bottom: 16px;">
+                    <div class="flex items-start justify-between mb-2">
+                      <h4 class="font-medium" style="font-size: 14px; color: #111827;">Email notifications delayed</h4>
+                      <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">RESOLVED</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                      <span style="color: #ef4444;">•</span>
+                      <span>Email</span>
+                    </div>
+                    <p class="text-xs" style="color: #9ca3af; margin-top: 4px;">2/9/2026</p>
+                  </div>
+
+                  <div>
+                    <div class="flex items-start justify-between mb-2">
+                      <h4 class="font-medium" style="font-size: 14px; color: #111827;">User role assignment issue</h4>
+                      <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">RESOLVED</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                      <span style="color: #ef4444;">•</span>
+                      <span>Users</span>
+                    </div>
+                    <p class="text-xs" style="color: #9ca3af; margin-top: 4px;">2/8/2026</p>
+                  </div>
+
+                  <button style="color: #2563eb; font-size: 14px; font-weight: 500; width: 100%; text-align: left; margin-top: 8px; background: none; border: none; cursor: pointer; padding: 8px 0;">
+                    View All Activity
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Health -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                System Health Status
+              </h3>
+            </div>
+            <div class="card-content">
+              <div class="grid-4">
+                <div style="padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; background-color: white;">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium" style="color: #111827;">Database</p>
+                    <span class="text-sm font-semibold" style="color: #16a34a;">Operational</span>
+                  </div>
+                  <p class="text-sm" style="color: #6b7280;">Uptime: 99.9%</p>
+                </div>
+
+                <div style="padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; background-color: white;">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium" style="color: #111827;">API Server</p>
+                    <span class="text-sm font-semibold" style="color: #16a34a;">Operational</span>
+                  </div>
+                  <p class="text-sm" style="color: #6b7280;">Uptime: 99.8%</p>
+                </div>
+
+                <div style="padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; background-color: white;">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium" style="color: #111827;">Authentication</p>
+                    <span class="text-sm font-semibold" style="color: #16a34a;">Operational</span>
+                  </div>
+                  <p class="text-sm" style="color: #6b7280;">Uptime: 100%</p>
+                </div>
+
+                <div style="padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; background-color: white;">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium" style="color: #111827;">File Storage</p>
+                    <span class="text-sm font-semibold" style="color: #ea580c;">Degraded</span>
+                  </div>
+                  <p class="text-sm" style="color: #6b7280;">Uptime: 98.5%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Issues Page -->
+        <div id="page-system-issues" class="hidden">
+          <div class="page-header-with-action">
+            <div>
+              <h1 class="page-title">System Issues</h1>
+              <p class="page-description">Manage and track system issues</p>
+            </div>
+            <button class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              CREATE ISSUE
+            </button>
+          </div>
+
+          <!-- Filters Card -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-content" style="padding: 24px;">
+              <div class="grid-3">
+                <div style="position: relative;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%);">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <input id="adminIssueSearch" type="text" placeholder="Search issues..." style="width: 100%; padding: 8px 12px 8px 36px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                </div>
+                <select id="adminIssueDepartmentFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                  <option value="all">All Departments</option>
+                </select>
+                <select id="adminIssueStatusFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="reopened">Reopened</option>
+                </select>
+                <select id="adminIssueFeedbackFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                  <option value="all">All Feedback</option>
+                  <option value="pending">Feedback Pending</option>
+                  <option value="submitted">Feedback Submitted</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues List -->
+          <!-- Issues List -->
+          <div id="adminSystemIssuesList" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Issue 1: Database connection timeout -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-start gap-4">
+                  <div style="padding: 12px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <div class="flex items-start justify-between mb-2">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-2 mb-2">
+                          <h3 class="font-semibold" style="color: #111827;">Database connection timeout</h3>
+                          <span class="badge badge-orange" style="text-transform: uppercase; font-size: 11px;">HIGH</span>
+                          <span class="badge badge-blue" style="text-transform: uppercase; font-size: 11px;">IN-PROGRESS</span>
+                        </div>
+                        <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">Users experiencing intermittent database connection timeouts during peak hours</p>
+                        <div class="flex items-center gap-6 text-sm" style="color: #6b7280;">
+                          <span class="font-medium">ISS-001</span>
+                          <span>Assigned: John Smith</span>
+                          <span>Reported by: System Monitor</span>
+                          <span>2026-03-07 09:30</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2" style="margin-left: 16px;">
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Issue 2: Login page slow loading -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-start gap-4">
+                  <div style="padding: 12px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <div class="flex items-start justify-between mb-2">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-2 mb-2">
+                          <h3 class="font-semibold" style="color: #111827;">Login page slow loading</h3>
+                          <span class="badge badge-yellow" style="text-transform: uppercase; font-size: 11px; background-color: #fef3c7; color: #92400e;">MEDIUM</span>
+                          <span class="badge badge-red" style="text-transform: uppercase; font-size: 11px;">OPEN</span>
+                        </div>
+                        <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">Login page takes more than 5 seconds to load</p>
+                        <div class="flex items-center gap-6 text-sm" style="color: #6b7280;">
+                          <span class="font-medium">ISS-002</span>
+                          <span>Assigned: Jane Doe</span>
+                          <span>Reported by: user@example.com</span>
+                          <span>2026-03-07 10:15</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2" style="margin-left: 16px;">
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Issue 3: Critical security vulnerability -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-start gap-4">
+                  <div style="padding: 12px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <div class="flex items-start justify-between mb-2">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-2 mb-2">
+                          <h3 class="font-semibold" style="color: #111827;">Critical security vulnerability</h3>
+                          <span class="badge badge-red" style="text-transform: uppercase; font-size: 11px;">CRITICAL</span>
+                          <span class="badge badge-red" style="text-transform: uppercase; font-size: 11px;">OPEN</span>
+                        </div>
+                        <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">SQL injection vulnerability detected in user input forms</p>
+                        <div class="flex items-center gap-6 text-sm" style="color: #6b7280;">
+                          <span class="font-medium">ISS-003</span>
+                          <span>Assigned: Security Team</span>
+                          <span>Reported by: Security Audit</span>
+                          <span>2026-03-07 08:00</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2" style="margin-left: 16px;">
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Issue 4: Email notifications delayed -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-start gap-4">
+                  <div style="padding: 12px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <div class="flex items-start justify-between mb-2">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-2 mb-2">
+                          <h3 class="font-semibold" style="color: #111827;">Email notifications delayed</h3>
+                          <span class="badge badge-blue" style="text-transform: uppercase; font-size: 11px;">LOW</span>
+                          <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">RESOLVED</span>
+                        </div>
+                        <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">Email notifications are being delayed by 10-15 minutes</p>
+                        <div class="flex items-center gap-6 text-sm" style="color: #6b7280;">
+                          <span class="font-medium">ISS-004</span>
+                          <span>Assigned: Bob Wilson</span>
+                          <span>Reported by: admin@example.com</span>
+                          <span>2026-03-06 14:20</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2" style="margin-left: 16px;">
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Issue 5: API rate limit exceeded -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-start gap-4">
+                  <div style="padding: 12px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <div class="flex items-start justify-between mb-2">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-2 mb-2">
+                          <h3 class="font-semibold" style="color: #111827;">API rate limit exceeded</h3>
+                          <span class="badge badge-orange" style="text-transform: uppercase; font-size: 11px;">HIGH</span>
+                          <span class="badge badge-blue" style="text-transform: uppercase; font-size: 11px;">IN-PROGRESS</span>
+                        </div>
+                        <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">Third-party API hitting rate limits causing service disruption</p>
+                        <div class="flex items-center gap-6 text-sm" style="color: #6b7280;">
+                          <span class="font-medium">ISS-005</span>
+                          <span>Assigned: John Smith</span>
+                          <span>Reported by: System Monitor</span>
+                          <span>2026-03-07 11:45</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2" style="margin-left: 16px;">
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-outline btn-sm">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Escalated Issues Page -->
+        <div id="page-escalated-issues" class="hidden">
+          <div class="page-header-with-action">
+            <div>
+              <h1 class="page-title">Escalated Civic Issues</h1>
+              <p class="page-description">Manage high-priority citizen-reported issues</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('addRuleModal')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              ADD ESCALATION RULE
+            </button>
+          </div>
+
+          <div class="tabs">
+            <div class="tab-list">
+              <button class="tab-button active" onclick="switchTab('escalated', 'active-escalations')">Active Escalations</button>
+              <button class="tab-button" onclick="switchTab('escalated', 'escalation-rules')">Escalation Rules</button>
+              <button class="tab-button" onclick="switchTab('escalated', 'escalation-history')">History</button>
+            </div>
+
+            <!-- Active Escalations Tab -->
+            <div class="tab-content active" id="tab-active-escalations">
+              <div id="adminEscalatedIssuesList">
+                <div class="card issue-card">
+                <div class="card-content">
+                  <div class="issue-header">
+                    <div class="issue-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                    </div>
+                    <div class="issue-content">
+                      <div class="issue-title-row">
+                        <div>
+                          <div class="flex items-center gap-2 mb-2">
+                            <h3 class="issue-title">Water main break flooding street</h3>
+                            <span class="badge badge-red">P0</span>
+                            <span class="badge badge-red">Urgent</span>
+                          </div>
+                          <p class="issue-meta">Civic Issue CIV-003 • Reported by john.citizen@email.com</p>
+                          <p class="issue-meta"><span class="font-semibold">Location:</span> 123 Main Street • <span class="font-semibold">Department:</span> Water & Utilities</p>
+                        </div>
+                        <button class="btn btn-primary">Resolve</button>
+                      </div>
+                      
+                      <div class="grid-4 mb-4">
+                        <div style="padding: 12px; background-color: #f9fafb; border-radius: 8px;">
+                          <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Affected Citizens</p>
+                          <p style="font-size: 18px; font-weight: 600;">45</p>
+                        </div>
+                        <div style="padding: 12px; background-color: #f9fafb; border-radius: 8px;">
+                          <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Impact Level</p>
+                          <p style="font-size: 18px; font-weight: 600;">High</p>
+                        </div>
+                        <div style="padding: 12px; background-color: #f9fafb; border-radius: 8px;">
+                          <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Target Resolution</p>
+                          <p style="font-size: 18px; font-weight: 600;">4 hours</p>
+                        </div>
+                        <div style="padding: 12px; background-color: #f9fafb; border-radius: 8px;">
+                          <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Escalated At</p>
+                          <p style="font-size: 14px; font-weight: 600;">2026-03-07 08:15</p>
+                        </div>
+                      </div>
+
+                      <div class="mb-4">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">Assigned To:</p>
+                        <p class="text-sm text-gray-600" style="margin-left: 24px;">Emergency Response Team</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+
+            <!-- Escalation Rules Tab -->
+            <div class="tab-content" id="tab-escalation-rules">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Escalation Rules Configuration</h3>
+                </div>
+                <div class="card-content">
+                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
+                    <div class="flex items-center justify-between">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-3 mb-2">
+                          <h4 style="font-weight: 600; color: #111827;">Emergency Civic Issues</h4>
+                          <span class="badge badge-green">Enabled</span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Trigger:</span>
+                          <span style="color: #374151; font-size: 14px;">Category: Water/Gas/Electric Emergency</span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Action:</span>
+                          <span style="color: #374151; font-size: 14px;">Escalate to P0, Notify Emergency Response & Department Head</span>
+                        </div>
+                        <div>
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Timeline:</span>
+                          <span style="color: #374151; font-size: 14px;">Immediate</span>
+                        </div>
+                      </div>
+                      <button class="btn btn-outline btn-sm">Edit</button>
+                    </div>
+                  </div>
+
+                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
+                    <div class="flex items-center justify-between">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-3 mb-2">
+                          <h4 style="font-weight: 600; color: #111827;">High Citizen Impact</h4>
+                          <span class="badge badge-green">Enabled</span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Trigger:</span>
+                          <span style="color: #374151; font-size: 14px;">Affected Citizens > 50, Severity: High</span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Action:</span>
+                          <span style="color: #374151; font-size: 14px;">Escalate to P1, Notify Department Head</span>
+                        </div>
+                        <div>
+                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Timeline:</span>
+                          <span style="color: #374151; font-size: 14px;">1 hour</span>
+                        </div>
+                      </div>
+                      <button class="btn btn-outline btn-sm">Edit</button>
+                    </div>
+                  </div>
+
+                  <button class="btn btn-primary" style="width: 100%; margin-top: 24px;" onclick="openModal('addRuleModal')">Add New Rule</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- History Tab -->
+            <div class="tab-content" id="tab-escalation-history">
+              <div class="card">
+                <div class="card-content" style="padding: 48px; text-align: center;">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="margin: 0 auto 16px;">
+                    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <p style="color: #6b7280;">Escalation history will be displayed here</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users & Roles Page -->
+        <div id="page-users-roles" class="hidden">
+          <div class="page-header">
+            <h1 class="page-title">Users & Roles Management</h1>
+            <p class="page-description">Manage system users, roles, and departments</p>
+          </div>
+
+          <div class="tabs">
+            <div class="tab-list">
+              <button class="tab-button active" onclick="switchTab('users', 'users-tab')">Users</button>
+              <button class="tab-button" onclick="switchTab('users', 'roles-tab')">Roles</button>
+              <button class="tab-button" onclick="switchTab('users', 'departments-tab')">Departments</button>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="tab-content active" id="tab-users-tab">
+              <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <h3 class="card-title">System Users</h3>
+                  <button class="btn btn-primary" onclick="openModal('addUserModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    ADD USER
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Department</th>
+                          <th>Status</th>
+                          <th>Last Active</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="usersTableBody">
+                        <tr>
+                          <td><span class="font-semibold">John Smith</span></td>
+                          <td>john.smith@urbanity.gov</td>
+                          <td><span class="badge badge-blue">Department Head</span></td>
+                          <td>Public Works</td>
+                          <td><span class="badge badge-green">Active</span></td>
+                          <td>2 hours ago</td>
+                          <td>
+                            <button class="btn btn-outline btn-sm">Edit</button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><span class="font-semibold">Sarah Davis</span></td>
+                          <td>sarah.davis@urbanity.gov</td>
+                          <td><span class="badge badge-blue">Department Officer</span></td>
+                          <td>Water & Utilities</td>
+                          <td><span class="badge badge-green">Active</span></td>
+                          <td>1 hour ago</td>
+                          <td>
+                            <button class="btn btn-outline btn-sm">Edit</button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><span class="font-semibold">Mike Johnson</span></td>
+                          <td>mike.johnson@urbanity.gov</td>
+                          <td><span class="badge badge-blue">Field Worker</span></td>
+                          <td>Sanitation</td>
+                          <td><span class="badge badge-green">Active</span></td>
+                          <td>30 minutes ago</td>
+                          <td>
+                            <button class="btn btn-outline btn-sm">Edit</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Roles Tab -->
+            <div class="tab-content" id="tab-roles-tab">
+              <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <h3 class="card-title">System Roles</h3>
+                  <button class="btn btn-primary" onclick="openModal('createRoleModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    CREATE ROLE
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="grid-2" id="rolesGrid">
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Department Head</h4>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Full department management authority</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 4px;"><span class="font-semibold">Users:</span> 4</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;"><span class="font-semibold">Permissions:</span> Full Access</p>
+                      <button class="btn btn-outline btn-sm">Edit Role</button>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Department Officer</h4>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Issue validation and assignment</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 4px;"><span class="font-semibold">Users:</span> 12</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;"><span class="font-semibold">Permissions:</span> Moderate</p>
+                      <button class="btn btn-outline btn-sm">Edit Role</button>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Field Worker</h4>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">On-ground issue resolution</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 4px;"><span class="font-semibold">Users:</span> 45</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;"><span class="font-semibold">Permissions:</span> Limited</p>
+                      <button class="btn btn-outline btn-sm">Edit Role</button>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Citizen</h4>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Default role for registered users</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 4px;"><span class="font-semibold">Users:</span> 1,187</p>
+                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;"><span class="font-semibold">Permissions:</span> View & Report</p>
+                      <button class="btn btn-outline btn-sm">Edit Role</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Departments Tab -->
+            <div class="tab-content" id="tab-departments-tab">
+              <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <h3 class="card-title">Department Management</h3>
+                  <button class="btn btn-primary" onclick="openModal('createDepartmentModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    CREATE DEPARTMENT
+                  </button>
+                </div>
+                <div class="card-content">
+                  <div class="grid-2" id="departmentsGrid">
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <div class="flex items-center gap-3 mb-3">
+                        <div style="width: 40px; height: 40px; background-color: #d1fae5; color: #065f46; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 style="font-weight: 600; color: #111827;">Public Works</h4>
+                          <p style="font-size: 13px; color: #6b7280;">12 members</p>
+                        </div>
+                      </div>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Infrastructure and road maintenance</p>
+                      <p style="font-size: 13px; color: #6b7280;"><span class="font-semibold">Manager:</span> John Smith</p>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <div class="flex items-center gap-3 mb-3">
+                        <div style="width: 40px; height: 40px; background-color: #d1fae5; color: #065f46; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 style="font-weight: 600; color: #111827;">Sanitation</h4>
+                          <p style="font-size: 13px; color: #6b7280;">18 members</p>
+                        </div>
+                      </div>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Waste management and cleanliness</p>
+                      <p style="font-size: 13px; color: #6b7280;"><span class="font-semibold">Manager:</span> Robert Brown</p>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <div class="flex items-center gap-3 mb-3">
+                        <div style="width: 40px; height: 40px; background-color: #d1fae5; color: #065f46; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 style="font-weight: 600; color: #111827;">Water & Utilities</h4>
+                          <p style="font-size: 13px; color: #6b7280;">15 members</p>
+                        </div>
+                      </div>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Water supply and utilities management</p>
+                      <p style="font-size: 13px; color: #6b7280;"><span class="font-semibold">Manager:</span> Sarah Davis</p>
+                    </div>
+
+                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                      <div class="flex items-center gap-3 mb-3">
+                        <div style="width: 40px; height: 40px; background-color: #d1fae5; color: #065f46; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 style="font-weight: 600; color: #111827;">Parks & Recreation</h4>
+                          <p style="font-size: 13px; color: #6b7280;">10 members</p>
+                        </div>
+                      </div>
+                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Parks and recreational facilities</p>
+                      <p style="font-size: 13px; color: #6b7280;"><span class="font-semibold">Manager:</span> Emily Chen</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Settings Page -->
+        <div id="page-system-settings" class="hidden">
+          <div class="page-header">
+            <h1 class="page-title">System Settings</h1>
+            <p class="page-description">Configure system preferences and operational parameters</p>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">General Settings</h3>
+              </div>
+              <div class="card-content">
+                <div class="form-group">
+                  <label class="form-label">System Name</label>
+                  <input type="text" class="form-input" value="URBANITY Citizen Portal" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Admin Email</label>
+                  <input type="email" class="form-input" value="admin@urbanity.gov" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Default Language</label>
+                  <select class="form-select">
+                    <option>English</option>
+                    <option>Spanish</option>
+                    <option>French</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary">Save Changes</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Notification Settings</h3>
+              </div>
+              <div class="card-content">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" class="form-checkbox" checked />
+                    <span>Email notifications for new issues</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" class="form-checkbox" checked />
+                    <span>Email notifications for escalations</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" class="form-checkbox" />
+                    <span>SMS notifications for urgent issues</span>
+                  </label>
+                </div>
+                <button class="btn btn-primary">Save Changes</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Issue Categories</h3>
+              </div>
+              <div class="card-content">
+                <div style="margin-bottom: 12px;">
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Road Maintenance</span>
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Water Leak</span>
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Garbage Collection</span>
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Street Lighting</span>
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Parks</span>
+                  <span class="badge badge-blue" style="margin-right: 8px; margin-bottom: 8px;">Noise Complaint</span>
+                </div>
+                <button class="btn btn-outline">Manage Categories</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Priority Levels</h3>
+              </div>
+              <div class="card-content">
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px;">
+                    <span class="font-semibold">P0 - Critical</span>
+                    <span class="badge badge-red">4 hours</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px;">
+                    <span class="font-semibold">P1 - High</span>
+                    <span class="badge badge-orange">24 hours</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px;">
+                    <span class="font-semibold">P2 - Medium</span>
+                    <span class="badge badge-blue">72 hours</span>
+                  </div>
+                </div>
+                <button class="btn btn-outline">Edit Priority Levels</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Monitor Page -->
+        <div id="page-activity-monitor" class="hidden">
+          <div class="page-header-with-action">
+            <div>
+              <h1 class="page-title">Activity Monitor</h1>
+              <p class="page-description">Monitor overall system activity and performance</p>
+            </div>
+            <select style="width: 160px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+              <option>Last Hour</option>
+              <option selected>Last 24 Hours</option>
+              <option>Last 7 Days</option>
+              <option>Last 30 Days</option>
+            </select>
+          </div>
+
+          <!-- System Metrics -->
+          <div class="grid-4" style="margin-bottom: 32px;">
+            <!-- CPU Usage -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-center justify-between mb-3">
+                  <div style="padding: 8px; border-radius: 8px; background-color: #dcfce7;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                      <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+                      <rect x="9" y="9" width="6" height="6"/>
+                      <line x1="9" y1="1" x2="9" y2="4"/>
+                      <line x1="15" y1="1" x2="15" y2="4"/>
+                      <line x1="9" y1="20" x2="9" y2="23"/>
+                      <line x1="15" y1="20" x2="15" y2="23"/>
+                      <line x1="20" y1="9" x2="23" y2="9"/>
+                      <line x1="20" y1="14" x2="23" y2="14"/>
+                      <line x1="1" y1="9" x2="4" y2="9"/>
+                      <line x1="1" y1="14" x2="4" y2="14"/>
+                    </svg>
+                  </div>
+                  <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">GOOD</span>
+                </div>
+                <p style="font-size: 30px; font-weight: bold; color: #111827;">45%</p>
+                <p class="text-sm" style="color: #6b7280; margin-top: 4px;">CPU Usage</p>
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">+2% from last period</p>
+              </div>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-center justify-between mb-3">
+                  <div style="padding: 8px; border-radius: 8px; background-color: #dcfce7;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                      <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                      <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                      <line x1="6" y1="6" x2="6.01" y2="6"/>
+                      <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                  </div>
+                  <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">GOOD</span>
+                </div>
+                <p style="font-size: 30px; font-weight: bold; color: #111827;">62%</p>
+                <p class="text-sm" style="color: #6b7280; margin-top: 4px;">Memory Usage</p>
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">+5% from last period</p>
+              </div>
+            </div>
+
+            <!-- Disk Space -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-center justify-between mb-3">
+                  <div style="padding: 8px; border-radius: 8px; background-color: #fff7ed;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                      <line x1="22" y1="12" x2="2" y2="12"/>
+                      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                      <line x1="6" y1="16" x2="6.01" y2="16"/>
+                      <line x1="10" y1="16" x2="10.01" y2="16"/>
+                    </svg>
+                  </div>
+                  <span class="badge badge-orange" style="text-transform: uppercase; font-size: 11px;">WARNING</span>
+                </div>
+                <p style="font-size: 30px; font-weight: bold; color: #111827;">78%</p>
+                <p class="text-sm" style="color: #6b7280; margin-top: 4px;">Disk Space</p>
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">+3% from last period</p>
+              </div>
+            </div>
+
+            <!-- Active Users -->
+            <div class="card">
+              <div class="card-content" style="padding: 24px;">
+                <div class="flex items-center justify-between mb-3">
+                  <div style="padding: 8px; border-radius: 8px; background-color: #dcfce7;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </div>
+                  <span class="badge badge-green" style="text-transform: uppercase; font-size: 11px;">GOOD</span>
+                </div>
+                <p style="font-size: 30px; font-weight: bold; color: #111827;">245</p>
+                <p class="text-sm" style="color: #6b7280; margin-top: 4px;">Active Users</p>
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">+10% from last period</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Charts -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 32px;">
+            <!-- Active Users Chart -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Active Users
+                </h3>
+              </div>
+              <div class="card-content">
+                <div style="height: 200px; display: flex; align-items: center; justify-content: center; background-color: #f9fafb; border-radius: 8px;">
+                  <p style="color: #9ca3af; font-size: 14px;">[Line Chart Placeholder]</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Request & Error Rate Chart -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                  </svg>
+                  Request & Error Rate
+                </h3>
+              </div>
+              <div class="card-content">
+                <div style="height: 200px; display: flex; align-items: center; justify-content: center; background-color: #f9fafb; border-radius: 8px;">
+                  <p style="color: #9ca3af; font-size: 14px;">[Bar Chart Placeholder]</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs Section -->
+          <div class="tabs">
+            <div class="tab-list">
+              <button class="tab-button active" onclick="switchTab('activity', 'user-activity')">User Activity</button>
+              <button class="tab-button" onclick="switchTab('activity', 'system-logs')">System Logs</button>
+              <button class="tab-button" onclick="switchTab('activity', 'performance')">Performance</button>
+            </div>
+
+            <!-- User Activity Tab -->
+            <div class="tab-content active" id="tab-user-activity">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    Recent User Activity
+                  </h3>
+                </div>
+                <div class="card-content">
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Activity 1 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:35:22</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Updated user role</p>
+                          <p style="font-size: 12px; color: #6b7280;">john.smith@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">User: jane.doe@example.com</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">update</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 2 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:32:15</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Created system backup</p>
+                          <p style="font-size: 12px; color: #6b7280;">admin@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Database</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">create</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 3 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:28:45</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Resolved issue</p>
+                          <p style="font-size: 12px; color: #6b7280;">jane.doe@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Issue: ISS-004</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">resolve</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 4 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:25:10</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Automatic escalation</p>
+                          <p style="font-size: 12px; color: #6b7280;">system</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Issue: ISS-003</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">escalate</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 5 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:20:33</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Updated settings</p>
+                          <p style="font-size: 12px; color: #6b7280;">bob.wilson@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Email Configuration</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">update</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 6 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:15:20</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Created department</p>
+                          <p style="font-size: 12px; color: #6b7280;">admin@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Department: Operations</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">create</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 7 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:10:05</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Assigned role</p>
+                          <p style="font-size: 12px; color: #6b7280;">jane.doe@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">Role: Manager</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">assign</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Activity 8 -->
+                    <div class="flex items-center gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6;"></div>
+                      <div style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div><p style="font-size: 12px; color: #6b7280;">2026-03-07 14:05:42</p></div>
+                        <div>
+                          <p class="text-sm font-medium" style="color: #111827;">Deleted user</p>
+                          <p style="font-size: 12px; color: #6b7280;">john.smith@example.com</p>
+                        </div>
+                        <div><p class="text-sm" style="color: #4b5563;">User: test@example.com</p></div>
+                        <div style="text-align: right;"><span class="badge badge-blue" style="font-size: 11px;">delete</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- System Logs Tab -->
+            <div class="tab-content" id="tab-system-logs">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    System Logs
+                  </h3>
+                </div>
+                <div class="card-content">
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Log 1 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-blue" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">INFO</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:35:45</div>
+                        <div class="font-semibold" style="color: #111827;">[API]</div>
+                        <div style="color: #374151;">User authentication successful</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 2 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-orange" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">WARNING</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:35:12</div>
+                        <div class="font-semibold" style="color: #111827;">[Database]</div>
+                        <div style="color: #374151;">Connection pool near capacity (85%)</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 3 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-red" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">ERROR</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:34:33</div>
+                        <div class="font-semibold" style="color: #111827;">[Email]</div>
+                        <div style="color: #374151;">Failed to send notification email</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 4 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-blue" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">INFO</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:33:20</div>
+                        <div class="font-semibold" style="color: #111827;">[API]</div>
+                        <div style="color: #374151;">New issue created: ISS-006</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 5 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-blue" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">INFO</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:32:45</div>
+                        <div class="font-semibold" style="color: #111827;">[Backup]</div>
+                        <div style="color: #374151;">Database backup completed successfully</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 6 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-orange" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">WARNING</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:31:10</div>
+                        <div class="font-semibold" style="color: #111827;">[API]</div>
+                        <div style="color: #374151;">Rate limit warning for IP: 192.168.1.100</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 7 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-blue" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">INFO</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:30:22</div>
+                        <div class="font-semibold" style="color: #111827;">[Auth]</div>
+                        <div style="color: #374151;">User login: admin@example.com</div>
+                      </div>
+                    </div>
+
+                    <!-- Log 8 -->
+                    <div class="flex items-start gap-4" style="padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; font-family: monospace; font-size: 12px;">
+                      <span class="badge badge-red" style="margin-top: 2px; text-transform: uppercase; font-size: 10px;">ERROR</span>
+                      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 16px;">
+                        <div style="color: #6b7280;">2026-03-07 14:28:55</div>
+                        <div class="font-semibold" style="color: #111827;">[API]</div>
+                        <div style="color: #374151;">Request timeout after 30s</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="tab-content" id="tab-performance">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                <!-- Response Time Trends -->
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title flex items-center gap-2">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                        <polyline points="17 6 23 6 23 12"/>
+                      </svg>
+                      Response Time Trends
+                    </h3>
+                  </div>
+                  <div class="card-content">
+                    <div style="height: 250px; display: flex; align-items: center; justify-content: center; background-color: #f9fafb; border-radius: 8px;">
+                      <p style="color: #9ca3af; font-size: 14px;">[Line Chart Placeholder]</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title flex items-center gap-2">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      Performance Metrics
+                    </h3>
+                  </div>
+                  <div class="card-content">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                      <div class="flex items-center justify-between" style="padding: 16px; border-radius: 8px; background-color: #f9fafb;">
+                        <span class="text-sm" style="color: #374151;">Average Response Time</span>
+                        <span class="font-semibold">245ms</span>
+                      </div>
+                      <div class="flex items-center justify-between" style="padding: 16px; border-radius: 8px; background-color: #f9fafb;">
+                        <span class="text-sm" style="color: #374151;">Peak Response Time</span>
+                        <span class="font-semibold">1.2s</span>
+                      </div>
+                      <div class="flex items-center justify-between" style="padding: 16px; border-radius: 8px; background-color: #f9fafb;">
+                        <span class="text-sm" style="color: #374151;">Success Rate</span>
+                        <span class="font-semibold">99.2%</span>
+                      </div>
+                      <div class="flex items-center justify-between" style="padding: 16px; border-radius: 8px; background-color: #f9fafb;">
+                        <span class="text-sm" style="color: #374151;">Total Requests</span>
+                        <span class="font-semibold">24,580</span>
+                      </div>
+                      <div class="flex items-center justify-between" style="padding: 16px; border-radius: 8px; background-color: #f9fafb;">
+                        <span class="text-sm" style="color: #374151;">Error Rate</span>
+                        <span class="font-semibold" style="color: #dc2626;">0.8%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="page-profile" class="hidden">
+          <div class="page-header">
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-description">Manage your personal information and view your statistics.</p>
+          </div>
+
+          <div class="profile-grid">
+            <!-- Left Column -->
+            <div>
+              <!-- Profile Card -->
+              <div class="card mb-6">
+                <div class="card-content">
+                  <div class="profile-avatar-large" id="adminProfileAvatar">A</div>
+                  <div class="profile-info">
+                    <h2 class="profile-name" id="adminProfileName">Admin User</h2>
+                    <p class="profile-role">System Administrator</p>
+                    <p class="profile-role" style="margin-bottom: 24px;">Admin Portal</p>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="openModal('editProfileModal')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Edit Profile
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- System Stats -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">System Overview</h3>
+                </div>
+                <div class="card-content">
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;">
+                    <p class="text-sm text-gray-500 mb-2">Total Users</p>
+                    <p style="font-size: 20px; font-weight: 700; color: #111827;">1,248</p>
+                  </div>
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;">
+                    <p class="text-sm text-gray-500 mb-2">Active Issues</p>
+                    <p style="font-size: 20px; font-weight: 700; color: #111827;">342</p>
+                  </div>
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;">
+                    <p class="text-sm text-gray-500 mb-2">Resolved This Month</p>
+                    <p style="font-size: 20px; font-weight: 700; color: #111827;">156</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500 mb-2">System Uptime</p>
+                    <p style="font-size: 20px; font-weight: 700; color: #111827;">99.8%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+              <!-- Personal Information -->
+              <div class="card mb-6">
+                <div class="card-header">
+                  <h3 class="card-title">Personal Information</h3>
+                </div>
+                <div class="card-content">
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #dbeafe; color: #1e40af;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Full Name</p>
+                        <p class="font-semibold text-gray-900" id="adminInfoName">Admin User</p>
+                      </div>
+                    </div>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #d1fae5; color: #065f46;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                          <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Email Address</p>
+                        <p class="font-semibold text-gray-900" id="adminInfoEmail">admin@urbanity.gov</p>
+                      </div>
+                    </div>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #fed7aa; color: #c2410c;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Phone Number</p>
+                        <p class="font-semibold text-gray-900">+1-234-567-8900</p>
+                      </div>
+                    </div>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #e9d5ff; color: #6b21a8;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Office Location</p>
+                        <p class="font-semibold text-gray-900">City Hall, Room 301</p>
+                      </div>
+                    </div>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #fbcfe8; color: #9f1239;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Join Date</p>
+                        <p class="font-semibold text-gray-900">January 15, 2024</p>
+                      </div>
+                    </div>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="background-color: #fee2e2; color: #991b1b;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Employee ID</p>
+                        <p class="font-semibold text-gray-900">ADM-2024-001</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Account Security -->
+              <div class="card mb-6">
+                <div class="card-header">
+                  <h3 class="card-title">Account Security</h3>
+                </div>
+                <div class="card-content">
+                  <div class="security-item">
+                    <div class="flex items-center gap-3">
+                      <div class="info-icon" style="background-color: #dbeafe; color: #1e40af;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">Password</p>
+                        <p class="text-sm text-gray-500">Last changed 30 days ago</p>
+                      </div>
+                    </div>
+                    <button class="btn btn-outline btn-sm">Change Password</button>
+                  </div>
+
+                  <div class="security-item">
+                    <div class="flex items-center gap-3">
+                      <div class="info-icon" style="background-color: #d1fae5; color: #065f46;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">Two-Factor Authentication</p>
+                        <p class="text-sm text-gray-500">Add an extra layer of security</p>
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm">Enable</button>
+                  </div>
+
+                  <div class="security-item">
+                    <div class="flex items-center gap-3">
+                      <div class="info-icon" style="background-color: #e9d5ff; color: #6b21a8;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">Active Sessions</p>
+                        <p class="text-sm text-gray-500">Manage your active sessions</p>
+                      </div>
+                    </div>
+                    <button class="btn btn-outline btn-sm">View Sessions</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin Access & Permissions -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Admin Access & Permissions</h3>
+                </div>
+                <div class="card-content">
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">System Configuration</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">User Management</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">Issue Management</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">Department Settings</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">Activity Monitoring</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="text-sm font-medium text-gray-900">System Reports</span>
+                    <span class="badge badge-green">Full Access</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  
+  <!-- Add Escalation Rule Modal -->
+  <div class="modal-overlay" id="addRuleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New Escalation Rule</h3>
+        <p class="modal-description">Configure automatic escalation rules based on issue criteria.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Rule Name</label>
+          <input type="text" class="form-input" placeholder="e.g., Emergency Water Issues" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Trigger Type</label>
+          <select class="form-select">
+            <option>Select trigger type</option>
+            <option>Issue Category</option>
+            <option>Severity Level</option>
+            <option>Duration Unresolved</option>
+            <option>Affected Citizen Count</option>
+            <option>Report Frequency</option>
+            <option>Location-based</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Trigger Condition</label>
+          <textarea class="form-textarea" placeholder="e.g., Category: Water/Gas/Electric Emergency OR Affected Citizens > 50"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Escalation Priority</label>
+          <select class="form-select">
+            <option>Select priority</option>
+            <option>P0 - Critical Emergency</option>
+            <option>P1 - High Priority</option>
+            <option>P2 - Medium Priority</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Notify</label>
+          <select class="form-select">
+            <option>Select notification recipients</option>
+            <option>Department Head</option>
+            <option>Department Officer</option>
+            <option>Emergency Response Team</option>
+            <option>System Admin</option>
+            <option>All Stakeholders</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Response Timeline</label>
+          <select class="form-select">
+            <option>Select timeline</option>
+            <option>Immediate</option>
+            <option>1 Hour</option>
+            <option>4 Hours</option>
+            <option>12 Hours</option>
+            <option>24 Hours</option>
+            <option>48 Hours</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-select">
+            <option>Select department</option>
+            <option>All Departments</option>
+            <option>Road</option>
+            <option>Water Services</option>
+            <option>Sanitation</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" class="form-checkbox" />
+            <span>Auto-assign to available field worker</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" class="form-checkbox" checked />
+            <span>Enable rule immediately</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('addRuleModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="closeModal('addRuleModal')">Create Rule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal-overlay" id="addUserModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New User</h3>
+        <p class="modal-description">Create a new user account for the system.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="addUserName" placeholder="Enter full name" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="addUserEmail" placeholder="user@urbanity.gov" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-select" id="addUserRole">
+            <option>Select role</option>
+            <option>Department Head</option>
+            <option>Department Officer</option>
+            <option>Field Worker</option>
+            <option>Citizen</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-select" id="addUserDepartment">
+            <option>Select department</option>
+            <option>Road</option>
+            <option>Water Services</option>
+            <option>Sanitation</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-input" id="addUserPhone" placeholder="+1-234-567-8900" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="handleAddUser()">Add User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Role Modal -->
+  <div class="modal-overlay" id="createRoleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Role</h3>
+        <p class="modal-description">Define a new role with specific permissions.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Role Name</label>
+          <input type="text" class="form-input" id="roleNameInput" placeholder="e.g., Safety Inspector" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="roleDescriptionInput" placeholder="Describe the role responsibilities"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Permission Level</label>
+          <select class="form-select" id="rolePermissionSelect">
+            <option>Full Access</option>
+            <option>Moderate Access</option>
+            <option>Limited Access</option>
+            <option>View Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('createRoleModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="handleCreateRole()">Create Role</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Department Modal -->
+  <div class="modal-overlay" id="createDepartmentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Department</h3>
+        <p class="modal-description">Enter department details to create a new department.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Department Name</label>
+          <input type="text" class="form-input" id="departmentNameInput" placeholder="e.g., Transportation" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-input" id="departmentDescriptionInput" placeholder="Brief description of department responsibilities" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Department Manager</label>
+          <select class="form-select" id="departmentManagerSelect">
+            <option>Select manager</option>
+            <option>John Smith</option>
+            <option>Jane Doe</option>
+            <option>Bob Wilson</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Target Response Time (hours)</label>
+          <input type="number" class="form-input" id="departmentResponseTimeInput" placeholder="e.g., 24" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('createDepartmentModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="handleCreateDepartment()">Create Department</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Profile</h3>
+        <p class="modal-description">Update your personal information.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" value="Admin User" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" value="admin@urbanity.gov" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-input" value="+1-234-567-8900" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Office Location</label>
+          <input type="text" class="form-input" value="City Hall, Room 301" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('editProfileModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="closeModal('editProfileModal')">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
