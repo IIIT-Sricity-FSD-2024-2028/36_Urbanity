@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URBANITY - Department Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../global.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="../mockData.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">URBANITY</div>
+      <div class="sidebar-subtitle">Department Portal</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-button active" data-page="dashboard">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M7.5 2.5H3.33333C2.8731 2.5 2.5 2.8731 2.5 3.33333V9.16667C2.5 9.6269 2.8731 10 3.33333 10H7.5C7.96024 10 8.33333 9.6269 8.33333 9.16667V3.33333C8.33333 2.8731 7.96024 2.5 7.5 2.5Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16.6667 2.5H12.5C12.0398 2.5 11.6667 2.8731 11.6667 3.33333V5.83333C11.6667 6.29357 12.0398 6.66667 12.5 6.66667H16.6667C17.1269 6.66667 17.5 6.29357 17.5 5.83333V3.33333C17.5 2.8731 17.1269 2.5 16.6667 2.5Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16.6667 10H12.5C12.0398 10 11.6667 10.3731 11.6667 10.8333V16.6667C11.6667 17.1269 12.0398 17.5 12.5 17.5H16.6667C17.1269 17.5 17.5 17.1269 17.5 16.6667V10.8333C17.5 10.3731 17.1269 10 16.6667 10Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7.5 13.3333H3.33333C2.8731 13.3333 2.5 13.7064 2.5 14.1667V16.6667C2.5 17.1269 2.8731 17.5 3.33333 17.5H7.5C7.96024 17.5 8.33333 17.1269 8.33333 16.6667V14.1667C8.33333 13.7064 7.96024 13.3333 7.5 13.3333Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-button" data-page="complaints">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M18.1083 15L11.4417 3.33333C11.2963 3.07684 11.0855 2.86349 10.8308 2.71506C10.576 2.56663 10.2865 2.48842 9.99167 2.48842C9.69684 2.48842 9.4073 2.56663 9.15256 2.71506C8.89783 2.86349 8.68703 3.07684 8.54167 3.33333L1.875 15C1.72807 15.2545 1.65102 15.5433 1.65167 15.8371C1.65233 16.1309 1.73065 16.4194 1.87871 16.6732C2.02676 16.927 2.23929 17.1372 2.49475 17.2824C2.7502 17.4276 3.03951 17.5026 3.33333 17.5H16.6667C16.9591 17.4997 17.2463 17.4225 17.4994 17.2761C17.7525 17.1297 17.9627 16.9192 18.1088 16.6659C18.2548 16.4126 18.3317 16.1253 18.3316 15.8329C18.3315 15.5405 18.2545 15.2532 18.1083 15Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 7.5V10.8333" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 14.1667H10.0083" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Complaints</span>
+      </button>
+      <button class="nav-button" data-page="escalated-issues">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 6.66667V10" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 13.3333H10.0083" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Escalated Issues</span>
+      </button>
+      <button class="nav-button" data-page="department-officers">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M13.3333 17.5V15.8333C13.3333 14.9493 12.9821 14.1014 12.357 13.4763C11.7319 12.8512 10.8841 12.5 10 12.5H5C4.11595 12.5 3.2681 12.8512 2.64298 13.4763C2.01786 14.1014 1.66667 14.9493 1.66667 15.8333V17.5" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7.5 9.16667C9.34095 9.16667 10.8333 7.67428 10.8333 5.83333C10.8333 3.99238 9.34095 2.5 7.5 2.5C5.65905 2.5 4.16667 3.99238 4.16667 5.83333C4.16667 7.67428 5.65905 9.16667 7.5 9.16667Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18.3333 17.5V15.8333C18.3328 15.0948 18.087 14.3773 17.6345 13.7936C17.182 13.2099 16.5484 12.793 15.8333 12.6083" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.3333 2.60833C14.0503 2.79192 14.6859 3.20892 15.1397 3.79359C15.5935 4.37827 15.8399 5.09736 15.8399 5.8375C15.8399 6.57764 15.5935 7.29673 15.1397 7.88141C14.6859 8.46608 14.0503 8.88308 13.3333 9.06667" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Department Officers</span>
+      </button>
+      <button class="nav-button" data-page="field-workers">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M13.3333 16.6667V3.33333C13.3333 2.89131 13.1577 2.46738 12.8452 2.15482C12.5326 1.84226 12.1087 1.66667 11.6667 1.66667H8.33333C7.89131 1.66667 7.46738 1.84226 7.15482 2.15482C6.84226 2.46738 6.66667 2.89131 6.66667 3.33333V16.6667" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16.6667 5H3.33333C2.41286 5 1.66667 5.74619 1.66667 6.66667V15C1.66667 15.9205 2.41286 16.6667 3.33333 16.6667H16.6667C17.5871 16.6667 18.3333 15.9205 18.3333 15V6.66667C18.3333 5.74619 17.5871 5 16.6667 5Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Field Workers</span>
+      </button>
+      <button class="nav-button" data-page="profile">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M15.8333 17.5V15.8333C15.8333 14.9493 15.4821 14.1014 14.857 13.4763C14.2319 12.8512 13.3841 12.5 12.5 12.5H7.5C6.61595 12.5 5.7681 12.8512 5.14298 13.4763C4.51786 14.1014 4.16667 14.9493 4.16667 15.8333V17.5" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 9.16667C11.8409 9.16667 13.3333 7.67428 13.3333 5.83333C13.3333 3.99238 11.8409 2.5 10 2.5C8.15905 2.5 6.66667 3.99238 6.66667 5.83333C6.66667 7.67428 8.15905 9.16667 10 9.16667Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Profile</span>
+      </button>
+    </nav>
+    <button class="sign-out-button">
+      <svg class="sign-out-icon" viewBox="0 0 18 18" fill="none">
+        <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75" stroke="currentColor" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 12.75L15.75 9L12 5.25" stroke="currentColor" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15.75 9H6.75" stroke="currentColor" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Sign Out</span>
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-inner">
+        <h1 class="page-title" id="pageTitle">Department Head Portal</h1>
+        <div class="header-actions">
+          <button class="bell-button" id="bellButton">
+            <svg class="bell-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M10.268 21C10.4435 21.304 10.696 21.5565 11 21.732C11.3041 21.9075 11.6489 21.9999 12 21.9999C12.3511 21.9999 12.6959 21.9075 13 21.732C13.304 21.5565 13.5565 21.304 13.732 21" stroke="#4A5565" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.262 15.326C3.13136 15.4692 3.04515 15.6472 3.01386 15.8385C2.98256 16.0298 3.00752 16.226 3.08571 16.4034C3.16389 16.5807 3.29194 16.7316 3.45426 16.8375C3.61658 16.9434 3.80618 16.9999 4 17H20C20.1938 17.0001 20.3834 16.9438 20.5459 16.8381C20.7083 16.7324 20.8365 16.5817 20.9149 16.4045C20.9933 16.2273 21.0185 16.0311 20.9874 15.8398C20.9564 15.6485 20.8704 15.4703 20.74 15.327C19.41 13.956 18 12.499 18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 12.499 4.589 13.956 3.262 15.326Z" stroke="#4A5565" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="notification-badge" id="notificationBadge">3</span>
+          </button>
+          <button class="avatar-button" id="avatarButton">
+            <div class="avatar-info">
+              <div class="avatar-name">Head Smith</div>
+              <div class="avatar-email">head@urbanity.gov</div>
+            </div>
+            <div class="avatar-circle">
+              <span class="avatar-text">S</span>
+            </div>
+            <svg class="chevron-down" viewBox="0 0 16 16" fill="none">
+              <path d="M4 6L8 10L12 6" stroke="#4A5565" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area" id="contentArea">
+      <!-- Dashboard Content -->
+      <div id="dashboard-page">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-inner">
+              <div class="stat-icon-container" style="background: #DBEAFE;">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M14 2H7C5.89543 2 5 2.89543 5 4V20C5 21.1046 5.89543 22 7 22H17C18.1046 22 19 21.1046 19 20V7L14 2Z" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M14 2V7H19" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 11H15" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 15H15" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 19H13" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-text">
+                <div class="stat-value">10</div>
+                <div class="stat-label">Total Complaints</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-inner">
+              <div class="stat-icon-container" style="background: #F3E8FF;">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="#9810FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 8V12" stroke="#9810FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 16H12.01" stroke="#9810FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-text">
+                <div class="stat-value">4</div>
+                <div class="stat-label">Escalated</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-inner">
+              <div class="stat-icon-container" style="background: #DCFCE7;">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M16 21V19C16 17.3431 14.6569 16 13 16H7C5.34315 16 4 17.3431 4 19V21" stroke="#00A63E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="10" cy="9" r="3" stroke="#00A63E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M20 21V19.5C20 18.1193 18.8807 17 17.5 17H17" stroke="#00A63E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M14 6.2C15.1887 6.62227 16 7.75776 16 9.05C16 10.3422 15.1887 11.4777 14 11.9" stroke="#00A63E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-text">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Officers</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-inner">
+              <div class="stat-icon-container" style="background: #FEF3C7;">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="7" width="18" height="13" rx="2" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 12H21" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-text">
+                <div class="stat-value">6</div>
+                <div class="stat-label">Field Workers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-section">
+          <div class="dashboard-section-header">
+            <h2 class="dashboard-section-title">Escalated Issues</h2>
+            <button class="view-all-btn">View All</button>
+          </div>
+          <div class="data-table dashboard-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>TITLE</th>
+                  <th>CATEGORY</th>
+                  <th>STATUS</th>
+                  <th>PRIORITY</th>
+                  <th>SUBMITTED BY</th>
+                  <th>DATE</th>
+                  <th>ASSIGNED TO</th>
+                </tr>
+              </thead>
+              <tbody id="headDashboardEscalatedRows">
+                <tr>
+                  <td>CMP-002</td>
+                  <td>Garbage collection missed for two weeks</td>
+                  <td>Sanitation</td>
+                  <td><span class="chip chip-status-escalated">escalated</span></td>
+                  <td><span class="chip chip-priority-high">high</span></td>
+                  <td>Sarah Williams</td>
+                  <td>3/7/2026</td>
+                  <td><button class="mini-action mini-action-blue">Assign</button></td>
+                </tr>
+                <tr>
+                  <td>CMP-005</td>
+                  <td>Water leak in community center</td>
+                  <td>Facilities</td>
+                  <td><span class="chip chip-status-escalated">escalated</span></td>
+                  <td><span class="chip chip-priority-high">high</span></td>
+                  <td>Michael Garcia</td>
+                  <td>3/4/2026</td>
+                  <td>Chris Taylor <button class="mini-action mini-action-orange">Change</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="dashboard-section">
+          <div class="dashboard-section-header">
+            <h2 class="dashboard-section-title">Complaints</h2>
+            <button class="view-all-btn">View All</button>
+          </div>
+          <div class="data-table dashboard-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>TITLE</th>
+                  <th>CATEGORY</th>
+                  <th>STATUS</th>
+                  <th>PRIORITY</th>
+                  <th>SUBMITTED BY</th>
+                  <th>DATE</th>
+                  <th>ASSIGNED TO</th>
+                </tr>
+              </thead>
+              <tbody id="headDashboardComplaintsRows">
+                <tr>
+                  <td>CMP-001</td>
+                  <td>Street light not working on Main Street</td>
+                  <td>Infrastructure</td>
+                  <td><span class="chip chip-status-pending">pending</span></td>
+                  <td><span class="chip chip-priority-high">high</span></td>
+                  <td>John Smith</td>
+                  <td>3/8/2026</td>
+                  <td>Mike Johnson</td>
+                </tr>
+                <tr>
+                  <td>CMP-002</td>
+                  <td>Garbage collection missed for two weeks</td>
+                  <td>Sanitation</td>
+                  <td><span class="chip chip-status-escalated">escalated</span></td>
+                  <td><span class="chip chip-priority-high">high</span></td>
+                  <td>Sarah Williams</td>
+                  <td>3/7/2026</td>
+                  <td><button class="mini-action mini-action-blue">Assign</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaints Page -->
+      <div id="complaints-page" class="hidden">
+        <div class="page-heading">All Complaints</div>
+        <div class="data-table dashboard-table complaints-design-table">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TITLE</th>
+                <th>CATEGORY</th>
+                <th>Status</th>
+                <th>PRIORITY</th>
+                <th>SUBMITTED BY</th>
+                <th>Date</th>
+                <th>ASSIGNED TO</th>
+              </tr>
+            </thead>
+            <tbody id="headAllComplaintsRows">
+              <tr>
+                <td>CMP-001</td>
+                <td>Street light not working on Main Street</td>
+                <td>Infrastructure</td>
+                <td><span class="chip chip-status-pending">pending</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>John Smith</td>
+                <td>3/8/2026</td>
+                <td>Mike Johnson</td>
+              </tr>
+              <tr>
+                <td>CMP-002</td>
+                <td>Garbage collection missed for two weeks</td>
+                <td>Sanitation</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Sarah Williams</td>
+                <td>3/7/2026</td>
+                <td><button class="mini-action mini-action-blue">Assign</button></td>
+              </tr>
+              <tr>
+                <td>CMP-003</td>
+                <td>Pothole repair needed on 5th Avenue</td>
+                <td>Roads</td>
+                <td><span class="chip chip-status-in-progress">in-progress</span></td>
+                <td><span class="chip chip-priority-medium">medium</span></td>
+                <td>Robert Davis</td>
+                <td>3/6/2026</td>
+                <td>David Wilson</td>
+              </tr>
+              <tr>
+                <td>CMP-004</td>
+                <td>Park bench vandalism reported</td>
+                <td>Parks</td>
+                <td><span class="chip chip-status-resolved">resolved</span></td>
+                <td><span class="chip chip-priority-low">low</span></td>
+                <td>Lisa Anderson</td>
+                <td>3/5/2026</td>
+                <td>Sarah Martinez</td>
+              </tr>
+              <tr>
+                <td>CMP-005</td>
+                <td>Water leak in community center</td>
+                <td>Facilities</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Michael Garcia</td>
+                <td>3/4/2026</td>
+                <td>Chris Taylor <button class="mini-action mini-action-orange">Change</button></td>
+              </tr>
+              <tr>
+                <td>CMP-006</td>
+                <td>Noise complaint from construction site</td>
+                <td>Public Safety</td>
+                <td><span class="chip chip-status-pending">pending</span></td>
+                <td><span class="chip chip-priority-medium">medium</span></td>
+                <td>Jennifer Lee</td>
+                <td>3/3/2026</td>
+                <td>Alex Thompson</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Escalated Issues Page -->
+      <div id="escalated-issues-page" class="hidden">
+        <div class="page-heading">Escalated Issues</div>
+        <div class="data-table dashboard-table complaints-design-table">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TITLE</th>
+                <th>CATEGORY</th>
+                <th>STATUS</th>
+                <th>PRIORITY</th>
+                <th>SUBMITTED BY</th>
+                <th>DATE</th>
+                <th>ASSIGNED TO</th>
+              </tr>
+            </thead>
+            <tbody id="headAllEscalatedRows">
+              <tr>
+                <td>CMP-002</td>
+                <td>Garbage collection missed for two weeks</td>
+                <td>Sanitation</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Sarah Williams</td>
+                <td>3/7/2026</td>
+                <td><button class="mini-action mini-action-blue">Assign</button></td>
+              </tr>
+              <tr>
+                <td>CMP-005</td>
+                <td>Water leak in community center</td>
+                <td>Facilities</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Michael Garcia</td>
+                <td>3/4/2026</td>
+                <td>Chris Taylor <button class="mini-action mini-action-orange">Change</button></td>
+              </tr>
+              <tr>
+                <td>CMP-009</td>
+                <td>Broken water main flooding residential area</td>
+                <td>Infrastructure</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Thomas Brown</td>
+                <td>3/9/2026</td>
+                <td><button class="mini-action mini-action-blue">Assign</button></td>
+              </tr>
+              <tr>
+                <td>CMP-010</td>
+                <td>Hazardous waste dumping reported</td>
+                <td>Sanitation</td>
+                <td><span class="chip chip-status-escalated">escalated</span></td>
+                <td><span class="chip chip-priority-high">high</span></td>
+                <td>Patricia Wilson</td>
+                <td>3/9/2026</td>
+                <td><button class="mini-action mini-action-blue">Assign</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Department Officers Page -->
+      <div id="department-officers-page" class="hidden">
+        <div class="page-heading">Department Officers</div>
+        <div class="data-table dashboard-table complaints-design-table">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NAME</th>
+                <th>Role</th>
+                <th>DEPARTMENT</th>
+                <th>CONTACT</th>
+                <th>Status</th>
+                <th>ASSIGNED TASKS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>OFF-001</td>
+                <td>Mike Johnson</td>
+                <td>Senior Officer</td>
+                <td>Infrastructure</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: mike.j@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 123-4567</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>12</td>
+              </tr>
+              <tr>
+                <td>OFF-002</td>
+                <td>Emily Brown</td>
+                <td>Department Head</td>
+                <td>Sanitation</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: emily.b@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 234-5678</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>8</td>
+              </tr>
+              <tr>
+                <td>OFF-003</td>
+                <td>David Wilson</td>
+                <td>Field Supervisor</td>
+                <td>Roads</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: david.w@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 345-6789</div>
+                </td>
+                <td><span class="chip chip-status-on-leave">on-leave</span></td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td>OFF-004</td>
+                <td>Sarah Martinez</td>
+                <td>Parks Manager</td>
+                <td>Parks &amp; Recreation</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: sarah.m@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 456-7890</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>15</td>
+              </tr>
+              <tr>
+                <td>OFF-005</td>
+                <td>Chris Taylor</td>
+                <td>Facilities Director</td>
+                <td>Public Facilities</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: chris.t@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 567-8901</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Field Workers Page -->
+      <div id="field-workers-page" class="hidden">
+        <div class="page-heading">Field Workers</div>
+        <div class="data-table dashboard-table complaints-design-table field-workers-table">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NAME</th>
+                <th>ROLE</th>
+                <th>DEPARTMENT</th>
+                <th>CONTACT</th>
+                <th>Status</th>
+                <th class="assigned-tasks-col">ASSIGNED TASKS</th>
+                <th>LOCATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>WRK-001</td>
+                <td>Alex Thompson</td>
+                <td>Field Worker</td>
+                <td>Maintenance</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: alex.t@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 678-9012</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>6</td>
+                <td class="location-cell">North District</td>
+              </tr>
+              <tr>
+                <td>WRK-002</td>
+                <td>James Anderson</td>
+                <td>Technician</td>
+                <td>Electrical</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: james.a@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 789-0123</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>9</td>
+                <td class="location-cell">Central District</td>
+              </tr>
+              <tr>
+                <td>WRK-003</td>
+                <td>Maria Rodriguez</td>
+                <td>Sanitation Worker</td>
+                <td>Sanitation</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: maria.r@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 890-1234</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>11</td>
+                <td class="location-cell">South District</td>
+              </tr>
+              <tr>
+                <td>WRK-004</td>
+                <td>Kevin Zhang</td>
+                <td>Road Worker</td>
+                <td>Roads</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: kevin.z@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 901-2345</div>
+                </td>
+                <td><span class="chip chip-status-on-leave">on-leave</span></td>
+                <td>4</td>
+                <td class="location-cell">East District</td>
+              </tr>
+              <tr>
+                <td>WRK-005</td>
+                <td>Lisa Chen</td>
+                <td>Park Attendant</td>
+                <td>Parks</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: lisa.c@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 012-3456</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>7</td>
+                <td class="location-cell">West District</td>
+              </tr>
+              <tr>
+                <td>WRK-006</td>
+                <td>Daniel Kim</td>
+                <td>Maintenance Worker</td>
+                <td>Facilities</td>
+                <td class="contact-cell">
+                  <div class="contact-line">mail: daniel.k@urbanity.gov</div>
+                  <div class="contact-line">tel: (555) 123-4567</div>
+                </td>
+                <td><span class="chip chip-status-active">active</span></td>
+                <td>8</td>
+                <td class="location-cell">Central District</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profile Page -->
+      <div id="profile-page" class="hidden">
+        <div class="dh-profile-header">
+          <h1 class="dh-profile-title">My Profile</h1>
+          <p class="dh-profile-subtitle">Manage your personal information and view your statistics.</p>
+        </div>
+
+        <div class="profile-container">
+          <div class="profile-left">
+            <div class="profile-card">
+              <div class="profile-avatar-large">S</div>
+              <h2 class="profile-name" id="profileName">Officer Smith</h2>
+              <p class="profile-designation">Department Officer</p>
+              <p class="profile-department">Public Works Department</p>
+              <button class="edit-profile-btn" type="button" onclick="openEditProfile()">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Edit Profile
+              </button>
+            </div>
+
+            <div class="performance-stats-card">
+              <h3 class="performance-stats-title">Performance Stats</h3>
+              <div class="stats-list">
+                <div class="stat-item">
+                  <p class="stat-item-label">Total Complaints Handled</p>
+                  <p class="stat-item-value">156</p>
+                </div>
+                <div class="stat-item">
+                  <p class="stat-item-label">Assigned This Month</p>
+                  <p class="stat-item-value">24</p>
+                </div>
+                <div class="stat-item">
+                  <p class="stat-item-label">Resolved This Month</p>
+                  <p class="stat-item-value">32</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="profile-info-card">
+              <h3 class="profile-info-title">Personal Information</h3>
+
+              <div class="profile-info-grid">
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-blue">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Full Name</p>
+                    <p class="profile-info-text" id="infoName">Officer Smith</p>
+                  </div>
+                </div>
+
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-green">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Email Address</p>
+                    <p class="profile-info-text" id="infoEmail">officer@urbanity.gov</p>
+                  </div>
+                </div>
+
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-orange">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Phone Number</p>
+                    <p class="profile-info-text" id="infoPhone">+1-234-567-8900</p>
+                  </div>
+                </div>
+
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-purple">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Office Location</p>
+                    <p class="profile-info-text" id="infoLocation">District Office, Block A</p>
+                  </div>
+                </div>
+
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-cyan">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#155dfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Join Date</p>
+                    <p class="profile-info-text">January 15, 2024</p>
+                  </div>
+                </div>
+
+                <div class="profile-info-row">
+                  <div class="profile-icon profile-icon-red">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 7h18"></path>
+                      <rect x="5" y="4" width="14" height="16" rx="2"></rect>
+                      <path d="M9 2v4"></path>
+                      <path d="M15 2v4"></path>
+                    </svg>
+                  </div>
+                  <div class="profile-info-content">
+                    <p class="profile-info-label">Employee ID</p>
+                    <p class="profile-info-text">OFF-2024-001</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="account-security-card">
+              <h3 class="security-title">Account Security</h3>
+              <div class="security-list">
+                <div class="security-item">
+                  <div class="security-item-content">
+                    <h4>Password</h4>
+                    <p>Last changed 30 days ago</p>
+                  </div>
+                  <button class="security-btn-gray" type="button">Change Password</button>
+                </div>
+                <div class="security-item">
+                  <div class="security-item-content">
+                    <h4>Two-Factor Authentication</h4>
+                    <p>Add an extra layer of security</p>
+                  </div>
+                  <button class="security-btn-blue" type="button">Enable</button>
+                </div>
+                <div class="security-item">
+                  <div class="security-item-content">
+                    <h4>Active Sessions</h4>
+                    <p>Manage your active sessions</p>
+                  </div>
+                  <button class="security-btn-gray" type="button">View Sessions</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal edit-modal">
+      <div class="modal-header" style="height: 76.667px; padding-bottom: 0.667px;">
+        <h3 class="modal-title" style="font-size: 20px; font-weight: 700; color: #101828;">Edit Profile</h3>
+        <button class="modal-close" onclick="closeModal('editProfileModal')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <form id="editProfileForm">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#155DFC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <input type="text" class="form-input" id="editName" placeholder="John Doe" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A63E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+              </div>
+              <input type="email" class="form-input" id="editEmail" placeholder="johndoe@email.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9810FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+              </div>
+              <input type="tel" class="form-input" id="editPhone" placeholder="+1 (555) 123-4567" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Office Location</label>
+            <div class="input-wrapper">
+              <div class="input-icon input-icon-orange">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F54900" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
+              <input type="text" class="form-input" id="editLocation" placeholder="123 Main Street, Springfield, ST 12345" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer-edit">
+        <button class="btn-cancel" onclick="closeModal('editProfileModal')">Cancel</button>
+        <button class="btn-save" onclick="saveProfile()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10.1333 2C10.485 2.00501 10.8205 2.14878 11.0667 2.4L13.6 4.93333C13.8512 5.17951 13.995 5.51497 14 5.86667V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V3.33333C2 2.97971 2.14048 2.64057 2.39052 2.39052C2.64057 2.14048 2.97971 2 3.33333 2H10.1333Z" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11.3333 14V9.33333C11.3333 9.15652 11.2631 8.98695 11.1381 8.86193C11.013 8.73691 10.8435 8.66667 10.6667 8.66667H5.33333C5.15652 8.66667 4.98695 8.73691 4.86193 8.86193C4.7369 8.98695 4.66667 9.15652 4.66667 9.33333V14" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4.66667 2V4.66667C4.66667 4.84348 4.7369 5.01305 4.86193 5.13807C4.98695 5.2631 5.15652 5.33333 5.33333 5.33333H10" stroke="white" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dropdown Menu -->
+  <div class="dropdown-menu profile-dropdown" id="dropdownMenu">
+    <button class="dropdown-item profile-menu-item" data-action="profile">
+      <svg class="dropdown-icon" viewBox="0 0 20 20" fill="none">
+        <path d="M10 9.16667C11.8409 9.16667 13.3333 7.67428 13.3333 5.83333C13.3333 3.99238 11.8409 2.5 10 2.5C8.15905 2.5 6.66667 3.99238 6.66667 5.83333C6.66667 7.67428 8.15905 9.16667 10 9.16667Z" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2.026 17.5V15.8333C2.026 14.9493 2.37719 14.1014 3.00231 13.4763C3.62743 12.8512 4.47528 12.5 5.35933 12.5H14.6407C15.5247 12.5 16.3726 12.8512 16.9977 13.4763C17.6228 14.1014 17.974 14.9493 17.974 15.8333V17.5" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>View Profile</span>
+    </button>
+    <button class="dropdown-item profile-menu-item" data-action="help">
+      <svg class="dropdown-icon" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.39167"/>
+        <path d="M10 10V6" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round"/>
+        <circle cx="10" cy="14" r="0.5" fill="currentColor"/>
+      </svg>
+      <span>Help & Support</span>
+    </button>
+    <div class="profile-dropdown-divider"></div>
+    <div class="profile-signout-wrap">
+      <button class="dropdown-item profile-sign-out" data-action="signout">
+        <svg class="dropdown-icon" viewBox="0 0 20 20" fill="none">
+          <path d="M7.5 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V4.16667C2.5 3.72464 2.67559 3.30072 2.98816 2.98816C3.30072 2.67559 3.72464 2.5 4.16667 2.5H7.5" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.3333 14.1667L17.5 10L13.3333 5.83333" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17.5 10H7.5" stroke="currentColor" stroke-width="1.39167" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Panel -->
+  <div class="notification-panel" id="notificationPanel">
+    <div class="dropdown-header">
+      <h3>Notifications</h3>
+      <span class="dropdown-badge"><span id="unreadCount">3</span> New</span>
+    </div>
+    <div class="notification-list" id="notificationList">
+    </div>
+    <div class="dropdown-footer">
+      <button>View All Notifications</button>
+    </div>
+  </div>
+</body>
+</html>
