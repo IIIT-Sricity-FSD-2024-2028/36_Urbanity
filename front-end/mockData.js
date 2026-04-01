@@ -12,7 +12,9 @@
   }
 
   function toPhone(index) {
-    return `+91-98${String(100000 + index).slice(-6)}`;
+    const firstDigit = 6 + (index % 4);
+    const remainingDigits = String(100000000 + index).slice(-9);
+    return `+91-${firstDigit}${remainingDigits}`;
   }
 
   function buildUsers() {
@@ -213,7 +215,7 @@
         title: "Pothole Near Market",
         description: "Deep pothole causing traffic slowdown.",
         location: "Lal Market Road",
-        status: "in-progress",
+        status: "escalated",
         category: "Roads",
         date: "March 16, 2026",
         upvotes: 21,

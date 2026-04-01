@@ -2,14 +2,14 @@
 let profileData = {
   name: "Officer Smith",
   email: "officer@urbanity.gov",
-  phone: "+1-234-567-8900",
+  phone: "+91-9876543210",
   designation: "Department Officer",
   department: "Public Works Department",
   location: "District Office, Block A",
 };
 
 const OFFICER_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const OFFICER_PHONE_REGEX = /^\+?[0-9()\-\s]{8,20}$/;
+const OFFICER_PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
 
 function showOfficerToast(message, type = "info") {
   if (window.UIFeedback?.toast) {

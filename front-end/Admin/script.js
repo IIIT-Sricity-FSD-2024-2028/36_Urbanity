@@ -753,7 +753,7 @@ function handleAddEscalationRule() {
 }
 
 const ADMIN_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ADMIN_PHONE_REGEX = /^\+?[0-9()\-\s]{8,20}$/;
+const ADMIN_PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
 
 function loadAdminCrudState() {
   if (window.MockDataAPI) {
@@ -1537,7 +1537,7 @@ function handleAddUser() {
   }
 
   if (phone !== "N/A" && !ADMIN_PHONE_REGEX.test(phone)) {
-    showAdminToast("Please enter a valid phone number.", "error");
+    showAdminToast("Enter a valid phone number.", "error");
     return;
   }
 

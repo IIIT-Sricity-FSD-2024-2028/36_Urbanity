@@ -73,7 +73,7 @@ const FALLBACK_CREDENTIALS = {
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[0-9()\-\s]{8,20}$/;
+const PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
 
 function validateCredentials(roleKey, email, password) {
   const normalizedEmail = email.trim().toLowerCase();
@@ -269,7 +269,7 @@ function handleSignup(event) {
   }
 
   if (!PHONE_REGEX.test(phone)) {
-    showSignupMessage("Please enter a valid phone number.");
+    showSignupMessage("Enter a valid phone number.");
     return;
   }
 

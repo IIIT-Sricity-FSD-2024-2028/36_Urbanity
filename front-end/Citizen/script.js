@@ -8,7 +8,7 @@ const notificationTemplates = [
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[0-9()\-\s]{8,20}$/;
+const PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
 
 const notificationReadState = {};
 const notificationHiddenState = {};
