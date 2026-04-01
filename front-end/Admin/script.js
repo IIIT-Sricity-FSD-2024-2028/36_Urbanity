@@ -239,10 +239,45 @@ const ADMIN_ESCALATION_RULES_KEY = "urbanity.admin.escalationRules";
 
 const adminIssueFilters = {
   search: "",
-  department: "all",
   status: "all",
-  feedback: "all",
+  severity: "all",
 };
+
+const ADMIN_TECHNICAL_SYSTEM_ISSUES = [
+  {
+    id: "ISS-001",
+    title: "API Gateway Rate Limit Spikes",
+    description: "Traffic bursts are triggering 429 responses for complaint submission endpoints.",
+    location: "Urbanity Cloud",
+    status: "in-progress",
+    category: "Infrastructure",
+    department: "System",
+    date: "April 1, 2026",
+    reportedBy: "System Monitor",
+  },
+  {
+    id: "ISS-002",
+    title: "Notification Queue Delay",
+    description: "Email and SMS notifications are delayed by up to 12 minutes during peak load.",
+    location: "Messaging Service",
+    status: "pending",
+    category: "Infrastructure",
+    department: "System",
+    date: "April 1, 2026",
+    reportedBy: "Alert Engine",
+  },
+  {
+    id: "ISS-003",
+    title: "File Storage Degradation",
+    description: "Complaint media uploads intermittently fail due to elevated object storage latency.",
+    location: "Media Storage",
+    status: "reopened",
+    category: "Infrastructure",
+    department: "System",
+    date: "March 31, 2026",
+    reportedBy: "Storage Health Check",
+  },
+];
 
 const adminCrudState = {
   users: [],
@@ -656,6 +691,160 @@ function getAdminStoreAssignments() {
   return window.MockDataAPI.list("assignments");
 }
 
+function getAdminSystemIssuesData() {
+  return [...ADMIN_TECHNICAL_SYSTEM_ISSUES];
+}
+
+function getTechnicalSystemIssueById(issueId) {
+  return ADMIN_TECHNICAL_SYSTEM_ISSUES.find((item) => item.id === issueId) || null;
+}
+
+function escapeAdminHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function openTechnicalIssueViewModal(issue) {
+  const existing = document.getElementById("technicalIssueViewOverlay");
+  if (existing) {
+    existing.remove();
+  }
+
+  const overlay = document.createElement("div");
+  overlay.id = "technicalIssueViewOverlay";
+  overlay.className = "modal-overlay active";
+
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 720px;">
+      <div class="modal-header" style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+        <div>
+          <h3 class="modal-title" style="margin-bottom: 8px;">${escapeAdminHtml(issue.title)}</h3>
+          <div class="flex items-center gap-2" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span class="badge badge-gray">${escapeAdminHtml(issue.id)}</span>
+            <span class="badge ${getAdminStatusBadgeClass(issue.status)}">${escapeAdminHtml(formatAdminComplaintStatus(issue.status))}</span>
+            <span class="badge ${getAdminSeverityBadgeClass(issue.category)}">${escapeAdminHtml(getAdminSeverityLabel(issue.category))}</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" data-close-technical-issue-view="true">Close</button>
+      </div>
+      <div class="modal-body" style="display:grid; gap:16px;">
+        <div style="padding:14px; border:1px solid #e5e7eb; border-radius:10px; background:#f8fafc;">
+          <p style="font-size:13px; color:#64748b; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Description</p>
+          <p style="font-size:14px; color:#111827; line-height:1.6;">${escapeAdminHtml(issue.description || "No description provided.")}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+          <div style="padding:12px; border:1px solid #e5e7eb; border-radius:10px;">
+            <p style="font-size:12px; color:#6b7280; margin-bottom:4px;">Reported By</p>
+            <p style="font-size:14px; color:#111827; font-weight:600;">${escapeAdminHtml(issue.reportedBy || "System")}</p>
+          </div>
+          <div style="padding:12px; border:1px solid #e5e7eb; border-radius:10px;">
+            <p style="font-size:12px; color:#6b7280; margin-bottom:4px;">Department</p>
+            <p style="font-size:14px; color:#111827; font-weight:600;">${escapeAdminHtml(issue.department || "System")}</p>
+          </div>
+          <div style="padding:12px; border:1px solid #e5e7eb; border-radius:10px;">
+            <p style="font-size:12px; color:#6b7280; margin-bottom:4px;">Location</p>
+            <p style="font-size:14px; color:#111827; font-weight:600;">${escapeAdminHtml(issue.location || "N/A")}</p>
+          </div>
+          <div style="padding:12px; border:1px solid #e5e7eb; border-radius:10px;">
+            <p style="font-size:12px; color:#6b7280; margin-bottom:4px;">Reported On</p>
+            <p style="font-size:14px; color:#111827; font-weight:600;">${escapeAdminHtml(issue.date || "N/A")}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener("click", (event) => {
+    const closeBtn = event.target.closest("[data-close-technical-issue-view]");
+    if (event.target === overlay || closeBtn) {
+      overlay.remove();
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
+async function handleViewTechnicalSystemIssue(issueId) {
+  if (!hasPermission("system-issues", "read")) {
+    showAdminToast("You do not have permission to read system issues.", "error");
+    return;
+  }
+
+  const issue = getTechnicalSystemIssueById(issueId);
+  if (!issue) {
+    showAdminToast("System issue not found.", "error");
+    return;
+  }
+
+  openTechnicalIssueViewModal(issue);
+}
+
+async function handleEditTechnicalSystemIssue(issueId) {
+  if (!hasPermission("system-issues", "update")) {
+    showAdminToast("You do not have permission to update system issues.", "error");
+    return;
+  }
+
+  const issue = getTechnicalSystemIssueById(issueId);
+  if (!issue) {
+    showAdminToast("System issue not found.", "error");
+    return;
+  }
+
+  const result = await showAdminDialog({
+    title: "Edit System Issue Title",
+    message: "Update the issue title.",
+    confirmText: "Save",
+    cancelText: "Cancel",
+    inputValue: issue.title,
+  });
+
+  const nextTitle = (result.value || "").trim();
+  if (!result.confirmed || !nextTitle) {
+    return;
+  }
+
+  issue.title = nextTitle;
+  issue.date = "April 1, 2026";
+  renderAdminSystemIssues();
+  showAdminToast("System issue updated.", "success");
+}
+
+async function handleDeleteTechnicalSystemIssue(issueId) {
+  if (!hasPermission("system-issues", "delete")) {
+    showAdminToast("You do not have permission to delete system issues.", "error");
+    return;
+  }
+
+  const issue = getTechnicalSystemIssueById(issueId);
+  if (!issue) {
+    showAdminToast("System issue not found.", "error");
+    return;
+  }
+
+  const result = await showAdminDialog({
+    title: "Delete System Issue",
+    message: `Delete ${issue.id} - ${issue.title}? This action cannot be undone.`,
+    confirmText: "Delete",
+    cancelText: "Cancel",
+  });
+
+  if (!result.confirmed) {
+    return;
+  }
+
+  const index = ADMIN_TECHNICAL_SYSTEM_ISSUES.findIndex((item) => item.id === issueId);
+  if (index >= 0) {
+    ADMIN_TECHNICAL_SYSTEM_ISSUES.splice(index, 1);
+  }
+  renderAdminSystemIssues();
+  showAdminToast("System issue deleted.", "success");
+}
+
 function formatAdminComplaintStatus(status) {
   const normalized = (status || "").toLowerCase();
   if (normalized === "in-progress") return "IN-PROGRESS";
@@ -741,30 +930,16 @@ function renderAdminSystemIssues() {
     return;
   }
 
-  const complaints = getAdminStoreComplaints()
-    .filter((complaint) => {
-      const normalizedStatus = (complaint.status || "").toLowerCase();
-      const normalizedDepartment = (complaint.department || "").toLowerCase();
-      const hasFeedback = Boolean(complaint.feedback);
-
-      if (adminIssueFilters.department !== "all") {
-        const selectedDepartment = adminIssueFilters.department.toLowerCase();
-        if (normalizedDepartment !== selectedDepartment) {
-          return false;
-        }
-      }
+  const issues = getAdminSystemIssuesData()
+    .filter((issue) => {
+      const normalizedStatus = (issue.status || "").toLowerCase();
+      const normalizedSeverity = getAdminSeverityLabel(issue.category).toLowerCase();
 
       if (adminIssueFilters.status !== "all" && normalizedStatus !== adminIssueFilters.status) {
         return false;
       }
 
-      if (adminIssueFilters.feedback === "pending") {
-        if (!(normalizedStatus === "resolved" && !hasFeedback)) {
-          return false;
-        }
-      }
-
-      if (adminIssueFilters.feedback === "submitted" && !hasFeedback) {
+      if (adminIssueFilters.severity !== "all" && normalizedSeverity !== adminIssueFilters.severity) {
         return false;
       }
 
@@ -774,13 +949,13 @@ function renderAdminSystemIssues() {
       }
 
       const searchable = [
-        complaint.id,
-        complaint.title,
-        complaint.description,
-        complaint.location,
-        complaint.reportedBy,
-        complaint.reportedByEmail,
-        complaint.department,
+        issue.id,
+        issue.title,
+        issue.description,
+        issue.location,
+        issue.reportedBy,
+        issue.reportedByEmail,
+        issue.department,
       ]
         .filter(Boolean)
         .join(" ")
@@ -792,25 +967,20 @@ function renderAdminSystemIssues() {
   const assignments = getAdminStoreAssignments();
   const assignmentByComplaintId = new Map(assignments.map((item) => [item.complaintId, item]));
 
-  if (complaints.length === 0) {
-    container.innerHTML = '<div class="card"><div class="card-content" style="padding: 24px;">No civic complaints found.</div></div>';
+  if (issues.length === 0) {
+    container.innerHTML = '<div class="card"><div class="card-content" style="padding: 24px;">No issues found.</div></div>';
     return;
   }
 
-  container.innerHTML = complaints
-    .map((complaint) => {
-      const assignment = assignmentByComplaintId.get(complaint.id);
-      const complaintMedia = normalizeAdminMediaList(complaint.media);
+  container.innerHTML = issues
+    .map((issue) => {
+      const assignment = assignmentByComplaintId.get(issue.id);
+      const complaintMedia = normalizeAdminMediaList(issue.media);
       const resolutionMedia = normalizeAdminMediaList(
-        complaint.resolutionMedia && complaint.resolutionMedia.length
-          ? complaint.resolutionMedia
+        issue.resolutionMedia && issue.resolutionMedia.length
+          ? issue.resolutionMedia
           : assignment?.proofMedia,
       );
-      const feedbackLabel = complaint.feedback
-        ? `Feedback: ${complaint.feedback.rating}/5`
-        : complaint.status === "resolved"
-          ? "Feedback: pending"
-          : "Feedback: N/A";
 
       return `
         <div class="card">
@@ -827,17 +997,23 @@ function renderAdminSystemIssues() {
                 <div class="flex items-start justify-between mb-2">
                   <div style="flex: 1;">
                     <div class="flex items-center gap-2 mb-2">
-                      <h3 class="font-semibold" style="color: #111827;">${complaint.title}</h3>
-                      <span class="badge ${getAdminSeverityBadgeClass(complaint.category)}" style="text-transform: uppercase; font-size: 11px;">${getAdminSeverityLabel(complaint.category)}</span>
-                      <span class="badge ${getAdminStatusBadgeClass(complaint.status)}" style="text-transform: uppercase; font-size: 11px;">${formatAdminComplaintStatus(complaint.status)}</span>
+                      <h3 class="font-semibold" style="color: #111827;">${issue.title}</h3>
+                      <span class="badge ${getAdminSeverityBadgeClass(issue.category)}" style="text-transform: uppercase; font-size: 11px;">${getAdminSeverityLabel(issue.category)}</span>
+                      <span class="badge ${getAdminStatusBadgeClass(issue.status)}" style="text-transform: uppercase; font-size: 11px;">${formatAdminComplaintStatus(issue.status)}</span>
                     </div>
-                    <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">${complaint.description || "No description"}</p>
+                    <p class="text-sm" style="color: #4b5563; margin-bottom: 12px;">${issue.description || "No description"}</p>
                     <div class="flex items-center gap-6 text-sm" style="color: #6b7280; flex-wrap: wrap;">
-                      <span class="font-medium">${complaint.id}</span>
+                      <span class="font-medium">${issue.id}</span>
                       <span>Assigned: ${assignment?.assignee || "Unassigned"}</span>
-                      <span>Reported by: ${complaint.reportedBy || "Citizen"}</span>
-                      <span>${complaint.date || "N/A"}</span>
-                      <span>${feedbackLabel}</span>
+                      <span>Reported by: ${issue.reportedBy || "System"}</span>
+                      <span>${issue.date || "N/A"}</span>
+                      <span>Type: Technical Incident</span>
+                    </div>
+
+                    <div class="flex items-center gap-2" style="margin-top: 12px;">
+                      <button class="btn btn-outline btn-sm" data-view-system-issue="${issue.id}">View</button>
+                      <button class="btn btn-outline btn-sm" data-edit-system-issue="${issue.id}">Edit</button>
+                      <button class="btn btn-outline btn-sm" data-delete-system-issue="${issue.id}">Delete</button>
                     </div>
 
                     ${
@@ -872,39 +1048,10 @@ function renderAdminSystemIssues() {
     .join("");
 }
 
-function renderAdminIssueFilterOptions() {
-  const departmentFilter = document.getElementById("adminIssueDepartmentFilter");
-  if (!departmentFilter) {
-    return;
-  }
-
-  const selected = departmentFilter.value || adminIssueFilters.department;
-  const departments = Array.from(
-    new Set(
-      getAdminStoreComplaints()
-        .map((complaint) => complaint.department)
-        .filter(Boolean),
-    ),
-  ).sort((a, b) => a.localeCompare(b));
-
-  departmentFilter.innerHTML = [
-    '<option value="all">All Departments</option>',
-    ...departments.map((department) => `<option value="${department}">${department}</option>`),
-  ].join("");
-
-  if (selected && Array.from(departmentFilter.options).some((option) => option.value === selected)) {
-    departmentFilter.value = selected;
-  } else {
-    departmentFilter.value = "all";
-    adminIssueFilters.department = "all";
-  }
-}
-
 function bindAdminIssueFilters() {
   const searchInput = document.getElementById("adminIssueSearch");
-  const departmentFilter = document.getElementById("adminIssueDepartmentFilter");
   const statusFilter = document.getElementById("adminIssueStatusFilter");
-  const feedbackFilter = document.getElementById("adminIssueFeedbackFilter");
+  const severityFilter = document.getElementById("adminIssueSeverityFilter");
 
   if (searchInput && !searchInput.dataset.bound) {
     searchInput.addEventListener("input", (event) => {
@@ -912,14 +1059,6 @@ function bindAdminIssueFilters() {
       renderAdminSystemIssues();
     });
     searchInput.dataset.bound = "true";
-  }
-
-  if (departmentFilter && !departmentFilter.dataset.bound) {
-    departmentFilter.addEventListener("change", (event) => {
-      adminIssueFilters.department = event.target.value || "all";
-      renderAdminSystemIssues();
-    });
-    departmentFilter.dataset.bound = "true";
   }
 
   if (statusFilter && !statusFilter.dataset.bound) {
@@ -930,18 +1069,17 @@ function bindAdminIssueFilters() {
     statusFilter.dataset.bound = "true";
   }
 
-  if (feedbackFilter && !feedbackFilter.dataset.bound) {
-    feedbackFilter.addEventListener("change", (event) => {
-      adminIssueFilters.feedback = event.target.value || "all";
+  if (severityFilter && !severityFilter.dataset.bound) {
+    severityFilter.addEventListener("change", (event) => {
+      adminIssueFilters.severity = event.target.value || "all";
       renderAdminSystemIssues();
     });
-    feedbackFilter.dataset.bound = "true";
+    severityFilter.dataset.bound = "true";
   }
 
   if (searchInput) searchInput.value = adminIssueFilters.search;
-  if (departmentFilter) departmentFilter.value = adminIssueFilters.department;
   if (statusFilter) statusFilter.value = adminIssueFilters.status;
-  if (feedbackFilter) feedbackFilter.value = adminIssueFilters.feedback;
+  if (severityFilter) severityFilter.value = adminIssueFilters.severity;
 }
 
 function renderAdminEscalatedIssues() {
@@ -1003,7 +1141,6 @@ function renderAdminEscalatedIssues() {
 
 function renderAdminFlowViews() {
   renderAdminDashboardComplaintStats();
-  renderAdminIssueFilterOptions();
   bindAdminIssueFilters();
   renderAdminSystemIssues();
   renderAdminEscalatedIssues();
@@ -1443,6 +1580,9 @@ function handleCreateDepartment() {
 }
 
 document.addEventListener("click", async (evt) => {
+  const viewSystemIssueId = evt.target.getAttribute("data-view-system-issue");
+  const editSystemIssueId = evt.target.getAttribute("data-edit-system-issue");
+  const deleteSystemIssueId = evt.target.getAttribute("data-delete-system-issue");
   const readRuleId = evt.target.getAttribute("data-read-rule");
   const editRuleId = evt.target.getAttribute("data-edit-rule");
   const deleteRuleId = evt.target.getAttribute("data-delete-rule");
@@ -1450,6 +1590,21 @@ document.addEventListener("click", async (evt) => {
   const deleteUserId = evt.target.getAttribute("data-delete-user");
   const deleteRoleId = evt.target.getAttribute("data-delete-role");
   const deleteDepartmentId = evt.target.getAttribute("data-delete-department");
+
+  if (viewSystemIssueId) {
+    await handleViewTechnicalSystemIssue(viewSystemIssueId);
+    return;
+  }
+
+  if (editSystemIssueId) {
+    await handleEditTechnicalSystemIssue(editSystemIssueId);
+    return;
+  }
+
+  if (deleteSystemIssueId) {
+    await handleDeleteTechnicalSystemIssue(deleteSystemIssueId);
+    return;
+  }
 
   if (readRuleId) {
     await handleReadEscalationRule(readRuleId);

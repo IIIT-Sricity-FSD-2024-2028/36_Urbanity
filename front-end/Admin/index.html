@@ -163,13 +163,6 @@
               <h1 class="page-title">System Overview</h1>
               <p class="page-description">Real-time status of system administration and control</p>
             </div>
-            <button class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              CREATE NEW ISSUE
-            </button>
           </div>
 
           <!-- Stats Grid -->
@@ -375,13 +368,6 @@
               <h1 class="page-title">System Issues</h1>
               <p class="page-description">Manage and track system issues</p>
             </div>
-            <button class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              CREATE ISSUE
-            </button>
           </div>
 
           <!-- Filters Card -->
@@ -395,9 +381,6 @@
                   </svg>
                   <input id="adminIssueSearch" type="text" placeholder="Search issues..." style="width: 100%; padding: 8px 12px 8px 36px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
                 </div>
-                <select id="adminIssueDepartmentFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                  <option value="all">All Departments</option>
-                </select>
                 <select id="adminIssueStatusFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -405,10 +388,11 @@
                   <option value="resolved">Resolved</option>
                   <option value="reopened">Reopened</option>
                 </select>
-                <select id="adminIssueFeedbackFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                  <option value="all">All Feedback</option>
-                  <option value="pending">Feedback Pending</option>
-                  <option value="submitted">Feedback Submitted</option>
+                <select id="adminIssueSeverityFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                  <option value="all">All Severity</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
                 </select>
               </div>
             </div>
