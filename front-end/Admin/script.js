@@ -192,6 +192,9 @@ function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.add("active");
+    if (modalId === "addSystemIssueModal") {
+      resetAddSystemIssueForm();
+    }
     if (modalId === "addRuleModal" && !adminEscalationState.editingRuleId) {
       resetAddEscalationRuleForm();
     }
@@ -236,6 +239,7 @@ document.querySelector(".dropdown-signout")?.addEventListener("click", signOut);
 
 const ADMIN_STORE_KEY = "urbanityAdminCrudData";
 const ADMIN_ESCALATION_RULES_KEY = "urbanity.admin.escalationRules";
+const ADMIN_TECHNICAL_ISSUES_KEY = "urbanity.admin.technicalIssues";
 
 const adminIssueFilters = {
   search: "",
@@ -278,6 +282,116 @@ const ADMIN_TECHNICAL_SYSTEM_ISSUES = [
     reportedBy: "Storage Health Check",
   },
 ];
+
+function mapSeverityToCategory(severity) {
+  const normalized = String(severity || "").toLowerCase();
+  if (normalized === "high") return "Infrastructure";
+  if (normalized === "medium") return "Sanitation";
+  return "General";
+}
+
+function loadTechnicalIssuesState() {
+  const stored = localStorage.getItem(ADMIN_TECHNICAL_ISSUES_KEY);
+  if (!stored) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) {
+      return;
+    }
+
+    ADMIN_TECHNICAL_SYSTEM_ISSUES.splice(0, ADMIN_TECHNICAL_SYSTEM_ISSUES.length);
+    parsed.forEach((item) => {
+      if (item && item.id && item.title) {
+        ADMIN_TECHNICAL_SYSTEM_ISSUES.push(item);
+      }
+    });
+  } catch (error) {
+    console.error("Could not parse technical issues state.", error);
+  }
+}
+
+function saveTechnicalIssuesState() {
+  localStorage.setItem(
+    ADMIN_TECHNICAL_ISSUES_KEY,
+    JSON.stringify(ADMIN_TECHNICAL_SYSTEM_ISSUES),
+  );
+}
+
+function resetAddSystemIssueForm() {
+  const title = document.getElementById("systemIssueTitleInput");
+  const description = document.getElementById("systemIssueDescriptionInput");
+  const location = document.getElementById("systemIssueLocationInput");
+  const status = document.getElementById("systemIssueStatusInput");
+  const severity = document.getElementById("systemIssueSeverityInput");
+
+  if (title) title.value = "";
+  if (description) description.value = "";
+  if (location) location.value = "";
+  if (status) status.value = "pending";
+  if (severity) severity.value = "high";
+}
+
+function nextTechnicalIssueId() {
+  const used = ADMIN_TECHNICAL_SYSTEM_ISSUES
+    .map((item) => Number(String(item.id || "").replace("ISS-", "")))
+    .filter((value) => Number.isFinite(value));
+  const next = used.length ? Math.max(...used) + 1 : 1;
+  return `ISS-${String(next).padStart(3, "0")}`;
+}
+
+function handleCreateSystemIssue() {
+  if (!hasPermission("system-issues", "create")) {
+    showAdminToast("You do not have permission to create system issues.", "error");
+    return;
+  }
+
+  const title = (document.getElementById("systemIssueTitleInput")?.value || "").trim();
+  const description = (document.getElementById("systemIssueDescriptionInput")?.value || "").trim();
+  const location = (document.getElementById("systemIssueLocationInput")?.value || "").trim();
+  const status = document.getElementById("systemIssueStatusInput")?.value || "pending";
+  const severity = document.getElementById("systemIssueSeverityInput")?.value || "high";
+  const currentUser = getCurrentSessionUser();
+
+  if (!title || title.length < 4) {
+    showAdminToast("Issue title should be at least 4 characters.", "error");
+    return;
+  }
+
+  if (!description || description.length < 10) {
+    showAdminToast("Issue description should be at least 10 characters.", "error");
+    return;
+  }
+
+  if (!location) {
+    showAdminToast("Location / service is required.", "error");
+    return;
+  }
+
+  ADMIN_TECHNICAL_SYSTEM_ISSUES.unshift({
+    id: nextTechnicalIssueId(),
+    title,
+    description,
+    location,
+    status,
+    category: mapSeverityToCategory(severity),
+    department: "System",
+    date: new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    reportedBy: currentUser?.name || "Admin",
+  });
+
+  saveTechnicalIssuesState();
+  resetAddSystemIssueForm();
+  closeModal("addSystemIssueModal");
+  renderAdminSystemIssues();
+  showAdminToast("System issue created successfully.", "success");
+}
 
 const adminCrudState = {
   users: [],
@@ -810,6 +924,7 @@ async function handleEditTechnicalSystemIssue(issueId) {
 
   issue.title = nextTitle;
   issue.date = "April 1, 2026";
+  saveTechnicalIssuesState();
   renderAdminSystemIssues();
   showAdminToast("System issue updated.", "success");
 }
@@ -841,6 +956,7 @@ async function handleDeleteTechnicalSystemIssue(issueId) {
   if (index >= 0) {
     ADMIN_TECHNICAL_SYSTEM_ISSUES.splice(index, 1);
   }
+  saveTechnicalIssuesState();
   renderAdminSystemIssues();
   showAdminToast("System issue deleted.", "success");
 }
@@ -1698,6 +1814,7 @@ document.getElementById("addUserRole")?.addEventListener("change", updateAddUser
 
 loadAdminCrudState();
 loadAdminCrudState();
+loadTechnicalIssuesState();
 loadEscalationRulesState();
 renderAdminCrudData();
 renderAdminFlowViews();

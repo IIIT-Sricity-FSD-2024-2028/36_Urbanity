@@ -163,6 +163,13 @@
               <h1 class="page-title">System Overview</h1>
               <p class="page-description">Real-time status of system administration and control</p>
             </div>
+            <button class="btn btn-primary" onclick="openModal('addSystemIssueModal')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              CREATE ISSUE
+            </button>
           </div>
 
           <!-- Stats Grid -->
@@ -368,6 +375,13 @@
               <h1 class="page-title">System Issues</h1>
               <p class="page-description">Manage and track system issues</p>
             </div>
+            <button class="btn btn-primary" onclick="openModal('addSystemIssueModal')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              CREATE ISSUE
+            </button>
           </div>
 
           <!-- Filters Card -->
@@ -1792,6 +1806,55 @@
   </div>
 
   <!-- Modals -->
+
+  <!-- Add System Issue Modal -->
+  <div class="modal-overlay" id="addSystemIssueModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Raise System Issue</h3>
+        <p class="modal-description">Create a new technical incident that should appear in System Issues.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Issue Title</label>
+          <input type="text" class="form-input" id="systemIssueTitleInput" placeholder="e.g., Authentication token refresh failures" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="systemIssueDescriptionInput" placeholder="Describe impact, scope, and observed behavior"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location / Service</label>
+          <input type="text" class="form-input" id="systemIssueLocationInput" placeholder="e.g., API Gateway" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="systemIssueStatusInput">
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="reopened">Reopened</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Severity</label>
+          <select class="form-select" id="systemIssueSeverityInput">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('addSystemIssueModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="handleCreateSystemIssue()">Create Issue</button>
+      </div>
+    </div>
+  </div>
   
   <!-- Add Escalation Rule Modal -->
   <div class="modal-overlay" id="addRuleModal">
