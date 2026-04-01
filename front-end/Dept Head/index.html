@@ -844,6 +844,57 @@
     </div>
   </div>
 
+  <!-- View Escalated Complaint Modal -->
+  <div class="modal-overlay" id="viewEscalatedModal">
+    <div class="modal edit-modal">
+      <div class="modal-header" style="height: 76.667px; padding-bottom: 0.667px;">
+        <h3 class="modal-title" style="font-size: 20px; font-weight: 700; color: #101828;">Complaint Details</h3>
+        <button class="modal-close" type="button" onclick="closeModal('viewEscalatedModal')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6L18 18" stroke="#99A1AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <input type="hidden" id="previewComplaintId" />
+        <div class="form-group">
+          <label class="form-label">Issue Summary</label>
+          <div class="assign-issue-summary" id="viewEscalatedComplaintSummary">-</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <div class="escalated-preview-block" id="viewEscalatedComplaintDescription">-</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Complaint Media</label>
+          <div id="viewEscalatedComplaintMedia">-</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Details</label>
+          <div class="escalated-preview-block" id="viewEscalatedComplaintMeta">-</div>
+        </div>
+
+        <form id="viewEscalatedAssignForm">
+          <div class="form-group">
+            <label class="form-label" for="previewEscalatedOfficerSelect">Assign / Reassign Department Officer</label>
+            <select class="form-input" id="previewEscalatedOfficerSelect" required>
+              <option value="">Select Department Officer</option>
+            </select>
+          </div>
+
+          <div class="high-priority-note">
+            Save will notify the selected officer as high priority.
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer-edit">
+        <button class="btn-cancel" type="button" onclick="closeModal('viewEscalatedModal')">Close</button>
+        <button class="btn-save" type="button" onclick="saveEscalatedAssignment()">Save Assignment</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Dropdown Menu -->
   <div class="dropdown-menu profile-dropdown" id="dropdownMenu">
     <button class="dropdown-item profile-menu-item" data-action="profile">

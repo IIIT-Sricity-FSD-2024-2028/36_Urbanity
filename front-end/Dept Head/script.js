@@ -216,6 +216,42 @@ function findAssigneeForComplaint(complaintId) {
   return assignment?.assignee || "Unassigned";
 }
 
+function getAssignmentForComplaint(complaintId) {
+  return getStoreAssignments().find((entry) => entry.complaintId === complaintId) || null;
+}
+
+function isComplaintEscalated(complaint) {
+  return complaint.status === "escalated" || Number(complaint.upvotes || 0) >= 20;
+}
+
+function getHeadNonEscalatedComplaints() {
+  const scopedComplaints = getHeadScopedComplaints();
+  return scopedComplaints.filter((complaint) => !isComplaintEscalated(complaint));
+}
+
+function getHeadEscalatedComplaints() {
+  const scopedComplaints = getHeadScopedComplaints();
+  const scopedEscalated = scopedComplaints.filter((entry) => isComplaintEscalated(entry));
+  return scopedEscalated.slice(0, 3);
+}
+
+function renderEscalatedAssigneeCell(complaintId) {
+  const assignment = getAssignmentForComplaint(complaintId);
+  return assignment?.assignee || '<span class="assignee-muted">Unassigned</span>';
+}
+
+function renderComplaintTitle(complaint) {
+  return `
+    <button
+      class="complaint-link"
+      data-rbac-action="read"
+      data-rbac-module="complaints"
+      data-complaint-id="${complaint.id}"
+      type="button"
+    >${complaint.title}</button>
+  `;
+}
+
 function toHeadDate(value) {
   const parsed = Date.parse(value || "");
   if (!Number.isNaN(parsed)) {
@@ -232,46 +268,36 @@ function toHeadMediaList(mediaList) {
   return mediaList.filter((item) => item && item.url);
 }
 
-function renderHeadMediaLinks(complaint, assignmentByComplaintId) {
-  const assignment = assignmentByComplaintId.get(complaint.id);
-  const complaintMedia = toHeadMediaList(complaint.media);
-  const resolutionMedia = toHeadMediaList(
-    complaint.resolutionMedia && complaint.resolutionMedia.length
-      ? complaint.resolutionMedia
-      : assignment?.proofMedia,
-  );
-
-  if (complaintMedia.length === 0 && resolutionMedia.length === 0) {
+function renderMediaThumbs(mediaList, label) {
+  if (!mediaList.length) {
     return "";
   }
 
-  const complaintLinks = complaintMedia
-    .map((item, idx) => `<a href="${item.url}" target="_blank" rel="noopener">Complaint ${idx + 1}</a>`)
-    .join(" | ");
-  const resolutionLinks = resolutionMedia
-    .map((item, idx) => `<a href="${item.url}" target="_blank" rel="noopener">Proof ${idx + 1}</a>`)
-    .join(" | ");
+  return mediaList
+    .map((item, idx) => {
+      const safeLabel = `${label} ${idx + 1}`;
+      if (item.type === "video") {
+        return `
+          <video class="complaint-media-thumb" controls preload="metadata" aria-label="${safeLabel}">
+            <source src="${item.url}">
+          </video>
+        `;
+      }
 
-  return `
-    <div style="margin-top: 4px; font-size: 12px; color: #64748b;">
-      ${complaintLinks ? `<div>${complaintLinks}</div>` : ""}
-      ${resolutionLinks ? `<div>${resolutionLinks}</div>` : ""}
-    </div>
-  `;
+      return `<img class="complaint-media-thumb" src="${item.url}" alt="${safeLabel}">`;
+    })
+    .join("");
 }
 
 function renderHeadDashboardComplaintTables() {
   const complaints = getHeadScopedComplaints();
-  const assignments = getStoreAssignments();
-  const assignmentByComplaintId = new Map(assignments.map((item) => [item.complaintId, item]));
+  const nonEscalatedComplaints = getHeadNonEscalatedComplaints();
   const escalatedRows = document.getElementById("headDashboardEscalatedRows");
   const complaintsRows = document.getElementById("headDashboardComplaintsRows");
   const allComplaintsRows = document.getElementById("headAllComplaintsRows");
   const allEscalatedRows = document.getElementById("headAllEscalatedRows");
 
-  const escalated = complaints
-    .filter((entry) => entry.status === "escalated" || Number(entry.upvotes || 0) >= 20)
-    .slice(0, 5);
+  const escalated = getHeadEscalatedComplaints();
 
   if (escalatedRows) {
     escalatedRows.innerHTML =
@@ -283,13 +309,13 @@ function renderHeadDashboardComplaintTables() {
               return `
                 <tr>
                   <td>${complaint.id}</td>
-                  <td>${complaint.title}${renderHeadMediaLinks(complaint, assignmentByComplaintId)}</td>
+                  <td>${renderComplaintTitle(complaint)}</td>
                   <td>${complaint.category}</td>
                   <td><span class="${getHeadStatusChip("escalated")}">escalated</span></td>
                   <td><span class="${getHeadPriorityChip(priority)}">${priority}</span></td>
                   <td>${complaint.reportedBy || "Citizen"}</td>
                   <td>${toHeadDate(complaint.date)}</td>
-                  <td>${findAssigneeForComplaint(complaint.id)}</td>
+                  <td>${renderEscalatedAssigneeCell(complaint.id)}</td>
                 </tr>
               `;
             })
@@ -298,15 +324,15 @@ function renderHeadDashboardComplaintTables() {
 
   if (complaintsRows) {
     complaintsRows.innerHTML =
-      complaints.length === 0
+      nonEscalatedComplaints.length === 0
         ? '<tr><td colspan="8">No complaints available.</td></tr>'
-        : complaints.slice(0, 6)
+        : nonEscalatedComplaints.slice(0, 6)
             .map((complaint) => {
               const priority = derivePriorityFromCategory(complaint.category);
               return `
                 <tr>
                   <td>${complaint.id}</td>
-                  <td>${complaint.title}${renderHeadMediaLinks(complaint, assignmentByComplaintId)}</td>
+                  <td>${renderComplaintTitle(complaint)}</td>
                   <td>${complaint.category}</td>
                   <td><span class="${getHeadStatusChip(complaint.status)}">${complaint.status}</span></td>
                   <td><span class="${getHeadPriorityChip(priority)}">${priority}</span></td>
@@ -321,15 +347,15 @@ function renderHeadDashboardComplaintTables() {
 
   if (allComplaintsRows) {
     allComplaintsRows.innerHTML =
-      complaints.length === 0
+      nonEscalatedComplaints.length === 0
         ? '<tr><td colspan="8">No complaints available.</td></tr>'
-        : complaints
+        : nonEscalatedComplaints
             .map((complaint) => {
               const priority = derivePriorityFromCategory(complaint.category);
               return `
                 <tr>
                   <td>${complaint.id}</td>
-                  <td>${complaint.title}${renderHeadMediaLinks(complaint, assignmentByComplaintId)}</td>
+                  <td>${renderComplaintTitle(complaint)}</td>
                   <td>${complaint.category}</td>
                   <td><span class="${getHeadStatusChip(complaint.status)}">${complaint.status}</span></td>
                   <td><span class="${getHeadPriorityChip(priority)}">${priority}</span></td>
@@ -352,13 +378,13 @@ function renderHeadDashboardComplaintTables() {
               return `
                 <tr>
                   <td>${complaint.id}</td>
-                  <td>${complaint.title}${renderHeadMediaLinks(complaint, assignmentByComplaintId)}</td>
+                  <td>${renderComplaintTitle(complaint)}</td>
                   <td>${complaint.category}</td>
                   <td><span class="${getHeadStatusChip("escalated")}">escalated</span></td>
                   <td><span class="${getHeadPriorityChip(priority)}">${priority}</span></td>
                   <td>${complaint.reportedBy || "Citizen"}</td>
                   <td>${toHeadDate(complaint.date)}</td>
-                  <td>${findAssigneeForComplaint(complaint.id)}</td>
+                  <td>${renderEscalatedAssigneeCell(complaint.id)}</td>
                 </tr>
               `;
             })
@@ -367,7 +393,7 @@ function renderHeadDashboardComplaintTables() {
 
   const dashboardStats = document.querySelectorAll("#dashboard-page .stat-value");
   if (dashboardStats.length >= 2) {
-    dashboardStats[0].textContent = String(complaints.length);
+    dashboardStats[0].textContent = String(nonEscalatedComplaints.length);
     dashboardStats[1].textContent = String(escalated.length);
   }
 }
@@ -587,7 +613,7 @@ const pageTitles = {
   profile: "Profile",
 };
 
-const notifications = [
+let notifications = [
   {
     id: 1,
     title: "New Escalated Issue",
@@ -617,6 +643,37 @@ const notifications = [
     unread: false,
   },
 ];
+
+function refreshNotificationBadge() {
+  const unreadCount = notifications.filter((entry) => entry.unread).length;
+  const badge = document.getElementById("notificationBadge");
+  const unread = document.getElementById("unreadCount");
+
+  if (badge) {
+    badge.textContent = String(unreadCount);
+  }
+
+  if (unread) {
+    unread.textContent = String(unreadCount);
+  }
+}
+
+function pushHighPriorityNotification(message) {
+  const nextId = notifications.length
+    ? Math.max(...notifications.map((entry) => Number(entry.id) || 0)) + 1
+    : 1;
+
+  notifications.unshift({
+    id: nextId,
+    title: "High Priority Escalation Assigned",
+    message,
+    time: "Just now",
+    unread: true,
+    priority: "high",
+  });
+
+  initNotifications();
+}
 
 function navigateTo(pageName) {
   if (!hasPermission(pageName, "read")) {
@@ -681,15 +738,16 @@ function positionDropdown(button, dropdown, matchButtonWidth = true) {
 
 function initNotifications() {
   const notificationList = document.getElementById("notificationList");
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  refreshNotificationBadge();
 
-  document.getElementById("notificationBadge").textContent = unreadCount;
-  document.getElementById("unreadCount").textContent = unreadCount;
+  if (!notificationList) {
+    return;
+  }
 
   notificationList.innerHTML = notifications
     .map(
       (notification) => `
-        <div class="notification-item ${notification.unread ? "unread" : ""}">
+        <div class="notification-item ${notification.unread ? "unread" : ""} ${notification.priority === "high" ? "notification-item-high" : ""}">
           <div class="notification-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -711,6 +769,171 @@ function initNotifications() {
       `,
     )
     .join("");
+}
+
+function isComplaintEscalated(complaint) {
+  return complaint.status === "escalated" || Number(complaint.upvotes || 0) >= 20;
+}
+
+function openEscalatedComplaintPreview(complaintId) {
+  if (!hasPermission("escalated-issues", "read")) {
+    showDeptHeadToast("You do not have access to this module.", "error");
+    return;
+  }
+
+  const complaint = getStoreComplaints().find((entry) => entry.id === complaintId);
+  if (!complaint) {
+    showDeptHeadToast("Unable to find the complaint details.", "error");
+    return;
+  }
+
+  const assignment = getAssignmentForComplaint(complaintId);
+  const previewSummary = document.getElementById("viewEscalatedComplaintSummary");
+  const previewDescription = document.getElementById("viewEscalatedComplaintDescription");
+  const previewMeta = document.getElementById("viewEscalatedComplaintMeta");
+  const previewMedia = document.getElementById("viewEscalatedComplaintMedia");
+  const previewComplaintId = document.getElementById("previewComplaintId");
+  const assignSelect = document.getElementById("previewEscalatedOfficerSelect");
+  const assignForm = document.getElementById("viewEscalatedAssignForm");
+  const saveBtn = document.querySelector("#viewEscalatedModal .btn-save");
+
+  if (!previewSummary || !previewDescription || !previewMeta || !previewMedia || !previewComplaintId || !assignSelect) {
+    showDeptHeadToast("Preview panel is unavailable right now.", "error");
+    return;
+  }
+
+  const isEscalated = isComplaintEscalated(complaint);
+  const currentAssignee = assignment?.assignee || "Unassigned";
+  previewSummary.textContent = `${complaint.id} - ${complaint.title}`;
+  previewDescription.textContent = complaint.description || "No description available.";
+  const complaintMedia = toHeadMediaList(complaint.media);
+  previewMedia.innerHTML = complaintMedia.length
+    ? `<div class="complaint-media-strip complaint-media-strip-modal">${renderMediaThumbs(complaintMedia, "Complaint Media")}</div>`
+    : '<div class="assignee-muted">No media attached for this complaint.</div>';
+  previewMeta.innerHTML = `
+    <div><strong>Category:</strong> ${complaint.category || "N/A"}</div>
+    <div><strong>Location:</strong> ${complaint.location || "N/A"}</div>
+    <div><strong>Submitted by:</strong> ${complaint.reportedBy || "Citizen"}</div>
+    <div><strong>Current assignee:</strong> ${currentAssignee}</div>
+  `;
+  previewComplaintId.value = complaint.id;
+
+  if (isEscalated) {
+    const { officers } = getHeadScopedUsers();
+    assignSelect.innerHTML =
+      '<option value="">Select Department Officer</option>' +
+      officers
+        .map(
+          (officer) =>
+            `<option value="${officer.id}">${officer.name} (${officer.department})</option>`,
+        )
+        .join("");
+    assignSelect.value = assignment?.officerId || "";
+    if (assignForm) {
+      assignForm.style.display = "block";
+    }
+    if (saveBtn) {
+      saveBtn.style.display = "block";
+    }
+  } else {
+    if (assignForm) {
+      assignForm.style.display = "none";
+    }
+    if (saveBtn) {
+      saveBtn.style.display = "none";
+    }
+  }
+
+  setDeptHeadFormMessage("viewEscalatedAssignForm", "");
+  openModal("viewEscalatedModal");
+}
+
+function saveEscalatedAssignment() {
+  if (!hasPermission("escalated-issues", "update")) {
+    setDeptHeadFormMessage(
+      "viewEscalatedAssignForm",
+      "You do not have permission to assign escalated issues.",
+    );
+    return;
+  }
+
+  const complaintId = (document.getElementById("previewComplaintId")?.value || "").trim();
+  const officerId = (document.getElementById("previewEscalatedOfficerSelect")?.value || "").trim();
+
+  if (!complaintId) {
+    setDeptHeadFormMessage("viewEscalatedAssignForm", "Missing escalated issue details.");
+    return;
+  }
+
+  if (!officerId) {
+    setDeptHeadFormMessage("viewEscalatedAssignForm", "Please choose a Department Officer.");
+    return;
+  }
+
+  const officers = getHeadScopedUsers().officers;
+  const targetOfficer = officers.find((entry) => entry.id === officerId);
+
+  if (!targetOfficer) {
+    setDeptHeadFormMessage(
+      "viewEscalatedAssignForm",
+      "Selected officer is not available for assignment.",
+    );
+    return;
+  }
+
+  const complaint = getStoreComplaints().find((entry) => entry.id === complaintId);
+  if (!complaint) {
+    setDeptHeadFormMessage("viewEscalatedAssignForm", "Escalated issue could not be found.");
+    return;
+  }
+
+  const currentHead = getCurrentDeptHeadRecord();
+  const now = new Date();
+  const assignment = getAssignmentForComplaint(complaintId);
+
+  const assignmentPayload = {
+    complaintId: complaint.id,
+    issueDescription: complaint.title,
+    category: complaint.category,
+    location: complaint.location || "N/A",
+    assignedDate: now.toLocaleDateString(),
+    priority: "High",
+    status: "Pending",
+    details: complaint.description || "Escalated issue requires immediate action.",
+    citizenName: complaint.reportedBy || "Citizen",
+    citizenContact: "N/A",
+    assignee: targetOfficer.name,
+    assigneeId: targetOfficer.id,
+    officerId: targetOfficer.id,
+    headId: targetOfficer.headId || currentHead?.id,
+  };
+
+  if (assignment) {
+    window.MockDataAPI.update("assignments", assignment.id, assignmentPayload);
+  } else {
+    window.MockDataAPI.add("assignments", {
+      id: `ASG-${Date.now()}`,
+      ...assignmentPayload,
+    });
+  }
+
+  window.MockDataAPI.update("complaints", complaint.id, {
+    status: "in-progress",
+    upvotes: 0,
+  });
+
+  const isEscalated = isComplaintEscalated(complaint);
+  if (isEscalated) {
+    pushHighPriorityNotification(
+      `${complaint.id} assigned to ${targetOfficer.name}. Immediate response required.`,
+    );
+  }
+
+  closeModal("viewEscalatedModal");
+  renderHeadDashboardComplaintTables();
+  renderDeptHeadHierarchyTables();
+  guardRestrictedActions();
+  showDeptHeadToast("Escalated issue assigned and high-priority notification sent.", "success");
 }
 
 bellButton.addEventListener("click", function (e) {
@@ -844,6 +1067,20 @@ document.querySelectorAll(".view-all-btn").forEach((btn) => {
   btn.dataset.rbacModule = "dashboard";
 });
 
+document.addEventListener("click", (event) => {
+  const complaintLink = event.target.closest(".complaint-link");
+  if (!complaintLink) {
+    return;
+  }
+
+  const complaintId = complaintLink.dataset.complaintId;
+  if (!complaintId) {
+    return;
+  }
+
+  openEscalatedComplaintPreview(complaintId);
+});
+
 document.querySelectorAll(".sign-out-button").forEach((btn) => {
   btn.addEventListener("click", signOut);
 });
@@ -854,5 +1091,10 @@ guardRestrictedActions();
 document.getElementById("editProfileForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
   saveProfile();
+});
+
+document.getElementById("viewEscalatedAssignForm")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  saveEscalatedAssignment();
 });
 navigateTo(getSavedDeptHeadPage());

@@ -461,6 +461,10 @@ body {
     background-color: #eff6ff;
 }
 
+.notification-item-high {
+    border-left: 3px solid #ef4444;
+}
+
 .notification-icon {
     width: 40px;
     height: 40px;
@@ -748,6 +752,49 @@ body {
 
 .mini-action-orange:hover {
     background: #D94000;
+}
+
+.complaint-link {
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: #0f4fcf;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.complaint-link:hover {
+    color: #0b3b98;
+    text-decoration: underline;
+}
+
+.complaint-media-strip {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.complaint-media-thumb {
+    width: 88px;
+    height: 64px;
+    border-radius: 8px;
+    border: 1px solid #dbe2ea;
+    object-fit: cover;
+    background: #f8fafc;
+}
+
+.complaint-media-strip-modal .complaint-media-thumb {
+    width: 150px;
+    height: 100px;
+}
+
+.assignee-muted {
+    color: #6b7280;
+    font-size: 13px;
 }
 
 .complaints-design-table {
@@ -1233,6 +1280,44 @@ body {
 
 .btn-save:hover {
     background-color: #1557b0;
+}
+
+.assign-issue-summary {
+    min-height: 41px;
+    border: 1px solid #d1d5dc;
+    border-radius: 10px;
+    background: #f9fafb;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1f2937;
+}
+
+.high-priority-note {
+    margin-top: 6px;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    padding: 10px 12px;
+}
+
+.escalated-preview-block {
+    min-height: 41px;
+    border: 1px solid #d1d5dc;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1f2937;
+}
+
+.escalated-preview-block > div + div {
+    margin-top: 6px;
 }
 
 /* Table */

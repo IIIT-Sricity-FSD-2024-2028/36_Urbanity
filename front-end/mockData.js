@@ -216,7 +216,7 @@
         status: "in-progress",
         category: "Roads",
         date: "March 16, 2026",
-        upvotes: 19,
+        upvotes: 21,
         reportedBy: complaintCitizens[3].name,
         reportedById: complaintCitizens[3].id,
         media: [
