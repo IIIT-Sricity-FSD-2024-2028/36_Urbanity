@@ -192,6 +192,12 @@ function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.add("active");
+    if (modalId === "addRuleModal" && !adminEscalationState.editingRuleId) {
+      resetAddEscalationRuleForm();
+    }
+    if (modalId === "addRuleModal") {
+      syncEscalationRuleModalMode();
+    }
   }
 }
 
@@ -199,6 +205,10 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.remove("active");
+    if (modalId === "addRuleModal") {
+      adminEscalationState.editingRuleId = null;
+      syncEscalationRuleModalMode();
+    }
   }
 }
 
@@ -225,6 +235,7 @@ document.querySelector(".signout-btn")?.addEventListener("click", signOut);
 document.querySelector(".dropdown-signout")?.addEventListener("click", signOut);
 
 const ADMIN_STORE_KEY = "urbanityAdminCrudData";
+const ADMIN_ESCALATION_RULES_KEY = "urbanity.admin.escalationRules";
 
 const adminIssueFilters = {
   search: "",
@@ -238,6 +249,359 @@ const adminCrudState = {
   roles: [],
   departments: [],
 };
+
+const adminEscalationState = {
+  rules: [],
+  editingRuleId: null,
+};
+
+function syncEscalationRuleModalMode() {
+  const titleNode = document.getElementById("addRuleModalTitle");
+  const descNode = document.getElementById("addRuleModalDescription");
+  const submitNode = document.getElementById("addRuleModalSubmit");
+  const isEditing = Boolean(adminEscalationState.editingRuleId);
+
+  if (titleNode) {
+    titleNode.textContent = isEditing ? "Edit Escalation Rule" : "Add New Escalation Rule";
+  }
+  if (descNode) {
+    descNode.textContent = isEditing
+      ? "Update escalation criteria and response handling."
+      : "Configure automatic escalation rules based on issue criteria.";
+  }
+  if (submitNode) {
+    submitNode.textContent = isEditing ? "Update Rule" : "Create Rule";
+  }
+}
+
+function setEscalationRuleFormValues(rule) {
+  document.getElementById("ruleNameInput").value = rule.name || "";
+  document.getElementById("ruleTriggerTypeInput").value = rule.triggerType || "Select trigger type";
+  document.getElementById("ruleTriggerConditionInput").value = rule.triggerCondition || "";
+  document.getElementById("rulePriorityInput").value = rule.priority || "Select priority";
+  document.getElementById("ruleNotifyInput").value = rule.notify || "Select notification recipients";
+  document.getElementById("ruleTimelineInput").value = rule.timeline || "Select timeline";
+  document.getElementById("ruleDepartmentInput").value = rule.department || "Select department";
+  document.getElementById("ruleAutoAssignInput").checked = Boolean(rule.autoAssign);
+  document.getElementById("ruleEnabledInput").checked = Boolean(rule.enabled);
+}
+
+async function handleReadEscalationRule(ruleId) {
+  if (!hasPermission("escalated-issues", "read")) {
+    showAdminToast("You do not have permission to read escalation rules.", "error");
+    return;
+  }
+
+  const rule = adminEscalationState.rules.find((entry) => entry.id === ruleId);
+  if (!rule) {
+    showAdminToast("Escalation rule not found.", "error");
+    return;
+  }
+
+  const titleNode = document.getElementById("viewRuleTitle");
+  const statusNode = document.getElementById("viewRuleStatus");
+  const triggerTypeNode = document.getElementById("viewRuleTriggerType");
+  const triggerConditionNode = document.getElementById("viewRuleTriggerCondition");
+  const priorityNode = document.getElementById("viewRulePriority");
+  const notifyNode = document.getElementById("viewRuleNotify");
+  const timelineNode = document.getElementById("viewRuleTimeline");
+  const departmentNode = document.getElementById("viewRuleDepartment");
+  const autoAssignNode = document.getElementById("viewRuleAutoAssign");
+  const enabledNode = document.getElementById("viewRuleEnabled");
+
+  if (
+    !titleNode ||
+    !statusNode ||
+    !triggerTypeNode ||
+    !triggerConditionNode ||
+    !priorityNode ||
+    !notifyNode ||
+    !timelineNode ||
+    !departmentNode ||
+    !autoAssignNode ||
+    !enabledNode
+  ) {
+    showAdminToast("Rule details view is unavailable right now.", "error");
+    return;
+  }
+
+  titleNode.textContent = rule.name;
+  statusNode.textContent = rule.enabled ? "Enabled" : "Disabled";
+  statusNode.className = `badge ${rule.enabled ? "badge-green" : "badge-orange"}`;
+  triggerTypeNode.textContent = rule.triggerType;
+  triggerConditionNode.textContent = rule.triggerCondition;
+  priorityNode.textContent = rule.priority;
+  notifyNode.textContent = rule.notify;
+  timelineNode.textContent = rule.timeline;
+  departmentNode.textContent = rule.department;
+  autoAssignNode.textContent = rule.autoAssign ? "Yes" : "No";
+  enabledNode.textContent = rule.enabled ? "Yes" : "No";
+
+  openModal("viewRuleModal");
+}
+
+function handleEditEscalationRule(ruleId) {
+  if (!hasPermission("escalated-issues", "update")) {
+    showAdminToast("You do not have permission to update escalation rules.", "error");
+    return;
+  }
+
+  const rule = adminEscalationState.rules.find((entry) => entry.id === ruleId);
+  if (!rule) {
+    showAdminToast("Escalation rule not found.", "error");
+    return;
+  }
+
+  adminEscalationState.editingRuleId = ruleId;
+  syncEscalationRuleModalMode();
+  openModal("addRuleModal");
+  setEscalationRuleFormValues(rule);
+}
+
+async function handleDeleteEscalationRule(ruleId) {
+  if (!hasPermission("escalated-issues", "delete")) {
+    showAdminToast("You do not have permission to delete escalation rules.", "error");
+    return;
+  }
+
+  const rule = adminEscalationState.rules.find((entry) => entry.id === ruleId);
+  if (!rule) {
+    showAdminToast("Escalation rule not found.", "error");
+    return;
+  }
+
+  const result = await showAdminDialog({
+    title: "Delete Escalation Rule",
+    message: `Delete rule \"${rule.name}\"? This action cannot be undone.`,
+    confirmText: "Delete",
+    cancelText: "Cancel",
+  });
+
+  if (!result.confirmed) {
+    return;
+  }
+
+  adminEscalationState.rules = adminEscalationState.rules.filter((entry) => entry.id !== ruleId);
+  saveEscalationRulesState();
+  renderAdminEscalationRules();
+  showAdminToast("Escalation rule deleted.", "success");
+}
+
+function getDefaultEscalationRules() {
+  return [
+    {
+      id: "RULE-DEFAULT-1",
+      name: "Emergency Civic Issues",
+      triggerType: "Issue Category",
+      triggerCondition: "Category: Water/Gas/Electric Emergency",
+      priority: "P0 - Critical Emergency",
+      notify: "Emergency Response Team",
+      timeline: "Immediate",
+      department: "All Departments",
+      autoAssign: true,
+      enabled: true,
+    },
+    {
+      id: "RULE-DEFAULT-2",
+      name: "High Citizen Impact",
+      triggerType: "Affected Citizen Count",
+      triggerCondition: "Affected Citizens > 50, Severity: High",
+      priority: "P1 - High Priority",
+      notify: "Department Head",
+      timeline: "1 Hour",
+      department: "All Departments",
+      autoAssign: false,
+      enabled: true,
+    },
+  ];
+}
+
+function loadEscalationRulesState() {
+  const stored = localStorage.getItem(ADMIN_ESCALATION_RULES_KEY);
+  if (!stored) {
+    adminEscalationState.rules = getDefaultEscalationRules();
+    saveEscalationRulesState();
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    adminEscalationState.rules = Array.isArray(parsed)
+      ? parsed
+      : getDefaultEscalationRules();
+  } catch (error) {
+    console.error("Could not parse escalation rules state.", error);
+    adminEscalationState.rules = getDefaultEscalationRules();
+    saveEscalationRulesState();
+  }
+}
+
+function saveEscalationRulesState() {
+  localStorage.setItem(
+    ADMIN_ESCALATION_RULES_KEY,
+    JSON.stringify(adminEscalationState.rules),
+  );
+}
+
+function renderAdminEscalationRules() {
+  const container = document.getElementById("adminEscalationRulesList");
+  if (!container) {
+    return;
+  }
+
+  if (!adminEscalationState.rules.length) {
+    container.innerHTML =
+      '<div class="card"><div class="card-content" style="padding: 24px;">No escalation rules configured.</div></div>';
+    return;
+  }
+
+  container.innerHTML = adminEscalationState.rules
+    .map(
+      (rule) => `
+      <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
+        <div class="flex items-center justify-between">
+          <div style="flex: 1;">
+            <div class="flex items-center gap-3 mb-2">
+              <h4 style="font-weight: 600; color: #111827;">${rule.name}</h4>
+              <span class="badge ${rule.enabled ? "badge-green" : "badge-orange"}">${rule.enabled ? "Enabled" : "Disabled"}</span>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Trigger:</span>
+              <span style="color: #374151; font-size: 14px;">${rule.triggerType}: ${rule.triggerCondition}</span>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Action:</span>
+              <span style="color: #374151; font-size: 14px;">Escalate to ${rule.priority}, Notify ${rule.notify}${rule.autoAssign ? ", Auto-assign field worker" : ""}</span>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Timeline:</span>
+              <span style="color: #374151; font-size: 14px;">${rule.timeline}</span>
+            </div>
+            <div>
+              <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Department:</span>
+              <span style="color: #374151; font-size: 14px;">${rule.department}</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-left: 16px;">
+            <button class="btn btn-outline btn-sm" data-read-rule="${rule.id}">View</button>
+            <button class="btn btn-outline btn-sm" data-edit-rule="${rule.id}">Edit</button>
+            <button class="btn btn-outline btn-sm" data-delete-rule="${rule.id}">Delete</button>
+          </div>
+        </div>
+      </div>
+    `,
+    )
+    .join("");
+}
+
+function resetAddEscalationRuleForm() {
+  const ruleName = document.getElementById("ruleNameInput");
+  const triggerType = document.getElementById("ruleTriggerTypeInput");
+  const triggerCondition = document.getElementById("ruleTriggerConditionInput");
+  const priority = document.getElementById("rulePriorityInput");
+  const notify = document.getElementById("ruleNotifyInput");
+  const timeline = document.getElementById("ruleTimelineInput");
+  const department = document.getElementById("ruleDepartmentInput");
+  const autoAssign = document.getElementById("ruleAutoAssignInput");
+  const enabled = document.getElementById("ruleEnabledInput");
+
+  if (ruleName) ruleName.value = "";
+  if (triggerType) triggerType.selectedIndex = 0;
+  if (triggerCondition) triggerCondition.value = "";
+  if (priority) priority.selectedIndex = 0;
+  if (notify) notify.selectedIndex = 0;
+  if (timeline) timeline.selectedIndex = 0;
+  if (department) department.selectedIndex = 0;
+  if (autoAssign) autoAssign.checked = false;
+  if (enabled) enabled.checked = true;
+}
+
+function handleAddEscalationRule() {
+  const isEditing = Boolean(adminEscalationState.editingRuleId);
+  const action = isEditing ? "update" : "create";
+
+  if (!hasPermission("escalated-issues", action)) {
+    showAdminToast(
+      `You do not have permission to ${isEditing ? "update" : "create"} escalation rules.`,
+      "error",
+    );
+    return;
+  }
+
+  const ruleName = (document.getElementById("ruleNameInput")?.value || "").trim();
+  const triggerType = document.getElementById("ruleTriggerTypeInput")?.value || "";
+  const triggerCondition = (document.getElementById("ruleTriggerConditionInput")?.value || "").trim();
+  const priority = document.getElementById("rulePriorityInput")?.value || "";
+  const notify = document.getElementById("ruleNotifyInput")?.value || "";
+  const timeline = document.getElementById("ruleTimelineInput")?.value || "";
+  const department = document.getElementById("ruleDepartmentInput")?.value || "";
+  const autoAssign = Boolean(document.getElementById("ruleAutoAssignInput")?.checked);
+  const enabled = Boolean(document.getElementById("ruleEnabledInput")?.checked);
+
+  if (!ruleName || ruleName.length < 3) {
+    showAdminToast("Rule name should be at least 3 characters.", "error");
+    return;
+  }
+
+  if (
+    triggerType === "Select trigger type" ||
+    !triggerCondition ||
+    priority === "Select priority" ||
+    notify === "Select notification recipients" ||
+    timeline === "Select timeline" ||
+    department === "Select department"
+  ) {
+    showAdminToast("Please complete all required escalation rule fields.", "error");
+    return;
+  }
+
+  if (isEditing) {
+    const index = adminEscalationState.rules.findIndex(
+      (entry) => entry.id === adminEscalationState.editingRuleId,
+    );
+    if (index === -1) {
+      showAdminToast("Escalation rule not found.", "error");
+      return;
+    }
+
+    adminEscalationState.rules[index] = {
+      ...adminEscalationState.rules[index],
+      name: ruleName,
+      triggerType,
+      triggerCondition,
+      priority,
+      notify,
+      timeline,
+      department,
+      autoAssign,
+      enabled,
+    };
+  } else {
+    adminEscalationState.rules.unshift({
+      id: generateItemId("rule"),
+      name: ruleName,
+      triggerType,
+      triggerCondition,
+      priority,
+      notify,
+      timeline,
+      department,
+      autoAssign,
+      enabled,
+    });
+  }
+
+  saveEscalationRulesState();
+  renderAdminEscalationRules();
+  closeModal("addRuleModal");
+  resetAddEscalationRuleForm();
+  showAdminToast(
+    isEditing
+      ? "Escalation rule updated successfully."
+      : "Escalation rule created successfully.",
+    "success",
+  );
+}
 
 const ADMIN_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ADMIN_PHONE_REGEX = /^\+?[0-9()\-\s]{8,20}$/;
@@ -643,6 +1007,7 @@ function renderAdminFlowViews() {
   bindAdminIssueFilters();
   renderAdminSystemIssues();
   renderAdminEscalatedIssues();
+  renderAdminEscalationRules();
 }
 
 function renderAdminDashboardComplaintStats() {
@@ -670,7 +1035,6 @@ function renderAdminDashboardComplaintStats() {
   stats[1].textContent = String(resolved);
   stats[2].textContent = String(pending);
   stats[3].textContent = String(escalated);
-  renderAdminFlowViews();
 }
 
 function generateItemId(prefix) {
@@ -1079,10 +1443,28 @@ function handleCreateDepartment() {
 }
 
 document.addEventListener("click", async (evt) => {
+  const readRuleId = evt.target.getAttribute("data-read-rule");
+  const editRuleId = evt.target.getAttribute("data-edit-rule");
+  const deleteRuleId = evt.target.getAttribute("data-delete-rule");
   const editUserId = evt.target.getAttribute("data-edit-user");
   const deleteUserId = evt.target.getAttribute("data-delete-user");
   const deleteRoleId = evt.target.getAttribute("data-delete-role");
   const deleteDepartmentId = evt.target.getAttribute("data-delete-department");
+
+  if (readRuleId) {
+    await handleReadEscalationRule(readRuleId);
+    return;
+  }
+
+  if (editRuleId) {
+    handleEditEscalationRule(editRuleId);
+    return;
+  }
+
+  if (deleteRuleId) {
+    await handleDeleteEscalationRule(deleteRuleId);
+    return;
+  }
 
   if (editUserId) {
     if (!hasPermission("users-roles", "update")) {
@@ -1161,6 +1543,7 @@ document.getElementById("addUserRole")?.addEventListener("change", updateAddUser
 
 loadAdminCrudState();
 loadAdminCrudState();
+loadEscalationRulesState();
 renderAdminCrudData();
 renderAdminFlowViews();
 navigateTo(getSavedAdminPage());

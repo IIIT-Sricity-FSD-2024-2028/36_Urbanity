@@ -229,8 +229,8 @@
       },
       {
         id: "CMP-1005",
-        title: "Drain Overflow",
-        description: "Drain water overflowing in residential lane.",
+        title: "Garbage Not Picked",
+        description: "Garbage are all over the streets. It is not picked up.",
         location: "Ganga Lane",
         status: "pending",
         category: "Sanitation",

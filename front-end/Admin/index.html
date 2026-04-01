@@ -771,53 +771,7 @@
                   <h3 class="card-title">Escalation Rules Configuration</h3>
                 </div>
                 <div class="card-content">
-                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
-                    <div class="flex items-center justify-between">
-                      <div style="flex: 1;">
-                        <div class="flex items-center gap-3 mb-2">
-                          <h4 style="font-weight: 600; color: #111827;">Emergency Civic Issues</h4>
-                          <span class="badge badge-green">Enabled</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Trigger:</span>
-                          <span style="color: #374151; font-size: 14px;">Category: Water/Gas/Electric Emergency</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Action:</span>
-                          <span style="color: #374151; font-size: 14px;">Escalate to P0, Notify Emergency Response & Department Head</span>
-                        </div>
-                        <div>
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Timeline:</span>
-                          <span style="color: #374151; font-size: 14px;">Immediate</span>
-                        </div>
-                      </div>
-                      <button class="btn btn-outline btn-sm">Edit</button>
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
-                    <div class="flex items-center justify-between">
-                      <div style="flex: 1;">
-                        <div class="flex items-center gap-3 mb-2">
-                          <h4 style="font-weight: 600; color: #111827;">High Citizen Impact</h4>
-                          <span class="badge badge-green">Enabled</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Trigger:</span>
-                          <span style="color: #374151; font-size: 14px;">Affected Citizens > 50, Severity: High</span>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Action:</span>
-                          <span style="color: #374151; font-size: 14px;">Escalate to P1, Notify Department Head</span>
-                        </div>
-                        <div>
-                          <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 80px;">Timeline:</span>
-                          <span style="color: #374151; font-size: 14px;">1 hour</span>
-                        </div>
-                      </div>
-                      <button class="btn btn-outline btn-sm">Edit</button>
-                    </div>
-                  </div>
+                  <div id="adminEscalationRulesList"></div>
 
                   <button class="btn btn-primary" style="width: 100%; margin-top: 24px;" onclick="openModal('addRuleModal')">Add New Rule</button>
                 </div>
@@ -1859,18 +1813,18 @@
   <div class="modal-overlay" id="addRuleModal">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title">Add New Escalation Rule</h3>
-        <p class="modal-description">Configure automatic escalation rules based on issue criteria.</p>
+        <h3 class="modal-title" id="addRuleModalTitle">Add New Escalation Rule</h3>
+        <p class="modal-description" id="addRuleModalDescription">Configure automatic escalation rules based on issue criteria.</p>
       </div>
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Rule Name</label>
-          <input type="text" class="form-input" placeholder="e.g., Emergency Water Issues" />
+          <input type="text" class="form-input" id="ruleNameInput" placeholder="e.g., Emergency Water Issues" />
         </div>
         
         <div class="form-group">
           <label class="form-label">Trigger Type</label>
-          <select class="form-select">
+          <select class="form-select" id="ruleTriggerTypeInput">
             <option>Select trigger type</option>
             <option>Issue Category</option>
             <option>Severity Level</option>
@@ -1883,12 +1837,12 @@
         
         <div class="form-group">
           <label class="form-label">Trigger Condition</label>
-          <textarea class="form-textarea" placeholder="e.g., Category: Water/Gas/Electric Emergency OR Affected Citizens > 50"></textarea>
+          <textarea class="form-textarea" id="ruleTriggerConditionInput" placeholder="e.g., Category: Water/Gas/Electric Emergency OR Affected Citizens > 50"></textarea>
         </div>
         
         <div class="form-group">
           <label class="form-label">Escalation Priority</label>
-          <select class="form-select">
+          <select class="form-select" id="rulePriorityInput">
             <option>Select priority</option>
             <option>P0 - Critical Emergency</option>
             <option>P1 - High Priority</option>
@@ -1898,7 +1852,7 @@
         
         <div class="form-group">
           <label class="form-label">Notify</label>
-          <select class="form-select">
+          <select class="form-select" id="ruleNotifyInput">
             <option>Select notification recipients</option>
             <option>Department Head</option>
             <option>Department Officer</option>
@@ -1910,7 +1864,7 @@
         
         <div class="form-group">
           <label class="form-label">Response Timeline</label>
-          <select class="form-select">
+          <select class="form-select" id="ruleTimelineInput">
             <option>Select timeline</option>
             <option>Immediate</option>
             <option>1 Hour</option>
@@ -1923,7 +1877,7 @@
         
         <div class="form-group">
           <label class="form-label">Department</label>
-          <select class="form-select">
+          <select class="form-select" id="ruleDepartmentInput">
             <option>Select department</option>
             <option>All Departments</option>
             <option>Road</option>
@@ -1934,21 +1888,73 @@
         
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" class="form-checkbox" />
+            <input type="checkbox" class="form-checkbox" id="ruleAutoAssignInput" />
             <span>Auto-assign to available field worker</span>
           </label>
         </div>
         
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" class="form-checkbox" checked />
+            <input type="checkbox" class="form-checkbox" id="ruleEnabledInput" checked />
             <span>Enable rule immediately</span>
           </label>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('addRuleModal')">Cancel</button>
-        <button class="btn btn-primary" onclick="closeModal('addRuleModal')">Create Rule</button>
+        <button class="btn btn-primary" id="addRuleModalSubmit" onclick="handleAddEscalationRule()">Create Rule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Escalation Rule Modal -->
+  <div class="modal-overlay" id="viewRuleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <h3 class="modal-title" id="viewRuleTitle">Escalation Rule</h3>
+          <span class="badge badge-green" id="viewRuleStatus">Enabled</span>
+        </div>
+        <p class="modal-description">Detailed escalation rule configuration.</p>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Trigger Type</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleTriggerType">-</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Escalation Priority</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRulePriority">-</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Notify</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleNotify">-</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Timeline</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleTimeline">-</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Department</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleDepartment">-</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Auto-assign</div>
+            <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleAutoAssign">-</div>
+          </div>
+        </div>
+        <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 12px;">
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Trigger Condition</div>
+          <div style="font-size: 14px; color: #111827; font-weight: 500; line-height: 1.5;" id="viewRuleTriggerCondition">-</div>
+        </div>
+        <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 12px;">
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Rule Enabled</div>
+          <div style="font-size: 14px; color: #111827; font-weight: 600;" id="viewRuleEnabled">-</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('viewRuleModal')">Close</button>
       </div>
     </div>
   </div>
