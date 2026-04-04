@@ -93,7 +93,14 @@ function showWorkerDialog({ title, message, confirmText, cancelText, inputValue 
       inputValue,
     });
   }
-  return Promise.resolve({ confirmed: false, value: null });
+
+  if (typeof inputValue !== "undefined") {
+    const value = window.prompt(message || title || "Enter value", inputValue || "");
+    return Promise.resolve({ confirmed: value !== null, value: value || "" });
+  }
+
+  const confirmed = window.confirm(message || title || "Are you sure?");
+  return Promise.resolve({ confirmed, value: null });
 }
 
 function normalizeMediaList(mediaList) {
@@ -149,9 +156,18 @@ function readFilesAsMedia(fileList) {
         const reader = new FileReader();
         reader.onload = () => {
           const type = file.type.startsWith("video/") ? "video" : "image";
-          resolve({ type, url: String(reader.result || ""), name: file.name });
+          const resultUrl = String(reader.result || "");
+          if (resultUrl) {
+            resolve({ type, url: resultUrl, name: file.name });
+            return;
+          }
+
+          resolve({ type, url: URL.createObjectURL(file), name: file.name });
         };
-        reader.onerror = () => resolve(null);
+        reader.onerror = () => {
+          const type = file.type.startsWith("video/") ? "video" : "image";
+          resolve({ type, url: URL.createObjectURL(file), name: file.name });
+        };
         reader.readAsDataURL(file);
       }),
   );
@@ -246,20 +262,26 @@ function showAssignmentCompletionForm(task) {
       const selectedFiles = proofInput?.files;
 
       if (!completionNote) {
-        if (errorNode) errorNode.textContent = "Please add a completion note.";
+        const errorMessage = "Please add a completion note.";
+        if (errorNode) errorNode.textContent = errorMessage;
+        showWorkerToast(errorMessage, "error");
         noteInput?.focus();
         return;
       }
 
       if (workDetails.length < 12) {
-        if (errorNode) errorNode.textContent = "Please enter at least 12 characters in work details.";
+        const errorMessage = "Please enter at least 12 characters in work details.";
+        if (errorNode) errorNode.textContent = errorMessage;
+        showWorkerToast(errorMessage, "error");
         detailsInput?.focus();
         return;
       }
 
       const proofMedia = (await readFilesAsMedia(selectedFiles)).filter((item) => item.type === "image");
       if (!proofMedia.length) {
-        if (errorNode) errorNode.textContent = "Please upload at least one proof image.";
+        const errorMessage = "Please upload at least one proof image.";
+        if (errorNode) errorNode.textContent = errorMessage;
+        showWorkerToast(errorMessage, "error");
         proofInput?.focus();
         return;
       }
