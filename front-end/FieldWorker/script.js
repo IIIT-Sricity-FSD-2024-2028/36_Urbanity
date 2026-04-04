@@ -179,6 +179,105 @@ function pickProofMediaFiles() {
   });
 }
 
+function showAssignmentCompletionForm(task) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay show completion-form-overlay";
+    overlay.innerHTML = `
+      <div class="modal completion-form-modal" role="dialog" aria-modal="true" aria-label="Complete Assignment Form">
+        <div class="modal-header">
+          <h2 class="modal-title">Complete Assignment</h2>
+          <button type="button" class="close-btn" aria-label="Close completion form">&times;</button>
+        </div>
+        <form class="modal-content completion-form" novalidate>
+          <div class="completion-form-task">Task: ${task.issueDescription || "Assignment"}</div>
+
+          <label class="completion-form-label" for="completionNoteInput">Completion Note</label>
+          <input id="completionNoteInput" name="completionNote" class="completion-form-input" type="text" maxlength="160" value="${String(task.remarks || "Resolved on site and verified.").replace(/"/g, "&quot;")}" required />
+
+          <label class="completion-form-label" for="workDetailsInput">Work Details</label>
+          <textarea id="workDetailsInput" name="workDetails" class="completion-form-textarea" rows="4" placeholder="Explain what was fixed, checks performed, and final condition." required></textarea>
+
+          <label class="completion-form-label" for="materialsInput">Materials / Tools Used (Optional)</label>
+          <input id="materialsInput" name="materials" class="completion-form-input" type="text" maxlength="140" placeholder="Example: asphalt mix, shovel, cone barriers" />
+
+          <label class="completion-form-label" for="proofFilesInput">Proof of Work (Required)</label>
+          <input id="proofFilesInput" name="proofFiles" class="completion-form-file" type="file" accept="image/*" multiple required />
+          <p class="completion-form-hint">Upload at least one image. You can attach up to 4 files.</p>
+
+          <p class="completion-form-error" aria-live="polite"></p>
+
+          <div class="completion-form-actions">
+            <button type="button" class="modal-btn modal-btn-gray completion-form-cancel">Cancel</button>
+            <button type="submit" class="modal-btn modal-btn-blue">Submit Completion</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const cleanup = (result) => {
+      overlay.remove();
+      resolve(result);
+    };
+
+    const closeBtn = overlay.querySelector(".close-btn");
+    const cancelBtn = overlay.querySelector(".completion-form-cancel");
+    const form = overlay.querySelector("form");
+    const errorNode = overlay.querySelector(".completion-form-error");
+    const noteInput = overlay.querySelector("#completionNoteInput");
+    const detailsInput = overlay.querySelector("#workDetailsInput");
+    const materialsInput = overlay.querySelector("#materialsInput");
+    const proofInput = overlay.querySelector("#proofFilesInput");
+
+    closeBtn?.addEventListener("click", () => cleanup({ confirmed: false }));
+    cancelBtn?.addEventListener("click", () => cleanup({ confirmed: false }));
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        cleanup({ confirmed: false });
+      }
+    });
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const completionNote = String(noteInput?.value || "").trim();
+      const workDetails = String(detailsInput?.value || "").trim();
+      const materials = String(materialsInput?.value || "").trim();
+      const selectedFiles = proofInput?.files;
+
+      if (!completionNote) {
+        if (errorNode) errorNode.textContent = "Please add a completion note.";
+        noteInput?.focus();
+        return;
+      }
+
+      if (workDetails.length < 12) {
+        if (errorNode) errorNode.textContent = "Please enter at least 12 characters in work details.";
+        detailsInput?.focus();
+        return;
+      }
+
+      const proofMedia = (await readFilesAsMedia(selectedFiles)).filter((item) => item.type === "image");
+      if (!proofMedia.length) {
+        if (errorNode) errorNode.textContent = "Please upload at least one proof image.";
+        proofInput?.focus();
+        return;
+      }
+
+      cleanup({
+        confirmed: true,
+        completionNote,
+        workDetails,
+        materials,
+        proofMedia,
+      });
+    });
+
+    document.body.appendChild(overlay);
+    detailsInput?.focus();
+  });
+}
+
 function getCurrentSessionUser() {
   const stored = sessionStorage.getItem("urbanityCurrentUser");
   if (!stored) {
@@ -282,6 +381,29 @@ function loadAssignmentsFromStore() {
 
   assignmentsData = scopedAssignments.map((assignment) => {
     const linkedComplaint = complaintsById.get(assignment.complaintId);
+    const normalizedStatus = assignment.status === "Rejected" ? "Pending" : assignment.status;
+
+    if (assignment.status === "Rejected") {
+      syncAssignmentUpdate(assignment.id, {
+        status: "Pending",
+        remarks: "",
+        proofMedia: [],
+        completedAt: null,
+      });
+
+      if (assignment.complaintId) {
+        window.MockDataAPI.update("complaints", assignment.complaintId, {
+          status: "pending",
+          resolutionSubmittedAt: null,
+          resolutionSummary: "",
+          resolutionMedia: [],
+          latestWorkerUpdate: "",
+          lastUpdatedAt: null,
+          workStartedAt: null,
+        });
+      }
+    }
+
     return {
     id: assignment.id,
     complaintId: assignment.complaintId,
@@ -290,7 +412,7 @@ function loadAssignmentsFromStore() {
     location: assignment.location,
     assignedDate: assignment.assignedDate,
     priority: assignment.priority,
-    status: assignment.status,
+    status: normalizedStatus,
     details: assignment.details,
     citizenName: assignment.citizenName,
     citizenContact: assignment.citizenContact,
@@ -1052,40 +1174,32 @@ async function completeAssignment(taskId) {
     return;
   }
 
-  const noteResult = await showWorkerDialog({
-    title: "Complete Assignment",
-    message: "Add a short completion note.",
-    confirmText: "Continue",
-    cancelText: "Cancel",
-    inputValue: task.remarks || "Resolved on site and verified.",
-  });
-
-  if (!noteResult.confirmed) {
-    return;
-  }
-
-  showWorkerToast("Select proof images to attach.", "info");
-  const proofMedia = await pickProofMediaFiles();
-  if (!proofMedia.length) {
-    showWorkerToast("At least one proof image is required.", "error");
+  const formResult = await showAssignmentCompletionForm(task);
+  if (!formResult.confirmed) {
     return;
   }
 
   task.status = "Completed";
-  task.remarks = (noteResult.value || "").trim();
-  task.proofMedia = proofMedia;
+  task.remarks = formResult.completionNote;
+  task.workDetails = formResult.workDetails;
+  task.materials = formResult.materials;
+  task.proofMedia = normalizeMediaList(formResult.proofMedia);
+
+  const completionSummary = [task.remarks, task.workDetails].filter(Boolean).join(" ");
 
   syncAssignmentUpdate(taskId, {
     status: task.status,
     remarks: task.remarks,
-    proofMedia,
+    workDetails: task.workDetails,
+    materials: task.materials,
+    proofMedia: task.proofMedia,
     completedAt: new Date().toLocaleString(),
   });
   syncComplaintByTask(taskId, {
     status: "in-progress",
     resolutionSubmittedAt: new Date().toLocaleString(),
-    resolutionSummary: task.remarks || "Task marked completed by field worker.",
-    resolutionMedia: proofMedia,
+    resolutionSummary: completionSummary || "Task marked completed by field worker.",
+    resolutionMedia: task.proofMedia,
   });
   showWorkerToast("Assignment completed and sent for officer verification.", "success");
   renderPage();

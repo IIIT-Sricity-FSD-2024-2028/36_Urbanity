@@ -951,6 +951,76 @@ td {
     background-color: #374151;
 }
 
+.completion-form-modal {
+    max-width: 680px;
+}
+
+.completion-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.completion-form-task {
+    font-size: 14px;
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+}
+
+.completion-form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.completion-form-input,
+.completion-form-textarea,
+.completion-form-file {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #111827;
+    background: #ffffff;
+}
+
+.completion-form-input:focus,
+.completion-form-textarea:focus,
+.completion-form-file:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.completion-form-textarea {
+    resize: vertical;
+    min-height: 92px;
+}
+
+.completion-form-hint {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: -4px;
+}
+
+.completion-form-error {
+    min-height: 18px;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.completion-form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}
+
 .empty-state {
     text-align: center;
     padding: 48px;
@@ -1026,5 +1096,9 @@ td {
 
     .table-container {
         overflow-x: auto;
+    }
+
+    .completion-form-actions {
+        grid-template-columns: 1fr;
     }
 }

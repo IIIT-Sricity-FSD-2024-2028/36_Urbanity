@@ -200,26 +200,79 @@ function loadCitizenComplaintsFromStore() {
   }
 
   const complaints = getCitizenScopedComplaints();
+  const assignmentsByComplaintId = new Map(
+    window.MockDataAPI
+      .list("assignments")
+      .map((assignment) => [assignment.complaintId, assignment]),
+  );
+  const currentVoteKey = getCurrentCitizenVoteKey();
   if (complaints.length === 0) {
     issues = [];
     return;
   }
 
-  issues = complaints.map((complaint) => ({
-    id: complaint.id,
-    title: complaint.title,
-    description: complaint.description,
-    location: complaint.location,
-    status: complaint.status || "pending",
-    upvotes: Number(complaint.upvotes || 0),
-    date: complaint.date || new Date().toLocaleDateString(),
-    category: complaint.category || "Other",
-    upvoted: false,
-    feedback: complaint.feedback || null,
-    feedbackSubmittedAt: complaint.feedbackSubmittedAt || null,
-    media: normalizeMediaList(complaint.media),
-    resolutionMedia: normalizeMediaList(complaint.resolutionMedia),
-  }));
+  issues = complaints.map((complaint) => {
+    const linkedAssignment = assignmentsByComplaintId.get(complaint.id);
+    const isVerifiedResolved =
+      String(complaint.status || "").toLowerCase() === "resolved" ||
+      (linkedAssignment?.status === "Completed" && Boolean(linkedAssignment?.verifiedAt));
+    const nextStatus = isVerifiedResolved ? "resolved" : (complaint.status || "pending");
+
+    const upvotedBy = Array.isArray(complaint.upvotedBy)
+      ? complaint.upvotedBy.filter((entry) => typeof entry === "string")
+      : [];
+
+    return {
+      id: complaint.id,
+      title: complaint.title,
+      description: complaint.description,
+      location: complaint.location,
+      status: nextStatus,
+      upvotes: Number(complaint.upvotes || 0),
+      date: complaint.date || new Date().toLocaleDateString(),
+      category: complaint.category || "Other",
+      upvotedBy,
+      upvoted: Boolean(currentVoteKey && upvotedBy.includes(currentVoteKey)),
+      feedback: complaint.feedback || null,
+      feedbackSubmittedAt: complaint.feedbackSubmittedAt || null,
+      media: normalizeMediaList(complaint.media),
+      resolutionMedia: normalizeMediaList(
+        complaint.resolutionMedia && complaint.resolutionMedia.length
+          ? complaint.resolutionMedia
+          : linkedAssignment?.proofMedia,
+      ),
+    };
+  });
+}
+
+function refreshCitizenData(renderActivePage = true) {
+  loadCitizenComplaintsFromStore();
+
+  if (renderActivePage && !hasUnsavedRaiseIssueDraft()) {
+    renderPage(currentPage || "dashboard");
+  }
+
+  renderNotifications();
+}
+
+function hasUnsavedRaiseIssueDraft() {
+  if (currentPage !== "raise-issue") {
+    return false;
+  }
+
+  const form = document.getElementById("raiseIssueForm");
+  if (!form) {
+    return false;
+  }
+
+  const category = String(form.querySelector("select")?.value || "").trim();
+  const textInputs = form.querySelectorAll('input[type="text"]');
+  const title = String(textInputs[0]?.value || "").trim();
+  const location = String(textInputs[1]?.value || "").trim();
+  const description = String(form.querySelector("textarea")?.value || "").trim();
+  const mediaCount = Number(document.getElementById("issueMediaInput")?.files?.length || 0);
+
+  return Boolean(category || title || location || description || mediaCount > 0);
 }
 
 function getCitizenScopedComplaints() {
@@ -336,6 +389,7 @@ function syncCitizenIssueAdd(issue) {
     department: issue.department,
     date: issue.date,
     upvotes: issue.upvotes,
+    upvotedBy: Array.isArray(issue.upvotedBy) ? issue.upvotedBy : [],
     media: normalizeMediaList(issue.media),
     resolutionMedia: normalizeMediaList(issue.resolutionMedia),
     reportedBy: currentUser?.name || profileData.name || "Citizen",
@@ -363,6 +417,27 @@ function getCurrentSessionUser() {
     console.error("Invalid current user context found.", error);
     return null;
   }
+}
+
+function getCurrentCitizenVoteKey() {
+  const currentUser = getCurrentSessionUser();
+  if (currentUser?.id) {
+    return `id:${currentUser.id}`;
+  }
+
+  if (currentUser?.email) {
+    return `email:${String(currentUser.email).toLowerCase()}`;
+  }
+
+  if (profileData?.email) {
+    return `email:${String(profileData.email).toLowerCase()}`;
+  }
+
+  if (profileData?.name) {
+    return `name:${String(profileData.name).toLowerCase()}`;
+  }
+
+  return null;
 }
 
 function getCitizenInitials() {
@@ -540,7 +615,9 @@ function navigateTo(page) {
     return;
   }
 
+  loadCitizenComplaintsFromStore();
   renderPage(page);
+  renderNotifications();
   persistCitizenPage(page);
   document.getElementById("profileDropdown")?.classList.remove("active");
   document.getElementById("notificationDropdown")?.classList.remove("active");
@@ -1229,6 +1306,7 @@ function bindPageEvents(page) {
         category: formatCitizenCategory(category),
         department: mapCategoryToDepartment(category),
         upvoted: false,
+        upvotedBy: [],
         media,
         resolutionMedia: [],
       };
@@ -1471,9 +1549,32 @@ function toggleUpvote(issueId) {
   const issue = issues.find((i) => i.id === issueId);
   if (!issue) return;
 
-  issue.upvoted = !issue.upvoted;
-  issue.upvotes += issue.upvoted ? 1 : -1;
-  syncCitizenIssueUpdate(issueId, { upvotes: issue.upvotes });
+  const voteKey = getCurrentCitizenVoteKey();
+  if (!voteKey) {
+    showCitizenToast("Unable to verify user for upvote.", "error");
+    return;
+  }
+
+  const upvotedBy = Array.isArray(issue.upvotedBy)
+    ? issue.upvotedBy.filter((entry) => typeof entry === "string")
+    : [];
+
+  const hasUpvoted = issue.upvoted || upvotedBy.includes(voteKey);
+
+  if (hasUpvoted) {
+    issue.upvoted = false;
+    issue.upvotedBy = upvotedBy.filter((entry) => entry !== voteKey);
+    issue.upvotes = Math.max(0, Number(issue.upvotes || 0) - 1);
+  } else {
+    issue.upvoted = true;
+    issue.upvotedBy = Array.from(new Set([...upvotedBy, voteKey]));
+    issue.upvotes = Math.max(0, Number(issue.upvotes || 0)) + 1;
+  }
+
+  syncCitizenIssueUpdate(issueId, {
+    upvotes: issue.upvotes,
+    upvotedBy: issue.upvotedBy,
+  });
   openIssueModal(issueId);
 }
 
@@ -1581,6 +1682,22 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCitizenComplaintsFromStore();
   bindShellEvents();
   applyCitizenRoleRendering();
+
+  // Keep citizen view in sync when role actions update shared localStorage in another tab/window.
+  window.addEventListener("storage", () => {
+    refreshCitizenData(true);
+  });
+
+  // Also refresh when tab regains focus.
+  window.addEventListener("focus", () => {
+    refreshCitizenData(true);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      refreshCitizenData(true);
+    }
+  });
 
   document
     .getElementById("issueModal")
