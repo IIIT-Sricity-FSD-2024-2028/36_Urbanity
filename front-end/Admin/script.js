@@ -1568,7 +1568,7 @@ function handleAddUser() {
     };
   }
 
-  adminCrudState.users.push({
+  const newUser = {
     id: getNextUserId(),
     name,
     email: emailLower,
@@ -1580,9 +1580,16 @@ function handleAddUser() {
     status: "Active",
     lastActive: "Just now",
     ...mapping,
-  });
+  };
 
-  saveAdminCrudState();
+  if (window.MockDataAPI) {
+    window.MockDataAPI.add("users", newUser);
+    loadAdminCrudState();
+  } else {
+    adminCrudState.users.push(newUser);
+    saveAdminCrudState();
+  }
+
   renderAdminCrudData();
   resetAddUserForm();
   closeModal("addUserModal");
@@ -1622,14 +1629,21 @@ function handleCreateRole() {
     return;
   }
 
-  adminCrudState.roles.push({
+  const newRole = {
     id: generateItemId("role"),
     name,
     description,
     permissionLevel,
-  });
+  };
 
-  saveAdminCrudState();
+  if (window.MockDataAPI) {
+    window.MockDataAPI.add("roles", newRole);
+    loadAdminCrudState();
+  } else {
+    adminCrudState.roles.push(newRole);
+    saveAdminCrudState();
+  }
+
   renderDynamicRoles();
   resetCreateRoleForm();
   closeModal("createRoleModal");
@@ -1680,15 +1694,22 @@ function handleCreateDepartment() {
     return;
   }
 
-  adminCrudState.departments.push({
+  const newDepartment = {
     id: generateItemId("department"),
     name,
     description,
     manager,
     responseTime,
-  });
+  };
 
-  saveAdminCrudState();
+  if (window.MockDataAPI) {
+    window.MockDataAPI.add("departments", newDepartment);
+    loadAdminCrudState();
+  } else {
+    adminCrudState.departments.push(newDepartment);
+    saveAdminCrudState();
+  }
+
   renderDynamicDepartments();
   resetCreateDepartmentForm();
   closeModal("createDepartmentModal");
@@ -1763,7 +1784,15 @@ document.addEventListener("click", async (evt) => {
 
     user.name = nextName;
     user.lastActive = "Just updated";
-    saveAdminCrudState();
+    if (window.MockDataAPI) {
+      window.MockDataAPI.update("users", user.id, {
+        name: user.name,
+        lastActive: user.lastActive,
+      });
+      loadAdminCrudState();
+    } else {
+      saveAdminCrudState();
+    }
     renderDynamicUsers();
     showAdminToast("User updated successfully.", "success");
     return;
@@ -1775,8 +1804,13 @@ document.addEventListener("click", async (evt) => {
       return;
     }
 
-    adminCrudState.users = adminCrudState.users.filter((item) => item.id !== deleteUserId);
-    saveAdminCrudState();
+    if (window.MockDataAPI) {
+      window.MockDataAPI.remove("users", deleteUserId);
+      loadAdminCrudState();
+    } else {
+      adminCrudState.users = adminCrudState.users.filter((item) => item.id !== deleteUserId);
+      saveAdminCrudState();
+    }
     renderDynamicUsers();
     showAdminToast("User deleted.", "success");
     return;
@@ -1788,8 +1822,13 @@ document.addEventListener("click", async (evt) => {
       return;
     }
 
-    adminCrudState.roles = adminCrudState.roles.filter((item) => item.id !== deleteRoleId);
-    saveAdminCrudState();
+    if (window.MockDataAPI) {
+      window.MockDataAPI.remove("roles", deleteRoleId);
+      loadAdminCrudState();
+    } else {
+      adminCrudState.roles = adminCrudState.roles.filter((item) => item.id !== deleteRoleId);
+      saveAdminCrudState();
+    }
     renderDynamicRoles();
     showAdminToast("Role deleted.", "success");
     return;
@@ -1801,10 +1840,15 @@ document.addEventListener("click", async (evt) => {
       return;
     }
 
-    adminCrudState.departments = adminCrudState.departments.filter(
-      (item) => item.id !== deleteDepartmentId,
-    );
-    saveAdminCrudState();
+    if (window.MockDataAPI) {
+      window.MockDataAPI.remove("departments", deleteDepartmentId);
+      loadAdminCrudState();
+    } else {
+      adminCrudState.departments = adminCrudState.departments.filter(
+        (item) => item.id !== deleteDepartmentId,
+      );
+      saveAdminCrudState();
+    }
     renderDynamicDepartments();
     showAdminToast("Department deleted.", "success");
   }

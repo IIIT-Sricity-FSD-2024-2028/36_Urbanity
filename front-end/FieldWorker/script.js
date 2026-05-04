@@ -144,35 +144,65 @@ function renderMediaPreviewHtml(mediaList) {
   `;
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImageFile(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const maxSide = 1200;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+        return;
+      }
+
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+async function fileToMedia(file) {
+  if (!file.type.startsWith("image/")) {
+    return null;
+  }
+
+  const compressed = await compressImageFile(file);
+  const dataUrl = compressed || (await readFileAsDataUrl(file).catch(() => ""));
+  return dataUrl ? { type: "image", url: dataUrl, name: file.name } : null;
+}
+
 function readFilesAsMedia(fileList) {
   const files = Array.from(fileList || []).slice(0, 4);
   if (files.length === 0) {
     return Promise.resolve([]);
   }
 
-  const readers = files.map(
-    (file) =>
-      new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const type = file.type.startsWith("video/") ? "video" : "image";
-          const resultUrl = String(reader.result || "");
-          if (resultUrl) {
-            resolve({ type, url: resultUrl, name: file.name });
-            return;
-          }
-
-          resolve({ type, url: URL.createObjectURL(file), name: file.name });
-        };
-        reader.onerror = () => {
-          const type = file.type.startsWith("video/") ? "video" : "image";
-          resolve({ type, url: URL.createObjectURL(file), name: file.name });
-        };
-        reader.readAsDataURL(file);
-      }),
-  );
-
-  return Promise.all(readers).then((items) => items.filter(Boolean));
+  return Promise.all(files.map(fileToMedia)).then((items) => items.filter(Boolean));
 }
 
 function pickProofMediaFiles() {
@@ -217,9 +247,9 @@ function showAssignmentCompletionForm(task) {
           <label class="completion-form-label" for="materialsInput">Materials / Tools Used (Optional)</label>
           <input id="materialsInput" name="materials" class="completion-form-input" type="text" maxlength="140" placeholder="Example: asphalt mix, shovel, cone barriers" />
 
-          <label class="completion-form-label" for="proofFilesInput">Proof of Work (Required)</label>
+          <label class="completion-form-label" for="proofFilesInput">Proof of Work</label>
           <input id="proofFilesInput" name="proofFiles" class="completion-form-file" type="file" accept="image/*" multiple required />
-          <p class="completion-form-hint">Upload at least one image. You can attach up to 4 files.</p>
+          <p class="completion-form-hint">Images are compressed automatically. You can attach up to 4 files.</p>
 
           <p class="completion-form-error" aria-live="polite"></p>
 
@@ -391,10 +421,20 @@ function loadAssignmentsFromStore() {
   const workerContext = getWorkerHierarchyContext().worker;
   const workerId = workerContext?.id || mockWorker.id;
   const workerName = workerContext?.name || mockWorker.name;
+  const workerDepartment = workerContext?.department || mockWorker.department;
 
-  const scopedAssignments = assignments.filter(
-    (assignment) => assignment.assigneeId === workerId || assignment.assignee === workerName,
-  );
+  const scopedAssignments = assignments.filter((assignment) => {
+    const linkedComplaint = complaintsById.get(assignment.complaintId);
+    const assignedToWorker =
+      assignment.assigneeId === workerId || assignment.assignee === workerName;
+    const sameDepartment =
+      !linkedComplaint ||
+      !workerDepartment ||
+      linkedComplaint.department === workerDepartment ||
+      assignment.department === workerDepartment;
+
+    return assignedToWorker && sameDepartment;
+  });
 
   if (scopedAssignments.length === 0) {
     assignmentsData = [];
@@ -477,6 +517,41 @@ function syncComplaintByTask(taskId, partial) {
   }
 
   window.MockDataAPI.update("complaints", task.complaintId, partial);
+}
+
+function formatComplaintDisplayId(id) {
+  const value = String(id || "");
+  if (value.startsWith("CMP-")) {
+    return value;
+  }
+  const compact = value.replace(/-/g, "").slice(0, 8).toUpperCase();
+  return compact ? `CMP-${compact}` : "CMP-N/A";
+}
+
+function addComplaintUpdateForTask(taskId, message) {
+  if (!window.MockDataAPI) {
+    return;
+  }
+
+  const task = assignmentsData.find((item) => item.id === taskId);
+  if (!task?.complaintId) {
+    return;
+  }
+
+  const existingUpdates = window.MockDataAPI
+    .list("complaintUpdates")
+    .filter((entry) => entry.complaintId === task.complaintId);
+
+  window.MockDataAPI.add("complaintUpdates", {
+    id: `UPD-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    complaintId: task.complaintId,
+    updateNo: existingUpdates.length + 1,
+    updatedBy: mockWorker.id,
+    updateMessage: message,
+    updateTime: new Date().toISOString(),
+    actorName: mockWorker.name,
+    actorRole: "Field Worker",
+  });
 }
 
 const WORKER_PAGE_STATE_KEY = "urbanity.fieldworker.lastPage";
@@ -835,7 +910,7 @@ function renderTasksTable(showFilters) {
 
       tableRows += `
                         <tr>
-                            <td>#${task.id}</td>
+                            <td>${formatComplaintDisplayId(task.complaintId || task.id)}</td>
                             <td>${task.issueDescription}</td>
                             <td><span class="badge ${getCategoryColor(task.category)}">${task.category}</span></td>
                             <td>${task.location}</td>
@@ -1063,7 +1138,7 @@ function openModal(taskId) {
                 <div class="modal-section modal-grid">
                     <div>
                         <p class="modal-label">Task ID</p>
-                        <p class="modal-value">#${task.id}</p>
+                        <p class="modal-value">${formatComplaintDisplayId(task.complaintId || task.id)}</p>
                     </div>
                     <div>
                         <p class="modal-label">Date Assigned</p>
@@ -1158,6 +1233,7 @@ function startAssignmentWork(taskId) {
     status: "in-progress",
     workStartedAt: new Date().toLocaleString(),
   });
+  addComplaintUpdateForTask(taskId, "Field worker started work on this complaint.");
   renderPage();
 }
 
@@ -1186,6 +1262,7 @@ async function updateAssignmentProgress(taskId) {
     latestWorkerUpdate: task.remarks,
     lastUpdatedAt: new Date().toLocaleString(),
   });
+  addComplaintUpdateForTask(taskId, task.remarks || "Field worker updated complaint progress.");
   showWorkerToast("Progress updated.", "success");
   renderPage();
 }
@@ -1223,6 +1300,10 @@ async function completeAssignment(taskId) {
     resolutionSummary: completionSummary || "Task marked completed by field worker.",
     resolutionMedia: task.proofMedia,
   });
+  addComplaintUpdateForTask(
+    taskId,
+    completionSummary || "Field worker completed the job and submitted proof for officer verification.",
+  );
   showWorkerToast("Assignment completed and sent for officer verification.", "success");
   renderPage();
 }

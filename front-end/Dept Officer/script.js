@@ -115,6 +115,27 @@ function getStoreComplaints() {
   return window.MockDataAPI.list("complaints");
 }
 
+function formatComplaintDisplayId(id) {
+  const value = String(id || "");
+  if (value.startsWith("CMP-")) {
+    return value;
+  }
+  const compact = value.replace(/-/g, "").slice(0, 8).toUpperCase();
+  return compact ? `CMP-${compact}` : "CMP-N/A";
+}
+
+function resolveComplaintId(id) {
+  const value = String(id || "");
+  const complaints = getStoreComplaints();
+
+  return (
+    complaints.find((entry) => entry.id === value)?.id ||
+    complaints.find((entry) => formatComplaintDisplayId(entry.id) === value)?.id ||
+    complaints.find((entry) => formatComplaintDisplayId(entry.id) === `CMP-${value}`)?.id ||
+    (value.startsWith("CMP-") ? value : `CMP-${value}`)
+  );
+}
+
 function getCurrentOfficerRecord() {
   const sessionUser = getCurrentSessionUser();
   if (!sessionUser) {
@@ -268,13 +289,20 @@ function getOfficerScopedComplaints() {
 
 function getOfficerScopedAssignments() {
   const assignments = getStoreAssignments();
+  const complaintsById = new Map(getStoreComplaints().map((complaint) => [complaint.id, complaint]));
   const { officer } = getOfficerHierarchy();
 
   if (!officer) {
-    return assignments;
+    return [];
   }
 
-  return assignments.filter((entry) => entry.officerId === officer.id);
+  return assignments.filter((entry) => {
+    const linkedComplaint = complaintsById.get(entry.complaintId);
+    return (
+      entry.officerId === officer.id &&
+      (!linkedComplaint || linkedComplaint.department === officer.department)
+    );
+  });
 }
 
 function getOfficerAssignmentByComplaintId(complaintId) {
@@ -357,7 +385,7 @@ function renderValidateAssignComplaints() {
       const hasAssignment = Boolean(getOfficerAssignmentByComplaintId(complaint.id));
       return `
         <tr data-category="${category}" data-status="${rowStatus}">
-          <td>#${complaint.id}</td>
+          <td>${formatComplaintDisplayId(complaint.id)}</td>
           <td>${complaint.title}</td>
           <td><span class="category-badge ${getOfficerCategoryClass(complaint.category)}">${complaint.category || "Other"}</span></td>
           <td>${complaint.location || "N/A"}</td>
@@ -400,7 +428,7 @@ function renderVerifyResolutionComplaints() {
       const priorityLabel = getOfficerPriorityLabel(complaint?.category);
       return `
         <tr>
-          <td>#${complaint?.id || assignment.complaintId}</td>
+          <td>${formatComplaintDisplayId(complaint?.id || assignment.complaintId)}</td>
           <td>${complaint?.title || assignment.issueDescription || "Complaint"}</td>
           <td><span class="category-badge ${getOfficerCategoryClass(complaint?.category)}">${complaint?.category || assignment.category || "Other"}</span></td>
           <td>${complaint?.location || assignment.location || "N/A"}</td>
@@ -438,7 +466,7 @@ function renderReopenedComplaints() {
       const priorityLabel = getOfficerPriorityLabel(complaint.category);
       return `
         <tr>
-          <td>#${complaint.id}</td>
+          <td>${formatComplaintDisplayId(complaint.id)}</td>
           <td>${complaint.title}</td>
           <td><span class="category-badge ${getOfficerCategoryClass(complaint.category)}">${complaint.category || "Other"}</span></td>
           <td>${complaint.location || "N/A"}</td>
@@ -478,10 +506,9 @@ function renderOfficerDashboardComplaints() {
   } else {
     rows.innerHTML = topComplaints
       .map((complaint) => {
-        const idNumeric = complaint.id.replace("CMP-", "");
         return `
           <tr>
-            <td>#${idNumeric}</td>
+            <td>${formatComplaintDisplayId(complaint.id)}</td>
             <td>${complaint.title}</td>
             <td><span class="category-badge ${getOfficerCategoryClass(complaint.category)}">${complaint.category}</span></td>
             <td><span class="priority-badge ${getOfficerPriorityClass(complaint.category)}">${getOfficerPriorityClass(complaint.category) === "priority-high" ? "High" : "Medium"}</span></td>
@@ -805,7 +832,7 @@ function renderOfficerMediaPreview(mediaList, emptyText) {
 }
 
 function viewComplaint(id) {
-  const complaintId = String(id).startsWith("CMP-") ? String(id) : `CMP-${id}`;
+  const complaintId = resolveComplaintId(id);
   const complaints = getOfficerScopedComplaints();
   const complaint =
     complaints.find((entry) => entry.id === complaintId) ||
@@ -835,7 +862,7 @@ function viewComplaint(id) {
   const priorityClass = getOfficerPriorityClass(category);
   const priorityLabel = getOfficerPriorityLabel(category);
 
-  document.getElementById("modalComplaintId").textContent = `#${complaint.id}`;
+  document.getElementById("modalComplaintId").textContent = formatComplaintDisplayId(complaint.id);
   document.getElementById("modalComplaintDate").textContent = toShortDate(complaint.date);
   document.getElementById(
     "modalComplaintCategory",
@@ -943,7 +970,7 @@ function confirmAssignment() {
 }
 
 function verifyResolution(id, approved) {
-  const complaintId = String(id).startsWith("CMP-") ? String(id) : `CMP-${id}`;
+  const complaintId = resolveComplaintId(id);
 
   if (!window.MockDataAPI) {
     return;

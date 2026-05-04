@@ -64,6 +64,23 @@ const ROLE_TO_USER_ROLE = {
   admin: "Admin",
 };
 
+const API_BASE_URL = "http://localhost:3000";
+
+const ROLE_TO_BACKEND_ROLE_ID = {
+  admin: "11111111-1111-4111-8111-111111111111",
+  head: "22222222-2222-4222-8222-222222222222",
+  officer: "33333333-3333-4333-8333-333333333333",
+  worker: "44444444-4444-4444-8444-444444444444",
+  citizen: "55555555-5555-4555-8555-555555555555",
+};
+
+const BACKEND_ROLE_ID_TO_USER_ROLE = Object.fromEntries(
+  Object.entries(ROLE_TO_BACKEND_ROLE_ID).map(([roleKey, roleId]) => [
+    roleId,
+    ROLE_TO_USER_ROLE[roleKey],
+  ]),
+);
+
 const FALLBACK_CREDENTIALS = {
   citizen: { email: "anita.rao@urbanity.gov", password: "anita123" },
   officer: { email: "priya.sharma@urbanity.gov", password: "priya123" },
@@ -75,9 +92,89 @@ const FALLBACK_CREDENTIALS = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
 
-function validateCredentials(roleKey, email, password) {
+async function requestBackend(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      role: "admin",
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function normalizeBackendUser(user) {
+  const role = BACKEND_ROLE_ID_TO_USER_ROLE[user.roleId] || user.role || "";
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    password: user.passwordHash || user.password,
+    role,
+    roleId: user.roleId,
+    department: user.department || (role === "Citizen" ? "N/A" : "System"),
+    status: user.status || "Active",
+    lastActive: user.lastActive || "Just now",
+    employeeCode: user.employeeCode,
+    reportsTo: user.reportsTo,
+    headId: user.headId,
+    officerId: user.officerId,
+  };
+}
+
+async function listBackendUsers() {
+  const response = await requestBackend("/users");
+  return Array.isArray(response.data) ? response.data.map(normalizeBackendUser) : [];
+}
+
+async function loginBackendUser(roleKey, email, password) {
+  const response = await requestBackend("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      password,
+      roleId: ROLE_TO_BACKEND_ROLE_ID[roleKey],
+    }),
+  });
+
+  return normalizeBackendUser(response.data);
+}
+
+async function createBackendCitizen({ fullName, email, phone, password }) {
+  const response = await requestBackend("/users", {
+    method: "POST",
+    body: JSON.stringify({
+      name: fullName,
+      email,
+      phone,
+      passwordHash: password,
+      roleId: ROLE_TO_BACKEND_ROLE_ID.citizen,
+      department: "N/A",
+      status: "Active",
+      lastActive: "Just now",
+    }),
+  });
+
+  return normalizeBackendUser(response.data);
+}
+
+async function validateCredentials(roleKey, email, password) {
   const normalizedEmail = email.trim().toLowerCase();
   const expectedRoleName = ROLE_TO_USER_ROLE[roleKey];
+
+  try {
+    return await loginBackendUser(roleKey, email, password);
+  } catch (error) {
+    console.warn("Backend login failed; falling back to local mock data.", error);
+  }
 
   if (window.MockDataAPI) {
     const users = window.MockDataAPI.list("users");
@@ -247,7 +344,7 @@ function clearForgotPasswordMessage() {
   messageNode.classList.remove("auth-message-error", "auth-message-success");
 }
 
-function handleSignup(event) {
+async function handleSignup(event) {
   event.preventDefault();
   clearSignupMessage();
 
@@ -283,7 +380,41 @@ function handleSignup(event) {
     return;
   }
 
-  // Check if email already exists
+  try {
+    const backendUsers = await listBackendUsers();
+    const emailExists = backendUsers.some((user) => user.email.toLowerCase() === email);
+    if (emailExists) {
+      showSignupMessage("Email already registered. Please use a different email or sign in.");
+      return;
+    }
+
+    const createdUser = await createBackendCitizen({ fullName, email, phone, password });
+
+    if (window.MockDataAPI) {
+      window.MockDataAPI.add("users", {
+        id: createdUser.id,
+        name: createdUser.name,
+        email: createdUser.email,
+        phone: createdUser.phone,
+        password,
+        role: "Citizen",
+        department: "N/A",
+        status: "Active",
+        lastActive: "Just now",
+      }, { skipBackend: true });
+    }
+
+    showSignupMessage("Account created successfully! Redirecting to sign in...", "success");
+
+    setTimeout(() => {
+      currentRole = "citizen";
+      showSignInForm();
+    }, 1500);
+    return;
+  } catch (error) {
+    console.warn("Backend signup failed; falling back to local mock data.", error);
+  }
+
   if (window.MockDataAPI) {
     const existingUsers = window.MockDataAPI.list("users");
     const emailExists = existingUsers.some((user) => user.email.toLowerCase() === email);
@@ -316,7 +447,7 @@ function handleSignup(event) {
   }, 1500);
 }
 
-function handleSignin(event) {
+async function handleSignin(event) {
   event.preventDefault();
   clearSigninMessage();
 
@@ -340,7 +471,7 @@ function handleSignin(event) {
     return;
   }
 
-  const matchedUser = validateCredentials(currentRole, email, password);
+  const matchedUser = await validateCredentials(currentRole, email, password);
   if (!matchedUser) {
     showSigninMessage("Invalid credentials. Check your email, password, and selected role.");
     return;
@@ -366,6 +497,11 @@ function handleSignin(event) {
       name: matchedUser.name,
       email: matchedUser.email,
       role: matchedUser.role,
+      department: matchedUser.department,
+      employeeCode: matchedUser.employeeCode,
+      reportsTo: matchedUser.reportsTo,
+      headId: matchedUser.headId,
+      officerId: matchedUser.officerId,
     }),
   );
 

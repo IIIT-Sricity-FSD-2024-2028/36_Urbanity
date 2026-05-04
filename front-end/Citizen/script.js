@@ -9,6 +9,7 @@ const notificationTemplates = [
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(\+91[-\s]?)?[6-9]\d{9}$/;
+const API_BASE_URL = "http://localhost:3000";
 
 const notificationReadState = {};
 const notificationHiddenState = {};
@@ -151,30 +152,76 @@ function renderMediaPreviewHtml(mediaList) {
   `;
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImageFile(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const maxSide = 1200;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+        return;
+      }
+
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+async function fileToMedia(file) {
+  const isImage = file.type.startsWith("image/");
+  const isVideo = file.type.startsWith("video/");
+
+  if (isImage) {
+    const compressed = await compressImageFile(file);
+    const dataUrl = compressed || (await readFileAsDataUrl(file).catch(() => ""));
+    return dataUrl ? { type: "image", url: dataUrl, name: file.name } : null;
+  }
+
+  if (isVideo) {
+    return {
+      type: "video",
+      url: URL.createObjectURL(file),
+      name: `${file.name} (local preview only)`,
+    };
+  }
+
+  return null;
+}
+
 function readFilesAsMedia(fileList) {
   const files = Array.from(fileList || []).slice(0, 4);
   if (files.length === 0) {
     return Promise.resolve([]);
   }
 
-  const readers = files.map(
-    (file) =>
-      new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const type = file.type.startsWith("video/") ? "video" : "image";
-          resolve({
-            type,
-            url: String(reader.result || ""),
-            name: file.name,
-          });
-        };
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(file);
-      }),
-  );
-
-  return Promise.all(readers).then((items) => items.filter(Boolean));
+  return Promise.all(files.map(fileToMedia)).then((items) => items.filter(Boolean));
 }
 
 function generateCitizenIssueId() {
@@ -192,6 +239,109 @@ function generateCitizenIssueId() {
 
   const next = (used.length ? Math.max(...used) : 1000) + 1;
   return `CMP-${String(next).padStart(4, "0")}`;
+}
+
+function formatComplaintDisplayId(id) {
+  const value = String(id || "");
+  if (value.startsWith("CMP-")) {
+    return value;
+  }
+  const compact = value.replace(/-/g, "").slice(0, 8).toUpperCase();
+  return compact ? `CMP-${compact}` : "CMP-N/A";
+}
+
+function isResolvedForFeedback(issue) {
+  const status = String(issue?.status || "").toLowerCase();
+  return (
+    status === "resolved" ||
+    status === "closed" ||
+    status === "finished" ||
+    status === "completed" ||
+    status === "complete"
+  );
+}
+
+function getFeedbackReadyIssues() {
+  if (!window.MockDataAPI) {
+    return issues.filter(isResolvedForFeedback);
+  }
+
+  const complaints = getCitizenScopedComplaints();
+  const assignmentsByComplaintId = new Map(
+    window.MockDataAPI
+      .list("assignments")
+      .map((assignment) => [assignment.complaintId, assignment]),
+  );
+
+  const feedbackReady = complaints
+    .filter((complaint) => {
+      const assignment = assignmentsByComplaintId.get(complaint.id);
+      return (
+        isResolvedForFeedback(complaint) ||
+        Boolean(complaint.verifiedAt) ||
+        Boolean(complaint.feedbackSubmittedAt) ||
+        (assignment?.status === "Completed" && Boolean(assignment?.verifiedAt))
+      );
+    })
+    .map((complaint) => {
+      const assignment = assignmentsByComplaintId.get(complaint.id);
+      return {
+        id: complaint.id,
+        title: complaint.title,
+        date:
+          complaint.resolvedAt ||
+          complaint.verifiedAt ||
+          assignment?.verifiedAt ||
+          complaint.date ||
+          new Date().toLocaleDateString(),
+        status: "resolved",
+        feedback: complaint.feedback || null,
+        feedbackSubmittedAt: complaint.feedbackSubmittedAt || null,
+      };
+    });
+
+  const readyById = new Map(feedbackReady.map((issue) => [issue.id, issue]));
+  issues
+    .filter(isResolvedForFeedback)
+    .forEach((issue) => {
+      if (!readyById.has(issue.id)) {
+        readyById.set(issue.id, issue);
+      }
+    });
+
+  return Array.from(readyById.values());
+}
+
+function getSubmittedFeedbackEntries() {
+  if (!window.MockDataAPI) {
+    return issues
+      .filter((issue) => issue.feedback)
+      .map((issue) => ({
+        id: `local-${issue.id}`,
+        complaintId: issue.id,
+        complaintTitle: issue.title,
+        rating: issue.feedback.rating,
+        category: issue.feedback.category,
+        comments: issue.feedback.comments,
+        submittedAt: issue.feedbackSubmittedAt,
+      }));
+  }
+
+  const currentUser = getCurrentSessionUser();
+  const complaintById = new Map(getCitizenScopedComplaints().map((complaint) => [complaint.id, complaint]));
+  return window.MockDataAPI
+    .list("feedback")
+    .filter((entry) => {
+      if (currentUser?.id && entry.userId) {
+        return entry.userId === currentUser.id;
+      }
+      return complaintById.has(entry.complaintId);
+    })
+    .map((entry) => ({
+      ...entry,
+      complaintTitle: entry.complaintTitle || complaintById.get(entry.complaintId)?.title || "Complaint",
+    }))
+    .sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")));
 }
 
 function loadCitizenComplaintsFromStore() {
@@ -303,7 +453,7 @@ function getCitizenScopedComplaints() {
 function buildCitizenNotifications() {
   const dynamicNotifications = issues
     .map((issue) => {
-      const issueNumber = issue.id;
+      const issueNumber = formatComplaintDisplayId(issue.id);
       if (issue.status === "resolved") {
         if (issue.feedbackSubmittedAt) {
           return {
@@ -372,14 +522,62 @@ function syncCitizenIssueDelete(issueId) {
   window.MockDataAPI.remove("complaints", issueId);
 }
 
-function syncCitizenIssueAdd(issue) {
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
+}
+
+async function createCitizenComplaintInBackend(payload) {
+  const response = await fetch(`${API_BASE_URL}/complaints`, {
+    method: "POST",
+    headers: {
+      role: "admin",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title: payload.title,
+      description: payload.description,
+      status: "Pending",
+      citizenId: isUuid(payload.citizenId) ? payload.citizenId : undefined,
+      location: payload.location,
+      category: payload.category,
+      department: payload.department,
+      reportedBy: payload.reportedBy,
+      reportedByEmail: payload.reportedByEmail,
+      upvotes: Number(payload.upvotes || 0),
+      upvotedBy: Array.isArray(payload.upvotedBy) ? payload.upvotedBy : [],
+      media: normalizeMediaList(payload.media),
+      resolutionMedia: normalizeMediaList(payload.resolutionMedia),
+      date: payload.date,
+    }),
+  });
+
+  if (!response.ok) {
+    let message = `Backend rejected complaint with status ${response.status}.`;
+    try {
+      const errorBody = await response.json();
+      message = Array.isArray(errorBody.message)
+        ? errorBody.message.join(" ")
+        : errorBody.message || message;
+    } catch (error) {
+      console.warn("Could not parse backend complaint error.", error);
+    }
+    throw new Error(message);
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+async function syncCitizenIssueAdd(issue) {
   if (!window.MockDataAPI) {
-    return;
+    return issue;
   }
 
   const currentUser = getCurrentSessionUser();
 
-  window.MockDataAPI.add("complaints", {
+  const payload = {
     id: issue.id,
     title: issue.title,
     description: issue.description,
@@ -393,9 +591,23 @@ function syncCitizenIssueAdd(issue) {
     media: normalizeMediaList(issue.media),
     resolutionMedia: normalizeMediaList(issue.resolutionMedia),
     reportedBy: currentUser?.name || profileData.name || "Citizen",
+    citizenId: currentUser?.id,
     reportedById: currentUser?.id,
     reportedByEmail: currentUser?.email || profileData.email,
-  });
+  };
+
+  const backendComplaint = await createCitizenComplaintInBackend(payload);
+  const syncedIssue = {
+    ...issue,
+    ...backendComplaint,
+    status: String(backendComplaint.status || issue.status).toLowerCase() === "pending"
+      ? "pending"
+      : backendComplaint.status || issue.status,
+    upvoted: false,
+  };
+
+  window.MockDataAPI.add("complaints", syncedIssue, { skipBackend: true });
+  return syncedIssue;
 }
 
 const profileData = {
@@ -922,7 +1134,7 @@ function renderRaiseIssuePage() {
         <div class="form-group">
           <label class="form-label">Upload Image / Video (Optional)</label>
           <input type="file" class="form-input" id="issueMediaInput" accept="image/*,video/*" multiple>
-          <p class="form-hint">You can attach up to 4 files as evidence.</p>
+          <p class="form-hint">Attach up to 4 files. Images are compressed automatically before saving.</p>
         </div>
 
         <button type="submit" class="form-button">
@@ -979,7 +1191,7 @@ function renderComplaintsPage() {
               .map(
                 (issue, idx) => `
                   <tr>
-                    <td><span class="complaint-id">${issue.id}</span></td>
+                    <td><span class="complaint-id">${formatComplaintDisplayId(issue.id)}</span></td>
                     <td><span class="complaint-title">${issue.title}</span></td>
                     <td><span class="complaint-category">${issue.category}</span></td>
                     <td><span class="status-badge ${issue.status}">${formatStatus(issue.status).toUpperCase()}</span></td>
@@ -1036,7 +1248,9 @@ function renderComplaintsPage() {
 }
 
 function renderFeedbackPage() {
-  const resolvedIssues = issues.filter((issue) => issue.status === "resolved");
+  loadCitizenComplaintsFromStore();
+  const resolvedIssues = getFeedbackReadyIssues();
+  const submittedFeedback = getSubmittedFeedbackEntries();
 
   return `
     <div class="page-header">
@@ -1054,7 +1268,7 @@ function renderFeedbackPage() {
               <option value="">Select a resolved issue</option>
               ${resolvedIssues
                 .map(
-                  (issue) => `<option value="${issue.id}">${issue.id} - ${issue.title} (Resolved: ${issue.date})</option>`,
+                  (issue) => `<option value="${issue.id}">${formatComplaintDisplayId(issue.id)} - ${issue.title} (Resolved: ${issue.date})</option>`,
                 )
                 .join("")}
             </select>
@@ -1118,26 +1332,28 @@ function renderFeedbackPage() {
         </div>
 
         <div class="info-card green" style="background-color: white;">
-          <h3 class="info-card-title">Your Resolved Issues</h3>
+          <h3 class="info-card-title">Your Submitted Feedback</h3>
           <div>
-            ${[
-              ...resolvedIssues.map((issue) => [issue.title, issue.id, issue.date]),
-            ]
-              .map(
-                ([title, id, date]) => `
+            ${
+              submittedFeedback.length
+                ? submittedFeedback
+                    .map(
+                      (entry) => `
                   <div class="resolved-issue-card">
                     <div class="resolved-issue-header">
                       <div>
-                        <div class="resolved-issue-title">${title}</div>
-                        <div class="resolved-issue-id">ID: ${id}</div>
+                        <div class="resolved-issue-title">${entry.complaintTitle}</div>
+                        <div class="resolved-issue-id">ID: ${formatComplaintDisplayId(entry.complaintId)} - ${entry.rating}/5</div>
                       </div>
-                      <span class="resolved-badge">Resolved</span>
+                      <span class="resolved-badge">Feedback</span>
                     </div>
-                    <div class="resolved-issue-date">Resolved on ${date}</div>
+                    <div class="resolved-issue-date">${entry.comments || "No comments"} - ${entry.submittedAt || "Submitted"}</div>
                   </div>
                 `,
-              )
-              .join("")}
+                    )
+                    .join("")
+                : '<div class="resolved-issue-card"><div class="resolved-issue-title">No feedback submitted yet.</div><div class="resolved-issue-date">Submit feedback for a resolved complaint and it will appear here.</div></div>'
+            }
           </div>
         </div>
       </div>
@@ -1311,8 +1527,20 @@ function bindPageEvents(page) {
         resolutionMedia: [],
       };
 
-      issues.unshift(issue);
-      syncCitizenIssueAdd(issue);
+      let syncedIssue;
+      try {
+        syncedIssue = await syncCitizenIssueAdd(issue);
+      } catch (error) {
+        console.error("Complaint backend create failed.", error);
+        setCitizenFormMessage(
+          "raiseIssueForm",
+          `Complaint was not saved to backend: ${error.message}`,
+        );
+        showCitizenToast("Complaint was not saved. Please keep the backend running and try again.", "error");
+        return;
+      }
+
+      issues.unshift(syncedIssue);
 
       setCitizenFormMessage(
         "raiseIssueForm",
@@ -1384,13 +1612,44 @@ function bindFeedbackPage() {
 
     const issue = issues.find((item) => item.id === issueId);
     if (issue) {
+      const currentUser = getCurrentSessionUser();
       issue.feedback = {
         rating: selectedRating,
         category,
         comments,
       };
       issue.feedbackSubmittedAt = new Date().toLocaleString();
+
+      if (window.MockDataAPI) {
+        const existingFeedback = window.MockDataAPI
+          .list("feedback")
+          .find(
+            (entry) =>
+              entry.complaintId === issue.id &&
+              (!currentUser?.id || entry.userId === currentUser.id),
+          );
+        const feedbackPayload = {
+          complaintId: issue.id,
+          complaintTitle: issue.title,
+          userId: currentUser?.id || "citizen",
+          rating: selectedRating,
+          category,
+          comments,
+          submittedAt: issue.feedbackSubmittedAt,
+        };
+
+        if (existingFeedback) {
+          window.MockDataAPI.update("feedback", existingFeedback.id, feedbackPayload);
+        } else {
+          window.MockDataAPI.add("feedback", {
+            id: `FDB-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            ...feedbackPayload,
+          });
+        }
+      }
+
       syncCitizenIssueUpdate(issue.id, {
+        status: "resolved",
         feedback: issue.feedback,
         feedbackSubmittedAt: issue.feedbackSubmittedAt,
       });

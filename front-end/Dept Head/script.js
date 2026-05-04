@@ -141,10 +141,15 @@ function getHeadScopedUsers() {
     };
   }
 
-  const managedOfficers = officers.filter((user) => user.headId === currentHead.id);
+  const managedOfficers = officers.filter(
+    (user) => user.headId === currentHead.id || user.department === currentHead.department,
+  );
   const managedOfficerIds = new Set(managedOfficers.map((user) => user.id));
   const managedWorkers = workers.filter(
-    (user) => user.headId === currentHead.id || managedOfficerIds.has(user.officerId),
+    (user) =>
+      user.headId === currentHead.id ||
+      managedOfficerIds.has(user.officerId) ||
+      user.department === currentHead.department,
   );
 
   return {
@@ -184,12 +189,9 @@ function getHeadScopedComplaints() {
     .filter((entry) => managedDepartments.has(entry.department))
     .forEach((entry) => scopedComplaintIds.add(entry.id));
 
-  const scoped = complaints.filter((entry) => scopedComplaintIds.has(entry.id));
-  if (scoped.length === 0) {
-    return complaints;
-  }
-
-  return scoped.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+  return complaints
+    .filter((entry) => scopedComplaintIds.has(entry.id))
+    .sort((a, b) => String(b.id).localeCompare(String(a.id)));
 }
 
 function getHeadStatusChip(status) {

@@ -1,5 +1,28 @@
 (function () {
   const STORAGE_KEY = "urbanity.mockData.v4";
+  const API_BASE_URL = "http://localhost:3000";
+
+  const BACKEND_ENTITY_PATHS = {
+    users: "users",
+    roles: "roles",
+    departments: "departments",
+    complaints: "complaints",
+    assignments: "assignments",
+    complaintUpdates: "complaint-updates",
+    feedback: "feedback",
+  };
+
+  const ROLE_NAME_TO_ID = {
+    Admin: "11111111-1111-4111-8111-111111111111",
+    "Department Head": "22222222-2222-4222-8222-222222222222",
+    "Department Officer": "33333333-3333-4333-8333-333333333333",
+    "Field Worker": "44444444-4444-4444-8444-444444444444",
+    Citizen: "55555555-5555-4555-8555-555555555555",
+  };
+
+  const ROLE_ID_TO_NAME = Object.fromEntries(
+    Object.entries(ROLE_NAME_TO_ID).map(([name, id]) => [id, name]),
+  );
 
   const departmentOptions = ["Road", "Water Services", "Sanitation"];
 
@@ -350,12 +373,356 @@
         ],
       },
     ],
+    complaintUpdates: [],
+    feedback: [],
   };
 
   let db = load();
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function withoutUndefinedFields(item) {
+    return Object.fromEntries(
+      Object.entries(item || {}).filter(([, value]) => typeof value !== "undefined"),
+    );
+  }
+
+  function backendHeaders() {
+    return {
+      role: "admin",
+      "Content-Type": "application/json",
+    };
+  }
+
+  function toBackendStatus(status) {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "in-progress") return "In Progress";
+    if (normalized === "resolved") return "Resolved";
+    if (normalized === "closed") return "Closed";
+    return status || "Pending";
+  }
+
+  function toFrontendStatus(status) {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "in progress") return "in-progress";
+    if (normalized === "pending") return "pending";
+    if (normalized === "resolved") return "resolved";
+    if (normalized === "closed") return "closed";
+    return normalized || "pending";
+  }
+
+  function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value || ""),
+    );
+  }
+
+  function normalizeBackendItem(entity, item) {
+    if (!item) {
+      return item;
+    }
+
+    if (entity === "users") {
+      const normalizedRole = item.role || ROLE_ID_TO_NAME[item.roleId] || "Citizen";
+      return {
+        ...item,
+        password: item.password || item.passwordHash,
+        role: normalizedRole,
+        department: item.department || (normalizedRole === "Citizen" ? "N/A" : "System"),
+        status: item.status || "Active",
+        lastActive: item.lastActive || "Just now",
+      };
+    }
+
+    if (entity === "roles") {
+      return {
+        ...item,
+        name: ROLE_ID_TO_NAME[item.id] || item.name,
+        description: item.description || "System role",
+        permissionLevel: item.permissionLevel || "Configured Access",
+      };
+    }
+
+    if (entity === "departments") {
+      return {
+        ...item,
+        description: item.description || "",
+        manager: item.manager || "Unassigned",
+        responseTime: item.responseTime || "24",
+      };
+    }
+
+    if (entity === "complaints") {
+      return {
+        ...item,
+        status: toFrontendStatus(item.status),
+        date: item.date || item.createdAt || new Date().toLocaleDateString(),
+        upvotes: Number(item.upvotes || 0),
+        upvotedBy: Array.isArray(item.upvotedBy) ? item.upvotedBy : [],
+        media: Array.isArray(item.media) ? item.media : [],
+        resolutionMedia: Array.isArray(item.resolutionMedia) ? item.resolutionMedia : [],
+      };
+    }
+
+    return item;
+  }
+
+  function toBackendItem(entity, item) {
+    if (!item) {
+      return item;
+    }
+
+    if (entity === "users") {
+      return {
+        name: item.name,
+        email: item.email,
+        passwordHash: item.passwordHash || item.password || "user123",
+        phone: item.phone === "N/A" ? undefined : item.phone,
+        roleId: item.roleId || ROLE_NAME_TO_ID[item.role] || ROLE_NAME_TO_ID.Citizen,
+        department: item.department,
+        status: item.status,
+        lastActive: item.lastActive,
+        employeeCode: item.employeeCode,
+        reportsTo: item.reportsTo,
+        headId: item.headId,
+        officerId: item.officerId,
+      };
+    }
+
+    if (entity === "roles") {
+      return {
+        name: Object.keys(ROLE_NAME_TO_ID).includes(item.name)
+          ? item.name.toLowerCase().replace(/\s+/g, "-")
+          : item.name,
+      };
+    }
+
+    if (entity === "departments") {
+      return {
+        name: item.name,
+        description: item.description,
+        manager: item.manager,
+        responseTime: String(item.responseTime || ""),
+      };
+    }
+
+    if (entity === "complaints") {
+      return {
+        citizenId: isUuid(item.citizenId || item.reportedById)
+          ? item.citizenId || item.reportedById
+          : undefined,
+        title: item.title,
+        description: item.description,
+        status: toBackendStatus(item.status),
+        location: item.location,
+        category: item.category,
+        department: item.department,
+        reportedBy: item.reportedBy,
+        reportedByEmail: item.reportedByEmail,
+        upvotes: Number(item.upvotes || 0),
+        upvotedBy: Array.isArray(item.upvotedBy) ? item.upvotedBy : [],
+        media: Array.isArray(item.media) ? item.media : [],
+        resolutionMedia: Array.isArray(item.resolutionMedia) ? item.resolutionMedia : [],
+        date: item.date,
+        feedback: item.feedback,
+        feedbackSubmittedAt: item.feedbackSubmittedAt,
+      };
+    }
+
+    if (entity === "assignments") {
+      return {
+        complaintId: item.complaintId,
+        assignedBy: isUuid(item.assignedBy || item.officerId)
+          ? item.assignedBy || item.officerId
+          : "11111111-1111-4111-8111-111111111111",
+        workerId: isUuid(item.workerId || item.assigneeId)
+          ? item.workerId || item.assigneeId
+          : "44444444-4444-4444-8444-444444444444",
+        assignee: item.assignee,
+        assigneeId: item.assigneeId,
+        officer: item.officer,
+        department: item.department,
+        status: item.status,
+        priority: item.priority,
+        dueDate: item.dueDate,
+        notes: item.notes,
+        proofMedia: Array.isArray(item.proofMedia) ? item.proofMedia : [],
+        verifiedAt: item.verifiedAt,
+        issueDescription: item.issueDescription,
+        category: item.category,
+        location: item.location,
+        assignedDate: item.assignedDate,
+        details: item.details,
+        citizenName: item.citizenName,
+        citizenContact: item.citizenContact,
+        officerId: item.officerId,
+        headId: item.headId,
+        remarks: item.remarks,
+        workDetails: item.workDetails,
+        materials: item.materials,
+        completedAt: item.completedAt,
+      };
+    }
+
+    if (entity === "complaintUpdates") {
+      return {
+        complaintId: item.complaintId,
+        updateNo: Number(item.updateNo || 1),
+        updatedBy: item.updatedBy || "system",
+        updateMessage: item.updateMessage || item.message || "Complaint updated.",
+      };
+    }
+
+    if (entity === "feedback") {
+      return {
+        complaintId: item.complaintId,
+        userId: item.userId || item.citizenId || "citizen",
+        rating: Number(item.rating || 1),
+        comments: item.comments || "",
+      };
+    }
+
+    return item;
+  }
+
+  async function backendRequest(entity, id, options = {}) {
+    const path = BACKEND_ENTITY_PATHS[entity];
+    if (!path || typeof fetch !== "function") {
+      return null;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/${path}${id ? `/${id}` : ""}`, {
+      ...options,
+      headers: {
+        ...backendHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`${entity} backend sync failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function syncAddToBackend(entity, item) {
+    const path = BACKEND_ENTITY_PATHS[entity];
+    if (!path) {
+      return;
+    }
+
+    backendRequest(entity, null, {
+      method: "POST",
+      body: JSON.stringify(toBackendItem(entity, item)),
+    })
+      .then((response) => {
+        if (!response?.data?.id || response.data.id === item.id) {
+          return;
+        }
+
+        const index = db[entity].findIndex((entry) => entry.id === item.id);
+        if (index !== -1) {
+          db[entity][index] = {
+            ...db[entity][index],
+            id: response.data.id,
+          };
+          save();
+        }
+      })
+      .catch((error) => {
+        console.warn(error.message);
+        window.dispatchEvent(
+          new CustomEvent("urbanity:backend-sync-error", {
+            detail: { entity, action: "add", message: error.message },
+          }),
+        );
+      });
+  }
+
+  function syncUpdateToBackend(entity, id, partial) {
+    if (!BACKEND_ENTITY_PATHS[entity]) {
+      return;
+    }
+
+    backendRequest(entity, id, {
+      method: "PATCH",
+      body: JSON.stringify(toBackendItem(entity, partial)),
+    }).catch((error) => {
+      console.warn(error.message);
+      window.dispatchEvent(
+        new CustomEvent("urbanity:backend-sync-error", {
+          detail: { entity, action: "update", message: error.message },
+        }),
+      );
+    });
+  }
+
+  function syncRemoveFromBackend(entity, id) {
+    if (!BACKEND_ENTITY_PATHS[entity]) {
+      return;
+    }
+
+    backendRequest(entity, id, { method: "DELETE" }).catch((error) => {
+      console.warn(error.message);
+      window.dispatchEvent(
+        new CustomEvent("urbanity:backend-sync-error", {
+          detail: { entity, action: "delete", message: error.message },
+        }),
+      );
+    });
+  }
+
+  async function createBackend(entity, item) {
+    const response = await backendRequest(entity, null, {
+      method: "POST",
+      body: JSON.stringify(toBackendItem(entity, item)),
+    });
+
+    return normalizeBackendItem(entity, response.data);
+  }
+
+  async function hydrateFromBackend() {
+    await Promise.all(
+      Object.keys(BACKEND_ENTITY_PATHS).map(async (entity) => {
+        try {
+          const response = await backendRequest(entity);
+          if (!Array.isArray(response?.data) || response.data.length === 0) {
+            return;
+          }
+
+          const backendItems = response.data.map((item) => normalizeBackendItem(entity, item));
+          const mergedByKey = new Map();
+
+          if (!Array.isArray(db[entity])) {
+            db[entity] = [];
+          }
+
+          db[entity].forEach((item) => {
+            const key = item.email ? `email:${String(item.email).toLowerCase()}` : `id:${item.id}`;
+            mergedByKey.set(key, item);
+          });
+
+          backendItems.forEach((item) => {
+            const key = item.email ? `email:${String(item.email).toLowerCase()}` : `id:${item.id}`;
+            mergedByKey.set(key, {
+              ...(mergedByKey.get(key) || {}),
+              ...withoutUndefinedFields(item),
+            });
+          });
+
+          db[entity] = Array.from(mergedByKey.values());
+        } catch (error) {
+          console.warn(error.message);
+        }
+      }),
+    );
+
+    save();
+    window.dispatchEvent(new CustomEvent("urbanity:data-sync"));
+    window.dispatchEvent(new Event("storage"));
   }
 
   function save() {
@@ -454,6 +821,10 @@
       users,
       complaints,
       assignments,
+      complaintUpdates: Array.isArray(data.complaintUpdates)
+        ? data.complaintUpdates
+        : clone(defaultData.complaintUpdates),
+      feedback: Array.isArray(data.feedback) ? data.feedback : clone(defaultData.feedback),
     };
   }
 
@@ -477,6 +848,10 @@
         assignments: Array.isArray(parsed.assignments)
           ? parsed.assignments
           : clone(defaultData.assignments),
+        complaintUpdates: Array.isArray(parsed.complaintUpdates)
+          ? parsed.complaintUpdates
+          : clone(defaultData.complaintUpdates),
+        feedback: Array.isArray(parsed.feedback) ? parsed.feedback : clone(defaultData.feedback),
       });
     } catch (error) {
       console.error("Failed to parse mock data store.", error);
@@ -501,7 +876,7 @@
     return item ? clone(item) : null;
   }
 
-  function add(entity, item) {
+  function add(entity, item, options = {}) {
     ensureEntity(entity);
     const nextItem = { ...item };
     if (!nextItem.id) {
@@ -509,6 +884,9 @@
     }
     db[entity].push(nextItem);
     save();
+    if (!options.skipBackend) {
+      syncAddToBackend(entity, nextItem);
+    }
     return clone(nextItem);
   }
 
@@ -521,6 +899,7 @@
 
     db[entity][index] = { ...db[entity][index], ...partial };
     save();
+    syncUpdateToBackend(entity, id, partial);
     return clone(db[entity][index]);
   }
 
@@ -531,6 +910,7 @@
     const changed = db[entity].length !== before;
     if (changed) {
       save();
+      syncRemoveFromBackend(entity, id);
     }
     return changed;
   }
@@ -656,6 +1036,7 @@
   }
 
   ensureUiFeedback();
+  hydrateFromBackend();
 
   window.MockDataAPI = {
     list,
@@ -665,5 +1046,6 @@
     remove,
     setEntity,
     reset,
+    createBackend,
   };
 })();
