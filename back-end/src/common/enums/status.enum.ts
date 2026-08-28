@@ -1,6 +1,9 @@
 export enum ComplaintStatus {
-  Pending = 'Pending',
-  InProgress = 'In Progress',
-  Resolved = 'Resolved',
-  Closed = 'Closed',
+  Submitted = 'SUBMITTED',
+  UnderReview = 'UNDER_REVIEW',
+  Assigned = 'ASSIGNED',
+  InProgress = 'IN_PROGRESS',
+  Resolved = 'RESOLVED',
+  Reviewed = 'REVIEWED',
+  Closed = 'CLOSED',
 }

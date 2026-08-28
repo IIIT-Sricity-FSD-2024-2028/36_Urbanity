@@ -1,6 +1,13 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import {
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+} from '@nestjs/swagger';
+import { RoleName } from '../common/enums/roles.enum';
 import {
   IsEmail,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -12,30 +19,22 @@ import {
   Min,
 } from 'class-validator';
 
-export const ACTOR_ROLES = [
-  'admin',
-  'department-head',
-  'department-officer',
-  'field-worker',
-  'citizen',
-] as const;
+export const ACTOR_ROLES = Object.values(RoleName);
 
-export type ActorRole = (typeof ACTOR_ROLES)[number];
+export type ActorRole = RoleName;
 
 export class Role {
   @ApiProperty({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   id!: string;
 
-  @ApiProperty({ example: 'citizen', maxLength: 50 })
-  name!: string;
+  @ApiProperty({ enum: RoleName, example: RoleName.Resident })
+  name!: RoleName;
 }
 
 export class CreateRoleDto {
-  @ApiProperty({ example: 'citizen', maxLength: 50 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
-  name!: string;
+  @ApiProperty({ enum: RoleName, example: RoleName.Resident })
+  @IsEnum(RoleName)
+  name!: RoleName;
 }
 
 export class UpdateRoleDto extends PartialType(CreateRoleDto) {}
@@ -223,41 +222,27 @@ export class User {
   @ApiProperty({ example: 'asha@example.com', maxLength: 100 })
   email!: string;
 
-  @ApiProperty({ example: 'hashed-password-value', maxLength: 255 })
+  @ApiHideProperty()
   passwordHash!: string;
 
   @ApiPropertyOptional({ example: '+91-9876543210', maxLength: 20 })
   phone?: string;
 
-  @ApiProperty({ example: '11111111-1111-4111-8111-111111111111' })
-  roleId!: string;
+  @ApiProperty({ enum: RoleName, example: RoleName.Resident })
+  role!: RoleName;
 
   @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
-  officeId?: string;
+  communityId?: string;
+
+  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
+  apartmentId?: string;
+
+  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
+  towerId?: string;
 
   @ApiProperty({ example: '2026-05-03T09:30:00.000Z' })
   createdAt!: string;
 
-  @ApiPropertyOptional({ example: 'Road' })
-  department?: string;
-
-  @ApiPropertyOptional({ example: 'Active' })
-  status?: string;
-
-  @ApiPropertyOptional({ example: 'Just now' })
-  lastActive?: string;
-
-  @ApiPropertyOptional({ example: 'DH-001' })
-  employeeCode?: string;
-
-  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
-  reportsTo?: string;
-
-  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
-  headId?: string;
-
-  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
-  officerId?: string;
 }
 
 export class CreateUserDto {
@@ -272,11 +257,11 @@ export class CreateUserDto {
   @MaxLength(100)
   email!: string;
 
-  @ApiProperty({ example: 'hashed-password-value', maxLength: 255 })
+  @ApiProperty({ example: 'a-strong-development-password', minLength: 8, maxLength: 128 })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
-  passwordHash!: string;
+  @MaxLength(128)
+  password!: string;
 
   @ApiPropertyOptional({ example: '+91-9876543210', maxLength: 20 })
   @IsOptional()
@@ -284,49 +269,24 @@ export class CreateUserDto {
   @MaxLength(20)
   phone?: string;
 
-  @ApiProperty({ example: '11111111-1111-4111-8111-111111111111' })
-  @IsUUID('4')
-  roleId!: string;
+  @ApiProperty({ enum: RoleName, example: RoleName.Resident })
+  @IsEnum(RoleName)
+  role!: RoleName;
 
   @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   @IsOptional()
   @IsUUID('4')
-  officeId?: string;
-
-  @ApiPropertyOptional({ example: 'Road' })
-  @IsOptional()
-  @IsString()
-  department?: string;
-
-  @ApiPropertyOptional({ example: 'Active' })
-  @IsOptional()
-  @IsString()
-  status?: string;
-
-  @ApiPropertyOptional({ example: 'Just now' })
-  @IsOptional()
-  @IsString()
-  lastActive?: string;
-
-  @ApiPropertyOptional({ example: 'DH-001' })
-  @IsOptional()
-  @IsString()
-  employeeCode?: string;
+  communityId?: string;
 
   @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   @IsOptional()
-  @IsString()
-  reportsTo?: string;
+  @IsUUID('4')
+  apartmentId?: string;
 
   @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   @IsOptional()
-  @IsString()
-  headId?: string;
-
-  @ApiPropertyOptional({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
-  @IsOptional()
-  @IsString()
-  officerId?: string;
+  @IsUUID('4')
+  towerId?: string;
 }
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {}

@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiExtraModels,
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
@@ -24,18 +26,23 @@ import {
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
+import { hashSync } from 'bcryptjs';
+import { RoleName } from '../enums/roles.enum';
 import { apiResponse } from '../api-response';
 import type { ApiResponse } from '../api-response';
 import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 import { CrudService } from './crud.service';
 import { ResourceDefinition, serviceToken } from '../../data/urbanity.resources';
 
 export function createUrbanityController(resource: ResourceDefinition): Type {
   @ApiTags(resource.tag)
+  @ApiBearerAuth('bearerAuth')
   @ApiExtraModels(resource.entity)
   @ApiForbiddenResponse({
     description: 'Missing, invalid, or unauthorized role.',
   })
+  @Roles(...(resource.readRoles ?? []))
   @UseGuards(RolesGuard)
   @Controller(resource.path)
   class UrbanityResourceController {
@@ -53,7 +60,7 @@ export function createUrbanityController(resource: ResourceDefinition): Type {
       schema: responseSchema(resource.entity, true),
     })
     findAll(): ApiResponse<unknown[]> {
-      return apiResponse(this.service.findAll());
+      return apiResponse(this.sanitize(this.service.findAll()) as unknown[]);
     }
 
     @Get(':id')
@@ -67,7 +74,7 @@ export function createUrbanityController(resource: ResourceDefinition): Type {
     findById(
       @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     ): ApiResponse<unknown> {
-      return apiResponse(this.service.findById(id));
+      return apiResponse(this.sanitize(this.service.findById(id)));
     }
 
     @Post()
@@ -82,7 +89,9 @@ export function createUrbanityController(resource: ResourceDefinition): Type {
       @Body(new ValidationPipe({ expectedType: resource.createDto }))
       createDto: unknown,
     ): ApiResponse<unknown> {
-      return apiResponse(this.service.create(createDto));
+      return apiResponse(
+        this.sanitize(this.service.create(this.prepareInput(createDto))),
+      );
     }
 
     @Patch(':id')
@@ -103,7 +112,10 @@ export function createUrbanityController(resource: ResourceDefinition): Type {
       @Body(new ValidationPipe({ expectedType: resource.updateDto }))
       updateDto: unknown,
     ): ApiResponse<unknown> {
-      return apiResponse(this.service.update(id, updateDto));
+      return apiResponse(
+        this.sanitize(this.service.update(id, this.prepareInput(updateDto, this.service.findById(id))),
+        ),
+      );
     }
 
     @Delete(':id')
@@ -117,7 +129,48 @@ export function createUrbanityController(resource: ResourceDefinition): Type {
     delete(
       @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     ): ApiResponse<unknown> {
-      return apiResponse(this.service.delete(id));
+      return apiResponse(this.sanitize(this.service.delete(id)));
+    }
+
+    private sanitize(data: unknown): unknown {
+      if (resource.name !== 'users') return data;
+      const sanitizeUser = (user: Record<string, unknown>) => {
+        const { passwordHash: _passwordHash, ...safeUser } = user;
+        return safeUser;
+      };
+
+      return Array.isArray(data)
+        ? data.map(sanitizeUser)
+        : sanitizeUser(data as Record<string, unknown>);
+    }
+
+    private prepareInput(data: unknown, existing?: Record<string, unknown>): unknown {
+      if (resource.name !== 'users') return data;
+
+      const { password, ...userData } = data as Record<string, unknown>;
+      const prepared = typeof password === 'string'
+        ? { ...userData, passwordHash: hashSync(password, 10) }
+        : userData;
+      this.validateUserAssociations({ ...existing, ...prepared });
+      return prepared;
+    }
+
+    private validateUserAssociations(user: Record<string, unknown>): void {
+      const role = user.role as RoleName | undefined;
+      const has = (field: 'communityId' | 'towerId' | 'apartmentId') => Boolean(user[field]);
+
+      if (!role) throw new BadRequestException('A user role is required');
+      if (role === RoleName.SuperAdmin) {
+        if (has('communityId') || has('towerId') || has('apartmentId')) throw new BadRequestException('SUPER_ADMIN accounts cannot have community, tower, or apartment associations');
+        return;
+      }
+      if (role === RoleName.CommunityAdmin || role === RoleName.MaintenanceWorker) {
+        if (!has('communityId')) throw new BadRequestException(`${role} accounts require a community association`);
+        if (has('towerId') || has('apartmentId')) throw new BadRequestException(`${role} accounts cannot have tower or apartment associations`);
+        return;
+      }
+      if (role === RoleName.TowerRepresentative && (has('communityId') || has('apartmentId'))) throw new BadRequestException('TOWER_REPRESENTATIVE accounts use only a tower association');
+      if (role === RoleName.Resident && (has('communityId') || has('towerId'))) throw new BadRequestException('RESIDENT accounts use only an apartment association');
     }
   }
 

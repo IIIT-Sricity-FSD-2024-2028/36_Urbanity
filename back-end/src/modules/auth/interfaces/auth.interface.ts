@@ -1,3 +1,14 @@
 import { User } from '../../../data/schemas';
 
-export type AuthenticatedUser = Omit<User, 'passwordHash'>;
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  role: User['role'];
+}
+
+export type AuthenticationResponseUser = Omit<User, 'passwordHash'>;
+
+export interface AuthenticationResult {
+  accessToken: string;
+  user: AuthenticationResponseUser;
+}

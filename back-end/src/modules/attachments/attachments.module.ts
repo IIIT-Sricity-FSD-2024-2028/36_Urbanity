@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ComplaintsModule } from '../complaints/complaints.module';
 import { AttachmentsController } from './attachments.controller';
-import { attachmentsProviders } from './attachments.service';
+import { AttachmentsService } from './attachments.service';
 
 @Module({
+  imports: [ComplaintsModule],
   controllers: [AttachmentsController],
-  providers: attachmentsProviders,
+  providers: [AttachmentsService],
 })
 export class AttachmentsModule {}

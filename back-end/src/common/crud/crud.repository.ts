@@ -10,7 +10,7 @@ export class CrudRepository<T extends Identifiable> {
   private readonly items: T[];
 
   constructor(initialItems: T[] = []) {
-    this.items = [...initialItems];
+    this.items = initialItems.map((item) => ({ ...item }));
   }
 
   findAll(): T[] {

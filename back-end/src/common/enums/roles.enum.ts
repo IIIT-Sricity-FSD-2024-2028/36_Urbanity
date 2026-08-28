@@ -1,7 +1,7 @@
 export enum RoleName {
-  Admin = 'admin',
-  DepartmentHead = 'department-head',
-  DepartmentOfficer = 'department-officer',
-  FieldWorker = 'field-worker',
-  Citizen = 'citizen',
+  SuperAdmin = 'SUPER_ADMIN',
+  CommunityAdmin = 'COMMUNITY_ADMIN',
+  TowerRepresentative = 'TOWER_REPRESENTATIVE',
+  Resident = 'RESIDENT',
+  MaintenanceWorker = 'MAINTENANCE_WORKER',
 }

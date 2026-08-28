@@ -5,11 +5,12 @@ import { AppModule } from './app.module';
 import { appConfig } from './config/app.config';
 import { swaggerConfig } from './config/swagger.config';
 import { validationPipe } from './common/pipes/validation.pipe';
+import { configureHttpSecurity } from './config/security.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors(appConfig.cors);
+  configureHttpSecurity(app);
   app.useGlobalPipes(validationPipe);
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

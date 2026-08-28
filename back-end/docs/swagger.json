@@ -4,24 +4,7 @@
     "/": {
       "get": {
         "operationId": "AppController_getHealth",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "API health returned successfully."
@@ -35,24 +18,7 @@
     "/auth/login": {
       "post": {
         "operationId": "AuthController_login",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -64,11 +30,34 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "User authenticated successfully."
+          "201": {
+            "description": "JWT access token issued successfully."
+          },
+          "401": {
+            "description": "Invalid credentials."
           }
         },
-        "summary": "Authenticate a user by email, password, and role",
+        "summary": "Authenticate a user by email and password and receive a JWT access token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get the authenticated user context",
         "tags": [
           "auth"
         ]
@@ -76,77 +65,20 @@
     },
     "/users": {
       "get": {
-        "operationId": "UserController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "operationId": "UsersController_list",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "User records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/User"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "List all user records",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "post": {
-        "operationId": "UserController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "operationId": "UsersController_create",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -159,40 +91,17 @@
         },
         "responses": {
           "201": {
-            "description": "User created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "Create user",
         "tags": [
-          "users"
+          "Users"
         ]
       }
     },
     "/users/{id}": {
       "get": {
-        "operationId": "UserController_findById",
+        "operationId": "UsersController_get",
         "parameters": [
           {
             "name": "id",
@@ -200,62 +109,20 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid User id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "User not found."
+            "description": ""
           }
         },
-        "summary": "Get user by id",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "patch": {
-        "operationId": "UserController_patch",
+        "operationId": "UsersController_update",
         "parameters": [
           {
             "name": "id",
@@ -263,22 +130,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -294,41 +145,15 @@
         },
         "responses": {
           "200": {
-            "description": "User updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid User id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "User not found."
+            "description": ""
           }
         },
-        "summary": "Partially update user",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "delete": {
-        "operationId": "UserController_delete",
+        "operationId": "UsersController_delete",
         "parameters": [
           {
             "name": "id",
@@ -337,81 +162,689 @@
             "schema": {
               "type": "string"
             }
-          },
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/communities": {
+      "get": {
+        "operationId": "CommunityController_communities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
           {
-            "name": "role",
-            "in": "header",
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "post": {
+        "operationId": "CommunityController_createCommunity",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/communities/{id}": {
+      "get": {
+        "operationId": "CommunityController_community",
+        "parameters": [
+          {
+            "name": "id",
             "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
+            "in": "path",
             "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/User"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid User id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "User not found."
+            "description": ""
           }
         },
-        "summary": "Delete user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
-          "users"
+          "community hierarchy"
+        ]
+      },
+      "patch": {
+        "operationId": "CommunityController_updateCommunity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "delete": {
+        "operationId": "CommunityController_deleteCommunity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/towers": {
+      "get": {
+        "operationId": "CommunityController_towers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "post": {
+        "operationId": "CommunityController_createTower",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTowerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/towers/{id}": {
+      "get": {
+        "operationId": "CommunityController_tower",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "patch": {
+        "operationId": "CommunityController_updateTower",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTowerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "delete": {
+        "operationId": "CommunityController_deleteTower",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/floors": {
+      "get": {
+        "operationId": "CommunityController_floors",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "post": {
+        "operationId": "CommunityController_createFloor",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFloorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/floors/{id}": {
+      "get": {
+        "operationId": "CommunityController_floor",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "patch": {
+        "operationId": "CommunityController_updateFloor",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFloorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "delete": {
+        "operationId": "CommunityController_deleteFloor",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/apartments": {
+      "get": {
+        "operationId": "CommunityController_apartments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "post": {
+        "operationId": "CommunityController_createApartment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/apartments/{id}": {
+      "get": {
+        "operationId": "CommunityController_apartment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "patch": {
+        "operationId": "CommunityController_updateApartment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      },
+      "delete": {
+        "operationId": "CommunityController_deleteApartment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/users/{id}/resident-apartment": {
+      "patch": {
+        "operationId": "CommunityController_associateResident",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssociateApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/users/{id}/representative-tower": {
+      "patch": {
+        "operationId": "CommunityController_associateRepresentative",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssociateTowerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/users/me/hierarchy": {
+      "get": {
+        "operationId": "CommunityController_resolveOwnHierarchy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/users/{id}/resident-hierarchy": {
+      "get": {
+        "operationId": "CommunityController_resolveResidentHierarchy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
         ]
       }
     },
     "/roles": {
       "get": {
         "operationId": "RoleController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Role records returned successfully.",
@@ -439,6 +872,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "List all role records",
         "tags": [
           "roles"
@@ -446,24 +884,7 @@
       },
       "post": {
         "operationId": "RoleController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -501,6 +922,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Create role",
         "tags": [
           "roles"
@@ -517,22 +943,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -566,6 +976,11 @@
             "description": "Role not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get role by id",
         "tags": [
           "roles"
@@ -580,22 +995,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -639,6 +1038,11 @@
             "description": "Role not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Partially update role",
         "tags": [
           "roles"
@@ -653,22 +1057,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -702,6 +1090,11 @@
             "description": "Role not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Delete role",
         "tags": [
           "roles"
@@ -711,24 +1104,7 @@
     "/departments": {
       "get": {
         "operationId": "DepartmentController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Department records returned successfully.",
@@ -756,6 +1132,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "List all department records",
         "tags": [
           "departments"
@@ -763,24 +1144,7 @@
       },
       "post": {
         "operationId": "DepartmentController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -818,6 +1182,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Create department",
         "tags": [
           "departments"
@@ -834,22 +1203,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -883,6 +1236,11 @@
             "description": "Department not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get department by id",
         "tags": [
           "departments"
@@ -897,22 +1255,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -956,6 +1298,11 @@
             "description": "Department not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Partially update department",
         "tags": [
           "departments"
@@ -970,22 +1317,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1019,6 +1350,11 @@
             "description": "Department not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Delete department",
         "tags": [
           "departments"
@@ -1028,24 +1364,7 @@
     "/offices": {
       "get": {
         "operationId": "OfficeController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Office records returned successfully.",
@@ -1073,6 +1392,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "List all office records",
         "tags": [
           "offices"
@@ -1080,24 +1404,7 @@
       },
       "post": {
         "operationId": "OfficeController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1135,6 +1442,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Create office",
         "tags": [
           "offices"
@@ -1151,22 +1463,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1200,6 +1496,11 @@
             "description": "Office not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get office by id",
         "tags": [
           "offices"
@@ -1214,22 +1515,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1273,6 +1558,11 @@
             "description": "Office not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Partially update office",
         "tags": [
           "offices"
@@ -1287,22 +1577,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1336,33 +1610,176 @@
             "description": "Office not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Delete office",
         "tags": [
           "offices"
         ]
       }
     },
-    "/cities": {
+    "/workforce/workers": {
       "get": {
-        "operationId": "CityController_findAll",
+        "operationId": "WorkforceController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      },
+      "post": {
+        "operationId": "WorkforceController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      }
+    },
+    "/workforce/workers/me": {
+      "get": {
+        "operationId": "WorkforceController_findOwn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      }
+    },
+    "/workforce/workers/{id}": {
+      "get": {
+        "operationId": "WorkforceController_findById",
         "parameters": [
           {
-            "name": "role",
-            "in": "header",
+            "name": "id",
             "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
+            "in": "path",
             "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
+              "type": "string"
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      },
+      "patch": {
+        "operationId": "WorkforceController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      },
+      "delete": {
+        "operationId": "WorkforceController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "workforce"
+        ]
+      }
+    },
+    "/cities": {
+      "get": {
+        "operationId": "CityController_findAll",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "City records returned successfully.",
@@ -1390,6 +1807,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "List all city records",
         "tags": [
           "cities"
@@ -1397,24 +1819,7 @@
       },
       "post": {
         "operationId": "CityController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1452,6 +1857,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Create city",
         "tags": [
           "cities"
@@ -1468,22 +1878,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1517,6 +1911,11 @@
             "description": "City not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get city by id",
         "tags": [
           "cities"
@@ -1531,22 +1930,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1590,6 +1973,11 @@
             "description": "City not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Partially update city",
         "tags": [
           "cities"
@@ -1604,22 +1992,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1653,6 +2025,11 @@
             "description": "City not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Delete city",
         "tags": [
           "cities"
@@ -1662,24 +2039,7 @@
     "/areas": {
       "get": {
         "operationId": "AreaController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Area records returned successfully.",
@@ -1707,6 +2067,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "List all area records",
         "tags": [
           "areas"
@@ -1714,24 +2079,7 @@
       },
       "post": {
         "operationId": "AreaController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1769,6 +2117,11 @@
             "description": "Missing, invalid, or unauthorized role."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Create area",
         "tags": [
           "areas"
@@ -1785,22 +2138,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1834,6 +2171,11 @@
             "description": "Area not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get area by id",
         "tags": [
           "areas"
@@ -1848,22 +2190,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1907,6 +2233,11 @@
             "description": "Area not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Partially update area",
         "tags": [
           "areas"
@@ -1921,22 +2252,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -1970,6 +2285,11 @@
             "description": "Area not found."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Delete area",
         "tags": [
           "areas"
@@ -1978,115 +2298,45 @@
     },
     "/complaints": {
       "get": {
-        "operationId": "ComplaintController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "operationId": "ComplaintsController_findAll",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "Complaint records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Complaint"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "List all complaint records",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
           "complaints"
         ]
       },
       "post": {
-        "operationId": "ComplaintController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "operationId": "ComplaintsController_create",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateComplaintDto"
+                "$ref": "#/components/schemas/CreateCommunityComplaintDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Complaint created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Complaint"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "Create complaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
           "complaints"
         ]
@@ -2094,7 +2344,7 @@
     },
     "/complaints/{id}": {
       "get": {
-        "operationId": "ComplaintController_findById",
+        "operationId": "ComplaintsController_findById",
         "parameters": [
           {
             "name": "id",
@@ -2103,61 +2353,24 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Complaint returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Complaint"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint not found."
+            "description": ""
           }
         },
-        "summary": "Get complaint by id",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
           "complaints"
         ]
       },
       "patch": {
-        "operationId": "ComplaintController_patch",
+        "operationId": "ComplaintsController_update",
         "parameters": [
           {
             "name": "id",
@@ -2166,22 +2379,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
           }
         ],
         "requestBody": {
@@ -2189,48 +2386,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateComplaintDto"
+                "$ref": "#/components/schemas/UpdateCommunityComplaintDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Complaint updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Complaint"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint not found."
+            "description": ""
           }
         },
-        "summary": "Partially update complaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
           "complaints"
         ]
       },
       "delete": {
-        "operationId": "ComplaintController_delete",
+        "operationId": "ComplaintsController_delete",
         "parameters": [
           {
             "name": "id",
@@ -2239,130 +2415,33 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Complaint deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Complaint"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint not found."
+            "description": ""
           }
         },
-        "summary": "Delete complaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
           "complaints"
         ]
       }
     },
-    "/assignments": {
-      "get": {
-        "operationId": "AssignmentController_findAll",
+    "/complaints/{id}/status": {
+      "patch": {
+        "operationId": "ComplaintsController_transitionStatus",
         "parameters": [
           {
-            "name": "role",
-            "in": "header",
+            "name": "id",
             "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
+            "in": "path",
             "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Assignment records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Assignment"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "List all assignment records",
-        "tags": [
-          "assignments"
-        ]
-      },
-      "post": {
-        "operationId": "AssignmentController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
+              "type": "string"
             }
           }
         ],
@@ -2371,110 +2450,95 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAssignmentDto"
+                "$ref": "#/components/schemas/TransitionComplaintStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/complaints/{id}/eligible-workers": {
+      "get": {
+        "operationId": "ComplaintsController_eligibleWorkers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/complaints/{id}/assign": {
+      "post": {
+        "operationId": "ComplaintsController_assignWorker",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignWorkerDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Assignment created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Assignment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "Create assignment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
-          "assignments"
+          "complaints"
         ]
       }
     },
-    "/assignments/{id}": {
-      "get": {
-        "operationId": "AssignmentController_findById",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Assignment returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Assignment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Assignment id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Assignment not found."
-          }
-        },
-        "summary": "Get assignment by id",
-        "tags": [
-          "assignments"
-        ]
-      },
+    "/complaints/{id}/start": {
       "patch": {
-        "operationId": "AssignmentController_patch",
+        "operationId": "ComplaintsController_startWork",
         "parameters": [
           {
             "name": "id",
@@ -2482,22 +2546,6 @@
             "in": "path",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
             }
           }
         ],
@@ -2506,180 +2554,36 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAssignmentDto"
+                "$ref": "#/components/schemas/WorkerActionDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Assignment updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Assignment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Assignment id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Assignment not found."
+            "description": ""
           }
         },
-        "summary": "Partially update assignment",
-        "tags": [
-          "assignments"
-        ]
-      },
-      "delete": {
-        "operationId": "AssignmentController_delete",
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
+            "bearerAuth": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Assignment deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Assignment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Assignment id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Assignment not found."
-          }
-        },
-        "summary": "Delete assignment",
         "tags": [
-          "assignments"
+          "complaints"
         ]
       }
     },
-    "/complaint-updates": {
-      "get": {
-        "operationId": "ComplaintupdateController_findAll",
+    "/complaints/{id}/resolve": {
+      "patch": {
+        "operationId": "ComplaintsController_resolveWork",
         "parameters": [
           {
-            "name": "role",
-            "in": "header",
+            "name": "id",
             "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
+            "in": "path",
             "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Complaint update records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ComplaintUpdate"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "List all complaint update records",
-        "tags": [
-          "complaint-updates"
-        ]
-      },
-      "post": {
-        "operationId": "ComplaintupdateController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
+              "type": "string"
             }
           }
         ],
@@ -2688,367 +2592,169 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateComplaintUpdateDto"
+                "$ref": "#/components/schemas/WorkerActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/complaints/{id}/review": {
+      "post": {
+        "operationId": "ComplaintsController_submitReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplaintReviewDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Complaint update created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/ComplaintUpdate"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "Create complaint update",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
-          "complaint-updates"
+          "complaints"
+        ]
+      },
+      "get": {
+        "operationId": "ComplaintsController_findReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaints"
         ]
       }
     },
-    "/complaint-updates/{id}": {
-      "get": {
-        "operationId": "ComplaintupdateController_findById",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Complaint update returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/ComplaintUpdate"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint update id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint update not found."
-          }
-        },
-        "summary": "Get complaint update by id",
-        "tags": [
-          "complaint-updates"
-        ]
-      },
-      "patch": {
-        "operationId": "ComplaintupdateController_patch",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateComplaintUpdateDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Complaint update updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/ComplaintUpdate"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint update id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint update not found."
-          }
-        },
-        "summary": "Partially update complaint update",
-        "tags": [
-          "complaint-updates"
-        ]
-      },
-      "delete": {
-        "operationId": "ComplaintupdateController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Complaint update deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/ComplaintUpdate"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Complaint update id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Complaint update not found."
-          }
-        },
-        "summary": "Delete complaint update",
-        "tags": [
-          "complaint-updates"
-        ]
-      }
-    },
-    "/attachments": {
-      "get": {
-        "operationId": "AttachmentController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Attachment records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Attachment"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "List all attachment records",
-        "tags": [
-          "attachments"
-        ]
-      },
+    "/complaints/{complaintId}/attachments": {
       "post": {
-        "operationId": "AttachmentController_create",
+        "operationId": "AttachmentsController_upload",
         "parameters": [
           {
-            "name": "role",
-            "in": "header",
+            "name": "complaintId",
             "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
+            "in": "path",
             "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
+              "type": "string"
             }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAttachmentDto"
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Attachment created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Attachment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
+            "description": ""
           }
         },
-        "summary": "Create attachment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "tags": [
-          "attachments"
+          "complaint attachments"
+        ]
+      },
+      "get": {
+        "operationId": "AttachmentsController_list",
+        "parameters": [
+          {
+            "name": "complaintId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint attachments"
         ]
       }
     },
-    "/attachments/{id}": {
+    "/complaints/{complaintId}/attachments/{attachmentId}": {
       "get": {
-        "operationId": "AttachmentController_findById",
+        "operationId": "AttachmentsController_retrieve",
         "parameters": [
           {
-            "name": "id",
+            "name": "complaintId",
             "required": true,
             "in": "path",
             "schema": {
@@ -3056,854 +2762,43 @@
             }
           },
           {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Attachment returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Attachment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Attachment id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Attachment not found."
-          }
-        },
-        "summary": "Get attachment by id",
-        "tags": [
-          "attachments"
-        ]
-      },
-      "patch": {
-        "operationId": "AttachmentController_patch",
-        "parameters": [
-          {
-            "name": "id",
+            "name": "attachmentId",
             "required": true,
             "in": "path",
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAttachmentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Attachment updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Attachment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Attachment id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Attachment not found."
-          }
-        },
-        "summary": "Partially update attachment",
-        "tags": [
-          "attachments"
-        ]
-      },
-      "delete": {
-        "operationId": "AttachmentController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Attachment deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Attachment"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Attachment id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Attachment not found."
+            "description": ""
           }
         },
-        "summary": "Delete attachment",
-        "tags": [
-          "attachments"
-        ]
-      }
-    },
-    "/supports": {
-      "get": {
-        "operationId": "SupportController_findAll",
-        "parameters": [
+        "security": [
           {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
+            "bearerAuth": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Support records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Support"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "List all support records",
         "tags": [
-          "supports"
-        ]
-      },
-      "post": {
-        "operationId": "SupportController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSupportDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Support created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Support"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "Create support",
-        "tags": [
-          "supports"
-        ]
-      }
-    },
-    "/supports/{id}": {
-      "get": {
-        "operationId": "SupportController_findById",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Support returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Support"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Support id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Support not found."
-          }
-        },
-        "summary": "Get support by id",
-        "tags": [
-          "supports"
-        ]
-      },
-      "patch": {
-        "operationId": "SupportController_patch",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSupportDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Support updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Support"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Support id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Support not found."
-          }
-        },
-        "summary": "Partially update support",
-        "tags": [
-          "supports"
-        ]
-      },
-      "delete": {
-        "operationId": "SupportController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Support deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Support"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Support id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Support not found."
-          }
-        },
-        "summary": "Delete support",
-        "tags": [
-          "supports"
-        ]
-      }
-    },
-    "/feedback": {
-      "get": {
-        "operationId": "FeedbackController_findAll",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feedback records returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Feedback"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "List all feedback records",
-        "tags": [
-          "feedback"
-        ]
-      },
-      "post": {
-        "operationId": "FeedbackController_create",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateFeedbackDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Feedback created successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Feedback"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          }
-        },
-        "summary": "Create feedback",
-        "tags": [
-          "feedback"
-        ]
-      }
-    },
-    "/feedback/{id}": {
-      "get": {
-        "operationId": "FeedbackController_findById",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feedback returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Feedback"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Feedback id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Feedback not found."
-          }
-        },
-        "summary": "Get feedback by id",
-        "tags": [
-          "feedback"
-        ]
-      },
-      "patch": {
-        "operationId": "FeedbackController_patch",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateFeedbackDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Feedback updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Feedback"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Feedback id or request body."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Feedback not found."
-          }
-        },
-        "summary": "Partially update feedback",
-        "tags": [
-          "feedback"
-        ]
-      },
-      "delete": {
-        "operationId": "FeedbackController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feedback deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Feedback"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Feedback id."
-          },
-          "403": {
-            "description": "Missing, invalid, or unauthorized role."
-          },
-          "404": {
-            "description": "Feedback not found."
-          }
-        },
-        "summary": "Delete feedback",
-        "tags": [
-          "feedback"
+          "complaint attachments"
         ]
       }
     },
     "/dashboard/summary": {
       "get": {
         "operationId": "DashboardController_getSummary",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Dashboard summary returned successfully."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get dashboard summary metrics",
         "tags": [
           "dashboard"
@@ -3913,29 +2808,17 @@
     "/reports/overview": {
       "get": {
         "operationId": "ReportsController_getOverview",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "required": true,
-            "description": "RBAC actor role. Admin has full access; other actors have read-only GET access.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "admin",
-                "department-head",
-                "department-officer",
-                "field-worker",
-                "citizen"
-              ]
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Report overview returned successfully."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "summary": "Get Urbanity report overview",
         "tags": [
           "reports"
@@ -3945,13 +2828,20 @@
   },
   "info": {
     "title": "Urbanity API",
-    "description": "In-memory NestJS CRUD API with role-based access control.",
+    "description": "In-memory NestJS CRUD API with JWT-backed role-based access control.",
     "version": "1.0.0",
     "contact": {}
   },
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
     "schemas": {
       "LoginDto": {
         "type": "object",
@@ -3963,93 +2853,11 @@
           "password": {
             "type": "string",
             "example": "arjun123"
-          },
-          "roleId": {
-            "type": "string",
-            "example": "11111111-1111-4111-8111-111111111111"
           }
         },
         "required": [
           "email",
-          "password",
-          "roleId"
-        ]
-      },
-      "User": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "name": {
-            "type": "string",
-            "example": "Asha Rao",
-            "maxLength": 100
-          },
-          "email": {
-            "type": "string",
-            "example": "asha@example.com",
-            "maxLength": 100
-          },
-          "passwordHash": {
-            "type": "string",
-            "example": "hashed-password-value",
-            "maxLength": 255
-          },
-          "phone": {
-            "type": "string",
-            "example": "+91-9876543210",
-            "maxLength": 20
-          },
-          "roleId": {
-            "type": "string",
-            "example": "11111111-1111-4111-8111-111111111111"
-          },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "createdAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "status": {
-            "type": "string",
-            "example": "Active"
-          },
-          "lastActive": {
-            "type": "string",
-            "example": "Just now"
-          },
-          "employeeCode": {
-            "type": "string",
-            "example": "DH-001"
-          },
-          "reportsTo": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "headId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "email",
-          "passwordHash",
-          "roleId",
-          "createdAt"
+          "password"
         ]
       },
       "CreateUserDto": {
@@ -4065,49 +2873,37 @@
             "example": "asha@example.com",
             "maxLength": 100
           },
-          "passwordHash": {
+          "password": {
             "type": "string",
-            "example": "hashed-password-value",
-            "maxLength": 255
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
           },
           "phone": {
             "type": "string",
             "example": "+91-9876543210",
             "maxLength": 20
           },
-          "roleId": {
+          "role": {
             "type": "string",
-            "example": "11111111-1111-4111-8111-111111111111"
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
           },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "status": {
-            "type": "string",
-            "example": "Active"
-          },
-          "lastActive": {
-            "type": "string",
-            "example": "Just now"
-          },
-          "employeeCode": {
-            "type": "string",
-            "example": "DH-001"
-          },
-          "reportsTo": {
+          "communityId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           },
-          "headId": {
+          "apartmentId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           },
-          "officerId": {
+          "towerId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           }
@@ -4115,8 +2911,8 @@
         "required": [
           "name",
           "email",
-          "passwordHash",
-          "roleId"
+          "password",
+          "role"
         ]
       },
       "UpdateUserDto": {
@@ -4132,53 +2928,200 @@
             "example": "asha@example.com",
             "maxLength": 100
           },
-          "passwordHash": {
+          "password": {
             "type": "string",
-            "example": "hashed-password-value",
-            "maxLength": 255
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
           },
           "phone": {
             "type": "string",
             "example": "+91-9876543210",
             "maxLength": 20
           },
-          "roleId": {
+          "role": {
             "type": "string",
-            "example": "11111111-1111-4111-8111-111111111111"
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
           },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "status": {
-            "type": "string",
-            "example": "Active"
-          },
-          "lastActive": {
-            "type": "string",
-            "example": "Just now"
-          },
-          "employeeCode": {
-            "type": "string",
-            "example": "DH-001"
-          },
-          "reportsTo": {
+          "communityId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           },
-          "headId": {
+          "apartmentId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           },
-          "officerId": {
+          "towerId": {
             "type": "string",
             "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
           }
         }
+      },
+      "CreateCommunityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "address"
+        ]
+      },
+      "UpdateCommunityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTowerDto": {
+        "type": "object",
+        "properties": {
+          "communityId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "communityId",
+          "name",
+          "code"
+        ]
+      },
+      "UpdateTowerDto": {
+        "type": "object",
+        "properties": {
+          "communityId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateFloorDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "towerId",
+          "floorNumber",
+          "label"
+        ]
+      },
+      "UpdateFloorDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "floorId": {
+            "type": "string"
+          },
+          "apartmentNumber": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "floorId",
+          "apartmentNumber",
+          "label"
+        ]
+      },
+      "UpdateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "floorId": {
+            "type": "string"
+          },
+          "apartmentNumber": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "AssociateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "apartmentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "apartmentId"
+        ]
+      },
+      "AssociateTowerDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "towerId"
+        ]
       },
       "Role": {
         "type": "object",
@@ -4189,8 +3132,14 @@
           },
           "name": {
             "type": "string",
-            "example": "citizen",
-            "maxLength": 50
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
           }
         },
         "required": [
@@ -4203,8 +3152,14 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "citizen",
-            "maxLength": 50
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
           }
         },
         "required": [
@@ -4216,8 +3171,14 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "citizen",
-            "maxLength": 50
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
           }
         }
       },
@@ -4420,6 +3381,70 @@
           }
         }
       },
+      "CreateWorkerProfileDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "specialization": {
+            "type": "string",
+            "enum": [
+              "PLUMBING",
+              "ELECTRICAL",
+              "CARPENTRY",
+              "HVAC",
+              "LIFT_MAINTENANCE",
+              "CLEANING",
+              "GENERAL_MAINTENANCE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "BUSY",
+              "ON_LEAVE",
+              "INACTIVE"
+            ],
+            "default": "AVAILABLE"
+          }
+        },
+        "required": [
+          "userId",
+          "specialization"
+        ]
+      },
+      "UpdateWorkerProfileDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "specialization": {
+            "type": "string",
+            "enum": [
+              "PLUMBING",
+              "ELECTRICAL",
+              "CARPENTRY",
+              "HVAC",
+              "LIFT_MAINTENANCE",
+              "CLEANING",
+              "GENERAL_MAINTENANCE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "BUSY",
+              "ON_LEAVE",
+              "INACTIVE"
+            ],
+            "default": "AVAILABLE"
+          }
+        }
+      },
       "City": {
         "type": "object",
         "properties": {
@@ -4544,1002 +3569,113 @@
           }
         }
       },
-      "Complaint": {
+      "CreateCommunityComplaintDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "citizenId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "departmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "areaId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "title": {
-            "type": "string",
-            "example": "Streetlight not working",
-            "maxLength": 200
-          },
-          "description": {
-            "type": "string",
-            "example": "The streetlight near park gate is out."
-          },
-          "status": {
+          "type": {
             "type": "string",
             "enum": [
-              "Pending",
-              "In Progress",
-              "Resolved",
-              "Closed"
-            ],
-            "example": "Pending"
+              "APARTMENT",
+              "TOWER",
+              "COMMUNITY"
+            ]
           },
-          "createdAt": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "requiredWorkType": {
             "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+            "enum": [
+              "PLUMBING",
+              "ELECTRICAL",
+              "CARPENTRY",
+              "HVAC",
+              "LIFT_MAINTENANCE",
+              "CLEANING",
+              "GENERAL_MAINTENANCE"
+            ]
           },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
+          "apartmentId": {
+            "type": "string"
           },
-          "category": {
-            "type": "string",
-            "example": "Roads"
+          "towerId": {
+            "type": "string"
           },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "reportedBy": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "reportedByEmail": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "upvotes": {
-            "type": "number",
-            "example": 3
-          },
-          "upvotedBy": {
-            "example": [
-              "id:user-id"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "media": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "resolutionMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "date": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "feedback": {
-            "type": "object",
-            "example": {
-              "rating": 5,
-              "comments": "Great work."
-            }
-          },
-          "feedbackSubmittedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+          "communityId": {
+            "type": "string"
           }
         },
         "required": [
-          "id",
+          "type",
           "title",
-          "status",
-          "createdAt"
+          "description",
+          "requiredWorkType"
         ]
       },
-      "CreateComplaintDto": {
+      "UpdateCommunityComplaintDto": {
         "type": "object",
         "properties": {
-          "citizenId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "departmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "areaId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
           "title": {
-            "type": "string",
-            "example": "Streetlight not working",
-            "maxLength": 200
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "example": "The streetlight near park gate is out."
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "Pending",
-              "In Progress",
-              "Resolved",
-              "Closed"
-            ],
-            "example": "Pending"
-          },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
-          },
-          "category": {
-            "type": "string",
-            "example": "Roads"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "reportedBy": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "reportedByEmail": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "upvotes": {
-            "type": "number",
-            "example": 3
-          },
-          "upvotedBy": {
-            "example": [
-              "id:user-id"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "media": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "resolutionMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "date": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "feedback": {
-            "type": "object",
-            "example": {
-              "rating": 5,
-              "comments": "Great work."
-            }
-          },
-          "feedbackSubmittedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          }
-        },
-        "required": [
-          "title"
-        ]
-      },
-      "UpdateComplaintDto": {
-        "type": "object",
-        "properties": {
-          "citizenId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "departmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "areaId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "title": {
-            "type": "string",
-            "example": "Streetlight not working",
-            "maxLength": 200
-          },
-          "description": {
-            "type": "string",
-            "example": "The streetlight near park gate is out."
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "Pending",
-              "In Progress",
-              "Resolved",
-              "Closed"
-            ],
-            "example": "Pending"
-          },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
-          },
-          "category": {
-            "type": "string",
-            "example": "Roads"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "reportedBy": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "reportedByEmail": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "upvotes": {
-            "type": "number",
-            "example": 3
-          },
-          "upvotedBy": {
-            "example": [
-              "id:user-id"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "media": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "resolutionMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "date": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "feedback": {
-            "type": "object",
-            "example": {
-              "rating": 5,
-              "comments": "Great work."
-            }
-          },
-          "feedbackSubmittedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+            "type": "string"
           }
         }
       },
-      "Assignment": {
+      "TransitionComplaintStatusDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "workerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          },
-          "assignee": {
-            "type": "string",
-            "example": "Ravi Verma"
-          },
-          "assigneeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officer": {
-            "type": "string",
-            "example": "Priya Sharma"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
           "status": {
             "type": "string",
-            "example": "Assigned"
-          },
-          "priority": {
-            "type": "string",
-            "example": "Medium"
-          },
-          "dueDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "notes": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "proofMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "verifiedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          },
-          "issueDescription": {
-            "type": "string",
-            "example": "Streetlight not working"
-          },
-          "category": {
-            "type": "string",
-            "example": "Roads"
-          },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
-          },
-          "assignedDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "details": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "citizenName": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "citizenContact": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "officerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "headId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "remarks": {
-            "type": "string",
-            "example": "Work completed on site."
-          },
-          "workDetails": {
-            "type": "string",
-            "example": "Repaired the damaged road patch."
-          },
-          "materials": {
-            "type": "string",
-            "example": "Asphalt mix"
-          },
-          "completedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+            "enum": [
+              "SUBMITTED",
+              "UNDER_REVIEW",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "RESOLVED",
+              "REVIEWED",
+              "CLOSED"
+            ]
           }
         },
         "required": [
-          "id",
-          "complaintId",
-          "assignedBy",
-          "workerId",
-          "assignedAt"
+          "status"
         ]
       },
-      "CreateAssignmentDto": {
+      "AssignWorkerDto": {
         "type": "object",
         "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
           "workerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignee": {
-            "type": "string",
-            "example": "Ravi Verma"
-          },
-          "assigneeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officer": {
-            "type": "string",
-            "example": "Priya Sharma"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "status": {
-            "type": "string",
-            "example": "Assigned"
-          },
-          "priority": {
-            "type": "string",
-            "example": "Medium"
-          },
-          "dueDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "notes": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "proofMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "verifiedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          },
-          "issueDescription": {
-            "type": "string",
-            "example": "Streetlight not working"
-          },
-          "category": {
-            "type": "string",
-            "example": "Roads"
-          },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
-          },
-          "assignedDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "details": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "citizenName": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "citizenContact": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "officerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "headId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "remarks": {
-            "type": "string",
-            "example": "Work completed on site."
-          },
-          "workDetails": {
-            "type": "string",
-            "example": "Repaired the damaged road patch."
-          },
-          "materials": {
-            "type": "string",
-            "example": "Asphalt mix"
-          },
-          "completedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+            "type": "string"
           }
         },
         "required": [
-          "complaintId",
-          "assignedBy",
           "workerId"
         ]
       },
-      "UpdateAssignmentDto": {
+      "WorkerActionDto": {
         "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "workerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "assignee": {
-            "type": "string",
-            "example": "Ravi Verma"
-          },
-          "assigneeId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "officer": {
-            "type": "string",
-            "example": "Priya Sharma"
-          },
-          "department": {
-            "type": "string",
-            "example": "Road"
-          },
-          "status": {
-            "type": "string",
-            "example": "Assigned"
-          },
-          "priority": {
-            "type": "string",
-            "example": "Medium"
-          },
-          "dueDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "notes": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "proofMedia": {
-            "example": [],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "verifiedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          },
-          "issueDescription": {
-            "type": "string",
-            "example": "Streetlight not working"
-          },
-          "category": {
-            "type": "string",
-            "example": "Roads"
-          },
-          "location": {
-            "type": "string",
-            "example": "Oak Street"
-          },
-          "assignedDate": {
-            "type": "string",
-            "example": "2026-05-03"
-          },
-          "details": {
-            "type": "string",
-            "example": "Inspect and resolve the issue."
-          },
-          "citizenName": {
-            "type": "string",
-            "example": "Anita Rao"
-          },
-          "citizenContact": {
-            "type": "string",
-            "example": "anita.rao@urbanity.gov"
-          },
-          "officerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "headId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "remarks": {
-            "type": "string",
-            "example": "Work completed on site."
-          },
-          "workDetails": {
-            "type": "string",
-            "example": "Repaired the damaged road patch."
-          },
-          "materials": {
-            "type": "string",
-            "example": "Asphalt mix"
-          },
-          "completedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          }
-        }
+        "properties": {}
       },
-      "ComplaintUpdate": {
+      "CreateComplaintReviewDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "updatedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateMessage": {
-            "type": "string",
-            "example": "Inspection completed by field worker."
-          },
-          "updateTime": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "complaintId",
-          "updateNo",
-          "updatedBy",
-          "updateTime"
-        ]
-      },
-      "CreateComplaintUpdateDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "updatedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateMessage": {
-            "type": "string",
-            "example": "Inspection completed by field worker."
-          }
-        },
-        "required": [
-          "complaintId",
-          "updateNo",
-          "updatedBy"
-        ]
-      },
-      "UpdateComplaintUpdateDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "updatedBy": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "updateMessage": {
-            "type": "string",
-            "example": "Inspection completed by field worker."
-          }
-        }
-      },
-      "Attachment": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "attachmentNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "fileUrl": {
-            "type": "string",
-            "example": "https://example.com/uploads/photo.jpg"
-          },
-          "uploadedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "complaintId",
-          "attachmentNo",
-          "userId",
-          "uploadedAt"
-        ]
-      },
-      "CreateAttachmentDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "attachmentNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "fileUrl": {
-            "type": "string",
-            "example": "https://example.com/uploads/photo.jpg"
-          }
-        },
-        "required": [
-          "complaintId",
-          "attachmentNo",
-          "userId"
-        ]
-      },
-      "UpdateAttachmentDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "attachmentNo": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "fileUrl": {
-            "type": "string",
-            "example": "https://example.com/uploads/photo.jpg"
-          }
-        }
-      },
-      "Support": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "supportedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "complaintId",
-          "userId",
-          "supportedAt"
-        ]
-      },
-      "CreateSupportDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          }
-        },
-        "required": [
-          "complaintId",
-          "userId"
-        ]
-      },
-      "UpdateSupportDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          }
-        }
-      },
-      "Feedback": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
           "rating": {
             "type": "number",
-            "example": 5,
             "minimum": 1,
             "maximum": 5
           },
-          "comments": {
-            "type": "string",
-            "example": "The issue was resolved quickly."
-          },
-          "submittedAt": {
-            "type": "string",
-            "example": "2026-05-03T09:30:00.000Z"
+          "feedback": {
+            "type": "string"
           }
         },
         "required": [
-          "id",
-          "complaintId",
-          "userId",
-          "rating",
-          "submittedAt"
-        ]
-      },
-      "CreateFeedbackDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "rating": {
-            "type": "number",
-            "example": 5,
-            "minimum": 1,
-            "maximum": 5
-          },
-          "comments": {
-            "type": "string",
-            "example": "The issue was resolved quickly."
-          }
-        },
-        "required": [
-          "complaintId",
-          "userId",
           "rating"
         ]
-      },
-      "UpdateFeedbackDto": {
-        "type": "object",
-        "properties": {
-          "complaintId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "userId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "rating": {
-            "type": "number",
-            "example": 5,
-            "minimum": 1,
-            "maximum": 5
-          },
-          "comments": {
-            "type": "string",
-            "example": "The issue was resolved quickly."
-          }
-        }
       }
     }
   }
