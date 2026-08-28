@@ -1,34 +1,14 @@
 const ADMIN_MODULES = [
   "dashboard",
   "system-issues",
-  "escalated-issues",
   "users-roles",
-  "system-settings",
   "activity-monitor",
   "profile",
 ];
 
-const SUPER_USER_PERMISSIONS = ADMIN_MODULES.reduce((acc, moduleName) => {
-  acc[moduleName] = ["create", "read", "update", "delete"];
-  return acc;
-}, {});
-
 const ADMIN_PAGE_STATE_KEY = "urbanity.admin.lastPage";
-
-function getRoleContext() {
-  const stored = sessionStorage.getItem("urbanityRoleContext");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (error) {
-      console.error("Invalid role context found.", error);
-    }
-  }
-
-  return null;
-}
-
-const roleContext = getRoleContext() || {};
+let authenticatedAdmin = false;
+let authenticatedAdminUser = null;
 
 function showAdminToast(message, type = "info") {
   if (window.UIFeedback?.toast) {
@@ -52,17 +32,7 @@ function showAdminDialog({ title, message, confirmText, cancelText, inputValue }
 }
 
 function getCurrentSessionUser() {
-  const stored = sessionStorage.getItem("urbanityCurrentUser");
-  if (!stored) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(stored);
-  } catch (error) {
-    console.error("Invalid current user context found.", error);
-    return null;
-  }
+  return authenticatedAdminUser || window.UrbanityApi?.getStoredUser() || null;
 }
 
 function applyCurrentUserToAdminUI() {
@@ -71,7 +41,8 @@ function applyCurrentUserToAdminUI() {
     return;
   }
 
-  const initials = (currentUser.name || "A")
+  const displayName = currentUser.name || currentUser.email?.split("@")[0] || "Community Admin";
+  const initials = displayName
     .split(" ")
     .map((part) => part.charAt(0))
     .join("")
@@ -82,8 +53,8 @@ function applyCurrentUserToAdminUI() {
   const headerEmail = document.querySelector(".user-email");
   const headerAvatar = document.querySelector(".user-avatar");
 
-  if (headerName) headerName.textContent = currentUser.name || "Admin User";
-  if (headerEmail) headerEmail.textContent = currentUser.email || "admin@urbanity.gov";
+  if (headerName) headerName.textContent = displayName;
+  if (headerEmail) headerEmail.textContent = currentUser.email || "";
   if (headerAvatar) headerAvatar.textContent = initials;
 
   const profileName = document.getElementById("adminProfileName");
@@ -91,26 +62,19 @@ function applyCurrentUserToAdminUI() {
   const infoEmail = document.getElementById("adminInfoEmail");
   const profileAvatar = document.getElementById("adminProfileAvatar");
 
-  if (profileName) profileName.textContent = currentUser.name || "Admin User";
-  if (infoName) infoName.textContent = currentUser.name || "Admin User";
-  if (infoEmail) infoEmail.textContent = currentUser.email || "admin@urbanity.gov";
+  if (profileName) profileName.textContent = displayName;
+  if (infoName) infoName.textContent = displayName;
+  if (infoEmail) infoEmail.textContent = currentUser.email || "";
   if (profileAvatar) profileAvatar.textContent = initials;
-}
 
-if (roleContext.role !== "super_user_admin") {
-  showAdminToast("Access denied: This portal is only for Admin. Redirecting to sign in.", "error");
-  window.setTimeout(() => {
-    window.location.href = "../Authentication/auth.html";
-  }, 900);
+  const profilePage = document.getElementById("page-profile");
+  if (profilePage) {
+    profilePage.innerHTML = `<div class="page-header"><h1 class="page-title">My Profile</h1><p class="page-description">Authenticated Community Admin account details.</p></div><section class="card"><div class="card-content"><div class="flex items-center gap-4"><div class="avatar-large" id="adminProfileAvatar">${hierarchyEscape(initials)}</div><div><h2 class="text-xl font-semibold" id="adminProfileName">${hierarchyEscape(displayName)}</h2><p class="text-gray-500" id="adminInfoEmail">${hierarchyEscape(currentUser.email || "Not available")}</p><p class="text-sm text-gray-500">${hierarchyEscape(complaintLabel(currentUser.role || "COMMUNITY_ADMIN"))}</p></div></div></div></section>`;
+  }
 }
-
-applyCurrentUserToAdminUI();
 
 function hasPermission(moduleName, action) {
-  const permissions = roleContext.permissions || {};
-  const wildcard = permissions["*"] || [];
-  const moduleAccess = permissions[moduleName] || [];
-  return wildcard.includes(action) || moduleAccess.includes(action);
+  return authenticatedAdmin && ADMIN_MODULES.includes(moduleName) && Boolean(action);
 }
 
 function persistAdminPage(page) {
@@ -159,6 +123,7 @@ function navigateTo(page, evt) {
   }
 
   persistAdminPage(page);
+  if (page === "dashboard" || page === "activity-monitor") refreshAdminAnalytics();
 }
 
 // Tab Switching
@@ -227,11 +192,7 @@ function closeDropdown() {
 }
 
 function signOut() {
-  sessionStorage.removeItem("urbanityRoleContext");
-  sessionStorage.removeItem("urbanityRole");
-  sessionStorage.removeItem("urbanityRoleLabel");
-  sessionStorage.removeItem("urbanityCurrentUser");
-  window.location.href = "../Landing Page/landingpage.html";
+  window.UrbanityApi.logout();
 }
 
 document.querySelector(".signout-btn")?.addEventListener("click", signOut);
@@ -240,6 +201,414 @@ document.querySelector(".dropdown-signout")?.addEventListener("click", signOut);
 const ADMIN_STORE_KEY = "urbanityAdminCrudData";
 const ADMIN_ESCALATION_RULES_KEY = "urbanity.admin.escalationRules";
 const ADMIN_TECHNICAL_ISSUES_KEY = "urbanity.admin.technicalIssues";
+const hierarchyState = { communities: [], towers: [], floors: [], apartments: [] };
+const userManagementState = { users: [] };
+const workforceManagementState = { workers: [] };
+const complaintManagementState = { complaints: [], loaded: false, filter: { type: "", status: "", workType: "" } };
+let activeManagedComplaintModal = null;
+let activeManagedAttachmentPreview = null;
+const managedAttachmentBlobUrls = new Set();
+const managedAssignmentState = { assigning: false, requestId: 0 };
+const managedLifecycleState = { updating: false, requestId: 0 };
+const managedReviewState = { requestId: 0 };
+const adminAnalyticsState = { loading: false };
+const WORKER_SPECIALIZATIONS = ["PLUMBING", "ELECTRICAL", "CARPENTRY", "HVAC", "LIFT_MAINTENANCE", "CLEANING", "GENERAL_MAINTENANCE"];
+const ADMIN_MANAGED_WORKER_STATUSES = ["AVAILABLE", "ON_LEAVE", "INACTIVE"];
+
+const hierarchyEscape = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+const analyticsCount = (items, field, value) => items.filter((item) => item[field] === value).length;
+const analyticsCard = (label, value) => `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;"><div class="text-sm" style="color:#6b7280;">${hierarchyEscape(label)}</div><div style="font-size:24px;font-weight:700;color:#111827;margin-top:4px;">${value}</div></div>`;
+
+function renderAdminAnalyticsLoading() {
+  const dashboard = document.getElementById("page-dashboard");
+  if (dashboard) dashboard.innerHTML = '<div class="page-header"><h1 class="page-title">Community Dashboard</h1><p class="page-description">Loading authenticated community data...</p></div>';
+}
+
+function renderAdminAnalytics(data, unavailable = []) {
+  const complaints = data.complaints || [], workers = data.workers || [], communities = data.communities || [], towers = data.towers || [], floors = data.floors || [], apartments = data.apartments || [], users = data.users || [];
+  const status = (value) => analyticsCount(complaints, "status", value), type = (value) => analyticsCount(complaints, "type", value), workerStatus = (value) => analyticsCount(workers, "status", value);
+  const totalCompleted = workers.reduce((sum, worker) => sum + Number(worker.completedWorkCount || 0), 0);
+  const averageRating = workers.length ? (workers.reduce((sum, worker) => sum + Number(worker.rating || 0), 0) / workers.length).toFixed(2) : "0.00";
+  const statusCards = ["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REVIEWED", "CLOSED"].map((value) => analyticsCard(complaintLabel(value), status(value))).join("");
+  const workTypeCards = [...new Set(complaints.map((item) => item.requiredWorkType).filter(Boolean))].map((value) => analyticsCard(`${complaintLabel(value)} Complaints`, analyticsCount(complaints, "requiredWorkType", value))).join("");
+  const warning = unavailable.length ? `<p class="text-sm" style="color:#b45309;margin-bottom:16px;">Some metrics are unavailable: ${hierarchyEscape(unavailable.join(", "))}.</p>` : "";
+  const recent = [...complaints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+  const dashboard = document.getElementById("page-dashboard");
+  if (dashboard) dashboard.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Dashboard</h1><p class="page-description">Authenticated apartment-community complaint and maintenance overview.</p></div><button class="btn btn-outline" id="refreshCommunityDashboard">Refresh</button></div>${warning}<div class="stats-grid">${analyticsCard("Communities", communities.length)}${analyticsCard("Apartments", apartments.length)}${analyticsCard("Total Complaints", complaints.length)}${analyticsCard("Available Workers", workerStatus("AVAILABLE"))}</div><div class="grid-3" style="grid-template-columns:2fr 1fr;margin:24px 0;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Status</h3></div><div class="card-content"><div class="grid-4">${statusCards}</div></div></section><section class="card"><div class="card-header"><h3 class="card-title">Community Structure</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Towers", towers.length)}${analyticsCard("Floors", floors.length)}${analyticsCard("Apartments", apartments.length)}</div></section></div><div class="grid-3" style="margin-bottom:24px;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Types</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Apartment Complaints", type("APARTMENT"))}${analyticsCard("Tower Complaints", type("TOWER"))}${analyticsCard("Community Complaints", type("COMMUNITY"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Maintenance Workforce</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Available", workerStatus("AVAILABLE"))}${analyticsCard("Busy", workerStatus("BUSY"))}${analyticsCard("On Leave", workerStatus("ON_LEAVE"))}${analyticsCard("Inactive", workerStatus("INACTIVE"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Users & Performance</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Residents", analyticsCount(users, "role", "RESIDENT"))}${analyticsCard("Tower Representatives", analyticsCount(users, "role", "TOWER_REPRESENTATIVE"))}${analyticsCard("Maintenance Workers", analyticsCount(users, "role", "MAINTENANCE_WORKER"))}${analyticsCard("Completed Works", totalCompleted)}${analyticsCard("Average Worker Rating", averageRating)}</div></section></div><section class="card"><div class="card-header"><h3 class="card-title">Recent Complaints</h3></div><div class="card-content"><div style="overflow:auto;"><table><thead><tr><th>Complaint</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody>${recent.length ? recent.map((item) => `<tr><td>${hierarchyEscape(item.title)}</td><td>${hierarchyEscape(complaintLabel(item.type))}</td><td>${hierarchyEscape(complaintLabel(item.status))}</td><td>${hierarchyEscape(new Date(item.createdAt).toLocaleString())}</td></tr>`).join("") : '<tr><td colspan="4">No complaints found.</td></tr>'}</tbody></table></div></div></section>`;
+  document.getElementById("refreshCommunityDashboard")?.addEventListener("click", refreshAdminAnalytics);
+  const reports = document.getElementById("page-activity-monitor");
+  if (reports) reports.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Reports</h1><p class="page-description">Backend-derived complaint, workforce, and community structure report.</p></div><button class="btn btn-outline" id="refreshCommunityReports">Refresh</button></div>${warning}<div class="grid-3"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Summary</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Total Complaints", complaints.length)}${statusCards}${workTypeCards}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Workforce Report</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Available", workerStatus("AVAILABLE"))}${analyticsCard("Busy", workerStatus("BUSY"))}${analyticsCard("On Leave", workerStatus("ON_LEAVE"))}${analyticsCard("Inactive", workerStatus("INACTIVE"))}${analyticsCard("Completed Works", totalCompleted)}${analyticsCard("Average Rating", averageRating)}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Community Structure</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Communities", communities.length)}${analyticsCard("Towers", towers.length)}${analyticsCard("Floors", floors.length)}${analyticsCard("Apartments", apartments.length)}${analyticsCard("Community Admins", analyticsCount(users, "role", "COMMUNITY_ADMIN"))}</div></section></div>`;
+  document.getElementById("refreshCommunityReports")?.addEventListener("click", refreshAdminAnalytics);
+}
+
+async function refreshAdminAnalytics() {
+  if (adminAnalyticsState.loading) return;
+  adminAnalyticsState.loading = true;
+  ["page-dashboard", "page-activity-monitor"].forEach((id) => { const page = document.getElementById(id); if (page) page.innerHTML = '<div class="page-header"><h1 class="page-title">Community Dashboard</h1><p class="page-description">Loading authenticated community data...</p></div>'; });
+  const resources = { complaints: "/complaints", workers: "/workforce/workers", communities: "/communities", towers: "/towers", floors: "/floors", apartments: "/apartments", users: "/users" };
+  const results = await Promise.allSettled(Object.entries(resources).map(async ([key, path]) => [key, await window.UrbanityApi.apiRequest(path)]));
+  const data = {}, unavailable = [];
+  results.forEach((result, index) => { const key = Object.keys(resources)[index]; if (result.status === "fulfilled") data[key] = result.value[1].data || []; else { data[key] = []; unavailable.push(key); } });
+  adminAnalyticsState.loading = false;
+  renderAdminAnalytics(data, unavailable);
+}
+
+async function loadHierarchyData() {
+  const [communities, towers, floors, apartments] = await Promise.all([
+    window.UrbanityApi.apiRequest("/communities"),
+    window.UrbanityApi.apiRequest("/towers"),
+    window.UrbanityApi.apiRequest("/floors"),
+    window.UrbanityApi.apiRequest("/apartments"),
+  ]);
+  hierarchyState.communities = communities.data || [];
+  hierarchyState.towers = towers.data || [];
+  hierarchyState.floors = floors.data || [];
+  hierarchyState.apartments = apartments.data || [];
+}
+
+function hierarchyOptions(items, selectedId, labelFor) {
+  return `<option value="">Select parent</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${hierarchyEscape(labelFor(item))}</option>`).join("")}`;
+}
+
+function renderHierarchyManagement() {
+  const container = document.getElementById("tab-departments-tab");
+  if (!container) return;
+  const communityName = (id) => hierarchyState.communities.find((item) => item.id === id)?.name || "Unknown community";
+  const towerName = (id) => hierarchyState.towers.find((item) => item.id === id)?.name || "Unknown tower";
+  const floorName = (id) => hierarchyState.floors.find((item) => item.id === id)?.label || "Unknown floor";
+  const list = (title, rows, empty) => `<section class="card" style="margin-bottom:20px;"><div class="card-header"><h3 class="card-title">${title}</h3></div><div class="card-content">${rows.length ? `<div style="overflow:auto;"><table><tbody>${rows.join("")}</tbody></table></div>` : `<p>${empty}</p>`}</div></section>`;
+  container.innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">Community Hierarchy Management</h3></div><div class="card-content"><p style="margin-bottom:16px;">Community → Tower → Floor → Apartment</p><div class="grid-2"><form id="communityForm"><h4>Community</h4><input class="form-input" name="name" placeholder="Community name" required><input class="form-input" name="address" placeholder="Community address" required><textarea class="form-input" name="description" placeholder="Description (optional)"></textarea><button class="btn btn-primary" type="submit">Add Community</button></form><form id="towerForm"><h4>Tower</h4><select class="form-select" name="communityId" required>${hierarchyOptions(hierarchyState.communities, "", (item) => item.name)}</select><input class="form-input" name="name" placeholder="Tower name" required><input class="form-input" name="code" placeholder="Tower code" required><button class="btn btn-primary" type="submit">Add Tower</button></form><form id="floorForm"><h4>Floor</h4><select class="form-select" name="towerId" required>${hierarchyOptions(hierarchyState.towers, "", (item) => `${item.name} (${communityName(item.communityId)})`)}</select><input class="form-input" name="floorNumber" type="number" min="0" placeholder="Floor number" required><input class="form-input" name="label" placeholder="Floor label" required><button class="btn btn-primary" type="submit">Add Floor</button></form><form id="apartmentForm"><h4>Apartment</h4><select class="form-select" name="floorId" required>${hierarchyOptions(hierarchyState.floors, "", (item) => `${item.label} (${towerName(item.towerId)})`)}</select><input class="form-input" name="apartmentNumber" placeholder="Apartment number" required><input class="form-input" name="label" placeholder="Apartment label" required><button class="btn btn-primary" type="submit">Add Apartment</button></form></div></div></div>${list("Communities", hierarchyState.communities.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b><br><small>${hierarchyEscape(item.address)}</small></td><td>${hierarchyEscape(item.description || "")}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('communities','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('communities','${item.id}')">Delete</button></td></tr>`), "No communities found.")}${list("Towers", hierarchyState.towers.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b> (${hierarchyEscape(item.code)})</td><td>${hierarchyEscape(communityName(item.communityId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('towers','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('towers','${item.id}')">Delete</button></td></tr>`), "No towers found.")}${list("Floors", hierarchyState.floors.map((item) => `<tr><td><b>${item.floorNumber}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(towerName(item.towerId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('floors','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('floors','${item.id}')">Delete</button></td></tr>`), "No floors found.")}${list("Apartments", hierarchyState.apartments.map((item) => `<tr><td><b>${hierarchyEscape(item.apartmentNumber)}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(floorName(item.floorId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('apartments','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('apartments','${item.id}')">Delete</button></td></tr>`), "No apartments found.")}`;
+  // Community records are platform-owned; this portal can only display them.
+  container.querySelector("#communityForm")?.remove();
+  container.querySelectorAll("[onclick*=\"'communities'\"]").forEach((button) => button.remove());
+  document.getElementById("towerForm").onsubmit = (event) => submitHierarchy(event, "towers");
+  document.getElementById("floorForm").onsubmit = (event) => submitHierarchy(event, "floors");
+  document.getElementById("apartmentForm").onsubmit = (event) => submitHierarchy(event, "apartments");
+}
+
+async function submitHierarchy(event, resource) {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget));
+  if (resource === "floors") data.floorNumber = Number(data.floorNumber);
+  try { await window.UrbanityApi.apiRequest(`/${resource}`, { method: "POST", body: data }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast(`${resource.slice(0, -1)} created successfully.`, "success"); } catch (error) { showAdminToast(error.message || "Unable to save hierarchy record.", "error"); }
+}
+
+async function editHierarchy(resource, id) {
+  const item = hierarchyState[resource].find((entry) => entry.id === id);
+  if (!item) return;
+  const fields = resource === "communities" ? ["name", "address", "description"] : resource === "towers" ? ["name", "code", "description"] : resource === "floors" ? ["floorNumber", "label"] : ["apartmentNumber", "label"];
+  const body = {};
+  for (const field of fields) {
+    const nextValue = window.prompt(`Update ${field}`, item[field] ?? "");
+    if (nextValue === null) return;
+    if (field !== "description" && !nextValue.trim()) return;
+    body[field] = field === "floorNumber" ? Number(nextValue) : nextValue.trim();
+  }
+  try { await window.UrbanityApi.apiRequest(`/${resource}/${id}`, { method: "PATCH", body }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast("Hierarchy record updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update hierarchy record.", "error"); }
+}
+
+async function deleteHierarchy(resource, id) {
+  if (!window.confirm("Delete this hierarchy record? Child records must be removed first.")) return;
+  try { await window.UrbanityApi.apiRequest(`/${resource}/${id}`, { method: "DELETE" }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast("Hierarchy record deleted.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete hierarchy record.", "error"); }
+}
+
+async function loadManagedUsers() {
+  const response = await window.UrbanityApi.apiRequest("/users");
+  userManagementState.users = response.data || [];
+}
+
+function userRoleLabel(role) { return String(role || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+
+function apartmentChain(apartmentId) {
+  const apartment = hierarchyState.apartments.find((item) => item.id === apartmentId);
+  const floor = apartment && hierarchyState.floors.find((item) => item.id === apartment.floorId);
+  const tower = floor && hierarchyState.towers.find((item) => item.id === floor.towerId);
+  const community = tower && hierarchyState.communities.find((item) => item.id === tower.communityId);
+  return apartment ? `${apartment.label || apartment.apartmentNumber} · ${floor?.label || ""} · ${tower?.name || ""} · ${community?.name || ""}` : "Unassigned";
+}
+
+function renderUserManagement() {
+  const container = document.getElementById("tab-users-tab");
+  if (!container) return;
+  const residents = userManagementState.users.filter((user) => user.role === "RESIDENT");
+  const representatives = userManagementState.users.filter((user) => user.role === "TOWER_REPRESENTATIVE");
+  const options = (items, labelFor) => `<option value="">Select</option>${items.map((item) => `<option value="${item.id}">${hierarchyEscape(labelFor(item))}</option>`).join("")}`;
+  container.innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">Community Users</h3></div><div class="card-content"><form id="createManagedUserForm" class="grid-2"><input class="form-input" name="name" placeholder="Full name" required><input class="form-input" type="email" name="email" placeholder="Email" required><input class="form-input" type="password" name="password" placeholder="Temporary password" minlength="8" required><input class="form-input" name="phone" placeholder="Phone (optional)"><select class="form-select" name="role" required><option value="">Select role</option><option value="COMMUNITY_ADMIN">Community Admin</option><option value="TOWER_REPRESENTATIVE">Tower Representative</option><option value="RESIDENT">Resident</option><option value="MAINTENANCE_WORKER">Maintenance Worker</option></select><button class="btn btn-primary" type="submit">Create User</button></form></div></div><div class="card"><div class="card-content"><div style="overflow:auto;"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Hierarchy Association</th><th>Actions</th></tr></thead><tbody>${userManagementState.users.length ? userManagementState.users.map((user) => `<tr><td>${hierarchyEscape(user.name)}</td><td>${hierarchyEscape(user.email)}</td><td>${hierarchyEscape(userRoleLabel(user.role))}</td><td>${user.role === "RESIDENT" ? hierarchyEscape(apartmentChain(user.apartmentId)) : user.role === "TOWER_REPRESENTATIVE" ? hierarchyEscape(hierarchyState.towers.find((tower) => tower.id === user.towerId)?.name || "Unassigned") : "—"}</td><td><button class="btn btn-outline btn-sm" onclick="editManagedUser('${user.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteManagedUser('${user.id}')">Delete</button></td></tr>`).join("") : '<tr><td colspan="5">No users found.</td></tr>'}</tbody></table></div></div></div><div class="grid-2"><section class="card"><div class="card-header"><h3 class="card-title">Resident → Apartment</h3></div><div class="card-content"><form id="residentAssociationForm"><select class="form-select" name="userId" required>${options(residents, (user) => `${user.name} (${user.email})`)}</select><select class="form-select" name="apartmentId" required>${options(hierarchyState.apartments, (apartment) => apartmentChain(apartment.id))}</select><button class="btn btn-primary" type="submit">Associate Resident</button></form></div></section><section class="card"><div class="card-header"><h3 class="card-title">Tower Representative → Tower</h3></div><div class="card-content"><form id="representativeAssociationForm"><select class="form-select" name="userId" required>${options(representatives, (user) => `${user.name} (${user.email})`)}</select><select class="form-select" name="towerId" required>${options(hierarchyState.towers, (tower) => `${tower.name} (${tower.code})`)}</select><button class="btn btn-primary" type="submit">Associate Representative</button></form></div></section></div>`;
+  document.getElementById("createManagedUserForm").onsubmit = createManagedUser;
+  document.getElementById("residentAssociationForm").onsubmit = (event) => associateUser(event, "resident-apartment", "apartmentId");
+  document.getElementById("representativeAssociationForm").onsubmit = (event) => associateUser(event, "representative-tower", "towerId");
+  document.querySelector('#createManagedUserForm option[value="COMMUNITY_ADMIN"]')?.remove();
+}
+
+async function refreshUserManagement() { await Promise.all([loadManagedUsers(), loadHierarchyData()]); renderUserManagement(); }
+async function createManagedUser(event) {
+  event.preventDefault(); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form)); if (!data.phone) delete data.phone;
+  try { await window.UrbanityApi.apiRequest("/users", { method: "POST", body: data }); form.reset(); await refreshUserManagement(); showAdminToast("User created successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to create user.", "error"); }
+}
+async function editManagedUser(id) {
+  const user = userManagementState.users.find((item) => item.id === id); if (!user) return;
+  const name = window.prompt("Update name", user.name); if (name === null || !name.trim()) return;
+  const email = window.prompt("Update email", user.email); if (email === null || !email.trim()) return;
+  const phone = window.prompt("Update phone (optional)", user.phone || ""); if (phone === null) return;
+  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "PATCH", body: { name: name.trim(), email: email.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) } }); await refreshUserManagement(); showAdminToast("User updated successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update user.", "error"); }
+}
+async function deleteManagedUser(id) {
+  if (!window.confirm("Delete this user permanently?")) return;
+  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "DELETE" }); await refreshUserManagement(); showAdminToast("User deleted successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete user.", "error"); }
+}
+async function associateUser(event, associationPath, relationshipField) {
+  event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); if (!data.userId || !data[relationshipField]) return;
+  try { await window.UrbanityApi.apiRequest(`/users/${data.userId}/${associationPath}`, { method: "PATCH", body: { [relationshipField]: data[relationshipField] } }); await refreshUserManagement(); showAdminToast("Hierarchy association updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update association.", "error"); }
+}
+
+function workforceLabel(value) { return String(value || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+async function loadManagedWorkers() { const response = await window.UrbanityApi.apiRequest("/workforce/workers"); workforceManagementState.workers = response.data || []; }
+function renderWorkforceManagement() {
+  const container = document.getElementById("tab-roles-tab");
+  if (!container) return;
+  const profiledUserIds = new Set(workforceManagementState.workers.map((worker) => worker.userId));
+  const accounts = userManagementState.users.filter((user) => user.role === "MAINTENANCE_WORKER" && !profiledUserIds.has(user.id));
+  const userName = (id) => { const user = userManagementState.users.find((entry) => entry.id === id); return user ? `${user.name} (${user.email})` : "Maintenance worker account"; };
+  const options = (values) => values.map((value) => `<option value="${value}">${hierarchyEscape(workforceLabel(value))}</option>`).join("");
+  container.innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">Shared Maintenance Workforce</h3></div><div class="card-content"><p style="margin-bottom:16px;">Worker profiles are shared across the entire community and are never permanently assigned to a tower.</p><form id="createWorkerProfileForm" class="grid-2"><select class="form-select" name="userId" required><option value="">Select maintenance worker account</option>${accounts.map((user) => `<option value="${user.id}">${hierarchyEscape(`${user.name} (${user.email})`)}</option>`).join("")}</select><select class="form-select" name="specialization" required><option value="">Select specialization</option>${options(WORKER_SPECIALIZATIONS)}</select><select class="form-select" name="status">${options(ADMIN_MANAGED_WORKER_STATUSES)}</select><button class="btn btn-primary" type="submit">Create Worker Profile</button></form>${accounts.length ? "" : "<p style=\"margin-top:12px;\">No maintenance worker accounts available.</p>"}</div></div><div class="card"><div class="card-content"><div style="overflow:auto;"><table><thead><tr><th>Maintenance Worker</th><th>Specialization</th><th>Status</th><th>Rating</th><th>Completed Work</th><th>Actions</th></tr></thead><tbody>${workforceManagementState.workers.length ? workforceManagementState.workers.map((worker) => `<tr><td>${hierarchyEscape(userName(worker.userId))}</td><td>${hierarchyEscape(workforceLabel(worker.specialization))}</td><td>${hierarchyEscape(workforceLabel(worker.status))}</td><td>${worker.rating}</td><td>${worker.completedWorkCount}</td><td><button class="btn btn-outline btn-sm" onclick="viewManagedWorker('${worker.id}')">Details</button> <button class="btn btn-outline btn-sm" onclick="editManagedWorker('${worker.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deactivateManagedWorker('${worker.id}')">Deactivate</button></td></tr>`).join("") : '<tr><td colspan="6">No maintenance workers found.</td></tr>'}</tbody></table></div></div></div>`;
+  document.getElementById("createWorkerProfileForm").onsubmit = createManagedWorker;
+}
+async function refreshWorkforceManagement() { await Promise.all([loadManagedWorkers(), loadManagedUsers()]); renderWorkforceManagement(); }
+async function createManagedWorker(event) { event.preventDefault(); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form)); try { await window.UrbanityApi.apiRequest("/workforce/workers", { method: "POST", body: data }); form.reset(); await refreshWorkforceManagement(); showAdminToast("Worker profile created.", "success"); } catch (error) { showAdminToast(error.message || "Unable to create worker profile.", "error"); } }
+async function viewManagedWorker(id) { try { const worker = (await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`)).data; window.alert(`Specialization: ${workforceLabel(worker.specialization)}\nStatus: ${workforceLabel(worker.status)}\nRating: ${worker.rating}\nCompleted work: ${worker.completedWorkCount}\nWork history: ${(worker.workHistory || []).join(", ") || "No completed work history found."}`); } catch (error) { showAdminToast(error.message || "Unable to load worker details.", "error"); } }
+async function editManagedWorker(id) { const worker = workforceManagementState.workers.find((entry) => entry.id === id); if (!worker) return; const specialization = window.prompt(`Specialization (${WORKER_SPECIALIZATIONS.join(", ")})`, worker.specialization); if (specialization === null || !WORKER_SPECIALIZATIONS.includes(specialization.trim().toUpperCase())) return; const status = window.prompt(`Status (${ADMIN_MANAGED_WORKER_STATUSES.join(", ")})`, worker.status); if (status === null || !ADMIN_MANAGED_WORKER_STATUSES.includes(status.trim().toUpperCase())) return; try { await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`, { method: "PATCH", body: { specialization: specialization.trim().toUpperCase(), status: status.trim().toUpperCase() } }); await refreshWorkforceManagement(); showAdminToast("Worker profile updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update worker profile.", "error"); } }
+async function deactivateManagedWorker(id) { if (!window.confirm("Deactivate this worker profile? The profile and history will be retained.")) return; try { await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`, { method: "DELETE" }); await refreshWorkforceManagement(); showAdminToast("Worker profile deactivated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to deactivate worker profile.", "error"); } }
+
+function complaintLabel(value) { return String(value || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+function complaintLocation(complaint) {
+  const apartment = hierarchyState.apartments.find((item) => item.id === complaint.apartmentId);
+  const floor = apartment && hierarchyState.floors.find((item) => item.id === apartment.floorId);
+  const tower = hierarchyState.towers.find((item) => item.id === complaint.towerId) || (floor && hierarchyState.towers.find((item) => item.id === floor.towerId));
+  const community = hierarchyState.communities.find((item) => item.id === complaint.communityId) || (tower && hierarchyState.communities.find((item) => item.id === tower.communityId));
+  return [apartment?.label || apartment?.apartmentNumber, floor?.label, tower?.name, community?.name].filter(Boolean).join(" · ") || "Location unavailable";
+}
+async function loadManagedComplaints() { const response = await window.UrbanityApi.apiRequest("/complaints"); complaintManagementState.complaints = response.data || []; complaintManagementState.loaded = true; }
+function renderComplaintManagement() {
+  const page = document.getElementById("page-system-issues"); if (!page) return;
+  const all = complaintManagementState.complaints;
+  const filtered = all.filter((complaint) => (!complaintManagementState.filter.type || complaint.type === complaintManagementState.filter.type) && (!complaintManagementState.filter.status || complaint.status === complaintManagementState.filter.status) && (!complaintManagementState.filter.workType || complaint.requiredWorkType === complaintManagementState.filter.workType));
+  const option = (values, selected, placeholder) => `<option value="">${placeholder}</option>${[...new Set(values)].map((value) => `<option value="${value}" ${value === selected ? "selected" : ""}>${hierarchyEscape(complaintLabel(value))}</option>`).join("")}`;
+  page.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Complaints</h1><p class="page-description">Read-only global complaint view from the authenticated backend.</p></div></div><div class="card"><div class="card-content"><div class="grid-3" style="margin-bottom:16px;"><select id="complaintTypeFilter" class="form-select">${option(all.map((item) => item.type), complaintManagementState.filter.type, "All complaint types")}</select><select id="complaintStatusFilter" class="form-select">${option(all.map((item) => item.status), complaintManagementState.filter.status, "All statuses")}</select><select id="complaintWorkTypeFilter" class="form-select">${option(all.map((item) => item.requiredWorkType), complaintManagementState.filter.workType, "All work types")}</select></div><div style="overflow:auto;"><table><thead><tr><th>Complaint</th><th>Type</th><th>Work Type</th><th>Status</th><th>Location</th><th>Responsible Authority</th><th>Assigned Worker</th><th>Created</th></tr></thead><tbody>${filtered.length ? filtered.map((complaint) => `<tr><td><button class="btn-link managed-complaint" data-id="${complaint.id}">${hierarchyEscape(complaint.title)}</button></td><td>${hierarchyEscape(complaintLabel(complaint.type))}</td><td>${hierarchyEscape(complaintLabel(complaint.requiredWorkType))}</td><td>${hierarchyEscape(complaintLabel(complaint.status))}</td><td>${hierarchyEscape(complaintLocation(complaint))}</td><td>${hierarchyEscape(complaint.responsibleUserName || complaintLabel(complaint.responsibleRole))}</td><td>${hierarchyEscape(complaint.assignedWorkerId || "Unassigned")}</td><td>${hierarchyEscape(new Date(complaint.createdAt).toLocaleString())}</td></tr>`).join("") : '<tr><td colspan="8">No complaints found.</td></tr>'}</tbody></table></div></div></div>`;
+  ["type", "status", "workType"].forEach((key) => document.getElementById(`complaint${key[0].toUpperCase()}${key.slice(1)}Filter`).onchange = (event) => { complaintManagementState.filter[key] = event.target.value; renderComplaintManagement(); });
+  document.querySelectorAll(".managed-complaint").forEach((button) => { button.onclick = () => viewManagedComplaint(button.dataset.id); });
+}
+function formatAttachmentSize(size) {
+  const bytes = Number(size);
+  if (!Number.isFinite(bytes) || bytes < 0) return "Size unavailable";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function closeManagedAttachmentPreview() {
+  if (activeManagedAttachmentPreview) {
+    const blobUrl = activeManagedAttachmentPreview.dataset.blobUrl;
+    if (blobUrl) {
+      managedAttachmentBlobUrls.delete(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+    }
+    activeManagedAttachmentPreview.remove();
+  }
+  activeManagedAttachmentPreview = null;
+}
+
+function revokeManagedAttachmentBlobUrls() {
+  managedAttachmentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+  managedAttachmentBlobUrls.clear();
+}
+
+function closeManagedComplaintModal() {
+  closeManagedAttachmentPreview();
+  revokeManagedAttachmentBlobUrls();
+  if (activeManagedComplaintModal) activeManagedComplaintModal.remove();
+  activeManagedComplaintModal = null;
+}
+
+function attachmentIsPreviewable(attachment) {
+  return ["image/jpeg", "image/png", "image/webp"].includes(String(attachment.mimeType || "").toLowerCase());
+}
+
+function managedWorkerName(worker) {
+  const user = userManagementState.users.find((item) => item.id === worker.userId);
+  return user?.name || `Maintenance worker profile ${worker.id}`;
+}
+
+function renderManagedAssignmentSection(complaint) {
+  if (complaint.assignedWorkerId) {
+    const assignedWorker = workforceManagementState.workers.find((worker) => worker.id === complaint.assignedWorkerId);
+    return `<h4>Maintenance Worker Assignment</h4><p>Worker already assigned: <b>${hierarchyEscape(assignedWorker ? managedWorkerName(assignedWorker) : complaint.assignedWorkerId)}</b></p>`;
+  }
+  if (complaint.status !== "UNDER_REVIEW") {
+    return `<h4>Maintenance Worker Assignment</h4><p>Assignment is available after the complaint is under review.</p>`;
+  }
+  return `<h4>Eligible Maintenance Workers</h4><p><b>Required Work Type:</b> ${hierarchyEscape(complaintLabel(complaint.requiredWorkType))}</p><div id="managedAssignmentState">Loading eligible maintenance workers...</div>`;
+}
+
+function renderManagedLifecycleSection(complaint) {
+  if (complaint.status === "SUBMITTED") return '<h4>Complaint Lifecycle</h4><p>Review this complaint before assigning a maintenance worker.</p><button class="btn btn-primary" type="button" data-lifecycle-status="UNDER_REVIEW">Start Review</button>';
+  if (complaint.status === "REVIEWED") return '<h4>Complaint Lifecycle</h4><p>The resident review is complete.</p><button class="btn btn-primary" type="button" data-lifecycle-status="CLOSED">Close Complaint</button>';
+  if (complaint.status === "RESOLVED") return '<h4>Complaint Lifecycle</h4><p>Awaiting Resident Review.</p>';
+  return '<h4>Complaint Lifecycle</h4><p>No Admin lifecycle action is available for this status.</p>';
+}
+
+function noManagedReviewMessage(complaint) {
+  if (complaint.status === "RESOLVED") return "Awaiting resident review.";
+  if (["REVIEWED", "CLOSED"].includes(complaint.status)) return "No resident review submitted yet.";
+  return "Review not available yet.";
+}
+
+function renderManagedReview(review) {
+  return `<div id="managedReviewState" class="card" style="margin:0;"><div class="card-content" style="padding:12px;"><p><b>Rating:</b> ${hierarchyEscape(review.rating)} / 5</p>${review.feedback ? `<p><b>Feedback:</b><br>${hierarchyEscape(review.feedback)}</p>` : "<p>No written feedback provided.</p>"}<p><b>Reviewed at:</b> ${hierarchyEscape(new Date(review.createdAt).toLocaleString())}</p></div></div>`;
+}
+
+async function loadManagedReview(overlay, complaint, requestId) {
+  try {
+    const response = await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/review`);
+    if (activeManagedComplaintModal !== overlay || !overlay.isConnected || managedReviewState.requestId !== requestId) return;
+    const reviewState = overlay.querySelector("#managedReviewState");
+    if (reviewState) reviewState.outerHTML = renderManagedReview(response.data);
+  } catch (error) {
+    if (activeManagedComplaintModal !== overlay || !overlay.isConnected || managedReviewState.requestId !== requestId) return;
+    const reviewState = overlay.querySelector("#managedReviewState");
+    if (!reviewState) return;
+    reviewState.textContent = error?.status === 400 ? noManagedReviewMessage(complaint) : "Unable to load resident review.";
+  }
+}
+
+async function updateManagedComplaintLifecycle(button, overlay, complaint, nextStatus, requestId) {
+  if (managedLifecycleState.updating || activeManagedComplaintModal !== overlay || managedLifecycleState.requestId !== requestId) return;
+  const actionLabel = nextStatus === "UNDER_REVIEW" ? "start the review" : "close this complaint";
+  const confirmation = await showAdminDialog({ title: nextStatus === "UNDER_REVIEW" ? "Start Complaint Review" : "Close Complaint", message: `Are you sure you want to ${actionLabel}?`, confirmText: nextStatus === "UNDER_REVIEW" ? "Start Review" : "Close", cancelText: "Cancel" });
+  if (!confirmation?.confirmed || managedLifecycleState.updating || activeManagedComplaintModal !== overlay || managedLifecycleState.requestId !== requestId) return;
+  managedLifecycleState.updating = true;
+  button.disabled = true;
+  button.textContent = "Updating...";
+  try {
+    await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/status`, { method: "PATCH", body: { status: nextStatus } });
+    showAdminToast(nextStatus === "UNDER_REVIEW" ? "Complaint marked under review." : "Complaint closed successfully.", "success");
+    await loadManagedComplaints();
+    renderComplaintManagement();
+    if (activeManagedComplaintModal === overlay && overlay.isConnected) await viewManagedComplaint(complaint.id);
+  } catch (error) {
+    showAdminToast(error.message || "Unable to update complaint status.", "error");
+    if (activeManagedComplaintModal === overlay && overlay.isConnected) { button.disabled = false; button.textContent = nextStatus === "UNDER_REVIEW" ? "Start Review" : "Close Complaint"; }
+  } finally { managedLifecycleState.updating = false; }
+}
+
+function renderEligibleManagedWorkers(workers) {
+  if (!workers.length) return '<p id="managedAssignmentState">No eligible maintenance workers are currently available.</p>';
+  return `<form id="managedAssignmentForm"><div id="managedAssignmentState" style="overflow:auto;"><table><thead><tr><th>Select</th><th>Maintenance Worker</th><th>Specialization</th><th>Status</th><th>Rating</th><th>Completed Works</th></tr></thead><tbody>${workers.map((worker) => `<tr><td><input type="radio" name="workerId" value="${hierarchyEscape(worker.id)}" required></td><td>${hierarchyEscape(managedWorkerName(worker))}<br><small>${hierarchyEscape(worker.id)}</small></td><td>${hierarchyEscape(complaintLabel(worker.specialization))}</td><td>${hierarchyEscape(complaintLabel(worker.status))}</td><td>${hierarchyEscape(worker.rating)}</td><td>${hierarchyEscape(worker.completedWorkCount)}</td></tr>`).join("")}</tbody></table></div><button class="btn btn-primary" type="submit" style="margin-top:12px;">Assign selected worker</button></form>`;
+}
+
+async function loadEligibleManagedWorkers(overlay, complaint, requestId) {
+  try {
+    const response = await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/eligible-workers`);
+    if (activeManagedComplaintModal !== overlay || !overlay.isConnected || managedAssignmentState.requestId !== requestId) return;
+    const workers = response.data || [];
+    const assignmentState = overlay.querySelector("#managedAssignmentState");
+    if (assignmentState) assignmentState.outerHTML = renderEligibleManagedWorkers(workers);
+    const form = overlay.querySelector("#managedAssignmentForm");
+    if (form) form.onsubmit = (event) => assignManagedWorker(event, overlay, complaint, workers, requestId);
+  } catch (_error) {
+    if (activeManagedComplaintModal === overlay && overlay.isConnected && managedAssignmentState.requestId === requestId) {
+      const assignmentState = overlay.querySelector("#managedAssignmentState");
+      if (assignmentState) assignmentState.textContent = "Unable to load eligible maintenance workers.";
+    }
+  }
+}
+
+async function assignManagedWorker(event, overlay, complaint, workers, requestId) {
+  event.preventDefault();
+  if (managedAssignmentState.assigning || activeManagedComplaintModal !== overlay || managedAssignmentState.requestId !== requestId) return;
+  const workerId = new FormData(event.currentTarget).get("workerId");
+  const worker = workers.find((item) => item.id === workerId);
+  if (!worker) return;
+  const confirmation = await showAdminDialog({ title: "Assign Maintenance Worker", message: `Assign this complaint to ${managedWorkerName(worker)}?\nSpecialization: ${complaintLabel(worker.specialization)}`, confirmText: "Assign", cancelText: "Cancel" });
+  if (!confirmation?.confirmed || managedAssignmentState.assigning || activeManagedComplaintModal !== overlay || managedAssignmentState.requestId !== requestId) return;
+  managedAssignmentState.assigning = true;
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Assigning worker..."; }
+  try {
+    await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/assign`, { method: "POST", body: { workerId: worker.id } });
+    showAdminToast("Maintenance worker assigned successfully.", "success");
+    await Promise.all([loadManagedComplaints(), loadManagedWorkers()]);
+    renderComplaintManagement();
+    if (activeManagedComplaintModal === overlay && overlay.isConnected) await viewManagedComplaint(complaint.id);
+  } catch (error) {
+    showAdminToast(error.message || "Unable to assign maintenance worker.", "error");
+    if (activeManagedComplaintModal === overlay && overlay.isConnected && submitButton) { submitButton.disabled = false; submitButton.textContent = "Assign selected worker"; }
+  } finally { managedAssignmentState.assigning = false; }
+}
+
+function renderManagedAttachments(attachments) {
+  if (!attachments.length) return '<p id="managedAttachmentState">No attachments found.</p>';
+  return `<div id="managedAttachmentState" style="display:grid; gap:10px;">${attachments.map((attachment) => `<div class="card" style="margin:0;"><div class="card-content" style="padding:12px;"><div class="flex items-center justify-between gap-3"><div><b>${hierarchyEscape(attachment.originalName || "Attachment")}</b><br><small>${hierarchyEscape(attachment.mimeType || "Content type unavailable")} · ${hierarchyEscape(formatAttachmentSize(attachment.size))}<br>Uploaded ${hierarchyEscape(attachment.uploadedAt ? new Date(attachment.uploadedAt).toLocaleString() : "date unavailable")}${attachment.uploadedByRole ? ` by ${hierarchyEscape(complaintLabel(attachment.uploadedByRole))}` : ""}</small></div>${attachmentIsPreviewable(attachment) ? `<button class="btn btn-outline btn-sm" data-view-attachment="${hierarchyEscape(attachment.id)}">View</button>` : ""}</div></div></div>`).join("")}</div>`;
+}
+
+async function previewManagedAttachment(complaintId, attachment) {
+  if (!attachmentIsPreviewable(attachment)) return;
+  try {
+    const blob = await window.UrbanityApi.apiRequest(`/complaints/${complaintId}/attachments/${attachment.id}`, { responseType: "blob" });
+    if (!blob || !String(blob.type || "").toLowerCase().startsWith("image/")) throw new Error("The attachment is not an image that can be previewed.");
+    closeManagedAttachmentPreview();
+    const blobUrl = URL.createObjectURL(blob);
+    managedAttachmentBlobUrls.add(blobUrl);
+    const preview = document.createElement("div");
+    preview.className = "modal-overlay active";
+    preview.dataset.blobUrl = blobUrl;
+    preview.innerHTML = `<div class="modal"><div class="modal-header"><h3 class="modal-title">${hierarchyEscape(attachment.originalName || "Attachment preview")}</h3><button class="modal-close" data-close>×</button></div><div class="modal-body"><img src="${blobUrl}" alt="${hierarchyEscape(attachment.originalName || "Complaint attachment")}" style="display:block; width:100%; max-height:70vh; object-fit:contain;"></div></div>`;
+    const closePreview = () => { managedAttachmentBlobUrls.delete(blobUrl); URL.revokeObjectURL(blobUrl); if (activeManagedAttachmentPreview === preview) activeManagedAttachmentPreview = null; preview.remove(); };
+    preview.addEventListener("click", (event) => { if (event.target === preview || event.target.closest("[data-close]")) closePreview(); });
+    activeManagedAttachmentPreview = preview;
+    document.body.appendChild(preview);
+  } catch (error) { showAdminToast(error.message || "Unable to retrieve this attachment.", "error"); }
+}
+
+async function viewManagedComplaint(id) {
+  closeManagedComplaintModal();
+  managedAssignmentState.assigning = false;
+  managedAssignmentState.requestId += 1;
+  managedLifecycleState.updating = false;
+  managedLifecycleState.requestId += 1;
+  managedReviewState.requestId += 1;
+  const assignmentRequestId = managedAssignmentState.requestId;
+  const lifecycleRequestId = managedLifecycleState.requestId;
+  const reviewRequestId = managedReviewState.requestId;
+  try {
+    const complaint = (await window.UrbanityApi.apiRequest(`/complaints/${id}`)).data;
+    const history = (complaint.statusHistory || []).map((entry) => `<li>${hierarchyEscape(complaintLabel(entry.status))} · ${hierarchyEscape(new Date(entry.changedAt).toLocaleString())} · ${hierarchyEscape(complaintLabel(entry.changedByRole))}</li>`).join("") || "<li>No status history available.</li>";
+    const overlay = document.createElement("div"); overlay.className = "modal-overlay active";
+    overlay.innerHTML = `<div class="modal"><div class="modal-header"><h3 class="modal-title">${hierarchyEscape(complaint.title)}</h3><button class="modal-close" data-close>×</button></div><div class="modal-body"><p>${hierarchyEscape(complaint.description)}</p><p><b>Type:</b> ${hierarchyEscape(complaintLabel(complaint.type))}<br><b>Required work:</b> ${hierarchyEscape(complaintLabel(complaint.requiredWorkType))}<br><b>Status:</b> ${hierarchyEscape(complaintLabel(complaint.status))}<br><b>Location:</b> ${hierarchyEscape(complaintLocation(complaint))}<br><b>Responsible authority:</b> ${hierarchyEscape(complaint.responsibleUserName || complaintLabel(complaint.responsibleRole))}<br><b>Assigned worker:</b> ${hierarchyEscape(complaint.assignedWorkerId || "Unassigned")}<br><b>Created:</b> ${hierarchyEscape(new Date(complaint.createdAt).toLocaleString())}<br><b>Updated:</b> ${hierarchyEscape(new Date(complaint.updatedAt).toLocaleString())}</p><h4>Status History</h4><ul>${history}</ul>${renderManagedLifecycleSection(complaint)}${renderManagedAssignmentSection(complaint)}<h4>Resident Review</h4><p id="managedReviewState">Loading resident review...</p><h4>Attachments</h4><p id="managedAttachmentState">Loading attachments...</p></div></div>`;
+    overlay.addEventListener("click", (event) => { if (event.target === overlay || event.target.closest("[data-close]")) closeManagedComplaintModal(); });
+    activeManagedComplaintModal = overlay;
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll("[data-lifecycle-status]").forEach((button) => { button.onclick = () => updateManagedComplaintLifecycle(button, overlay, complaint, button.dataset.lifecycleStatus, lifecycleRequestId); });
+    if (!complaint.assignedWorkerId && complaint.status === "UNDER_REVIEW") loadEligibleManagedWorkers(overlay, complaint, assignmentRequestId);
+    loadManagedReview(overlay, complaint, reviewRequestId);
+    try {
+      const response = await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/attachments`);
+      if (activeManagedComplaintModal !== overlay || !overlay.isConnected) return;
+      const attachments = response.data || [];
+      const attachmentState = overlay.querySelector("#managedAttachmentState");
+      if (attachmentState) attachmentState.outerHTML = renderManagedAttachments(attachments);
+      overlay.querySelectorAll("[data-view-attachment]").forEach((button) => {
+        const attachment = attachments.find((item) => item.id === button.dataset.viewAttachment);
+        button.onclick = () => { if (attachment) previewManagedAttachment(complaint.id, attachment); };
+      });
+    } catch (_error) {
+      if (activeManagedComplaintModal === overlay && overlay.isConnected) {
+        const attachmentState = overlay.querySelector("#managedAttachmentState");
+        if (attachmentState) attachmentState.textContent = "Unable to load attachments.";
+      }
+    }
+  } catch (error) { showAdminToast(error.message || "Unable to load complaint details.", "error"); }
+}
 
 const adminIssueFilters = {
   search: "",
@@ -389,7 +758,7 @@ function handleCreateSystemIssue() {
   saveTechnicalIssuesState();
   resetAddSystemIssueForm();
   closeModal("addSystemIssueModal");
-  renderAdminSystemIssues();
+  if (!complaintManagementState.loaded) renderAdminSystemIssues();
   showAdminToast("System issue created successfully.", "success");
 }
 
@@ -1258,36 +1627,13 @@ function renderAdminEscalatedIssues() {
 function renderAdminFlowViews() {
   renderAdminDashboardComplaintStats();
   bindAdminIssueFilters();
-  renderAdminSystemIssues();
+  if (!complaintManagementState.loaded) renderAdminSystemIssues();
   renderAdminEscalatedIssues();
   renderAdminEscalationRules();
 }
 
 function renderAdminDashboardComplaintStats() {
-  const stats = document.querySelectorAll("#page-dashboard .stat-value");
-  if (stats.length < 4) {
-    return;
-  }
-
-  const complaints = getAdminStoreComplaints();
-  if (complaints.length === 0) {
-    return;
-  }
-
-  const total = complaints.length;
-  const resolved = complaints.filter((entry) => entry.status === "resolved").length;
-  const pending = complaints.filter((entry) => entry.status === "pending").length;
-  const escalated = complaints.filter(
-    (entry) =>
-      entry.status === "escalated" ||
-      entry.status === "reopened" ||
-      entry.status === "in-progress",
-  ).length;
-
-  stats[0].textContent = String(total);
-  stats[1].textContent = String(resolved);
-  stats[2].textContent = String(pending);
-  stats[3].textContent = String(escalated);
+  // Active dashboard metrics are rendered from authenticated backend resources.
 }
 
 function generateItemId(prefix) {
@@ -1856,15 +2202,48 @@ document.addEventListener("click", async (evt) => {
 
 document.getElementById("addUserRole")?.addEventListener("change", updateAddUserDepartmentField);
 
-loadAdminCrudState();
-loadAdminCrudState();
-loadTechnicalIssuesState();
-loadEscalationRulesState();
-renderAdminCrudData();
-renderAdminFlowViews();
-navigateTo(getSavedAdminPage());
+async function initializeAdminPortal() {
+  if (!window.UrbanityApi?.getAccessToken()) {
+    window.UrbanityApi?.logout();
+    return;
+  }
 
-window.addEventListener("focus", renderAdminFlowViews);
+  try {
+    const backendUser = await window.UrbanityApi.getCurrentUser();
+    if (backendUser?.role !== "COMMUNITY_ADMIN") {
+      showAdminToast("Access denied: this portal is only for Community Admins.", "error");
+      window.UrbanityApi.clearSession();
+      window.setTimeout(() => window.UrbanityApi.logout(), 900);
+      return;
+    }
+
+    authenticatedAdmin = true;
+    authenticatedAdminUser = backendUser;
+    applyCurrentUserToAdminUI();
+    renderAdminAnalyticsLoading();
+
+    try {
+      await loadHierarchyData();
+      renderHierarchyManagement();
+      await loadManagedUsers();
+      renderUserManagement();
+      await loadManagedWorkers();
+      renderWorkforceManagement();
+      await loadManagedComplaints();
+      renderComplaintManagement();
+    } catch (error) {
+      showAdminToast(error.message || "Unable to load Admin management data.", "error");
+    }
+    navigateTo(getSavedAdminPage());
+  } catch (error) {
+    // UrbanityApi handles invalid/expired-token session cleanup and redirect.
+    if (error?.status !== 401) {
+      showAdminToast(error?.message || "Unable to verify the Admin session.", "error");
+    }
+  }
+}
+
+initializeAdminPortal();
 
 // Close dropdown when clicking outside
 document.addEventListener("click", function (event) {

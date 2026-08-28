@@ -6,7 +6,7 @@
     <title>URBANITY - Admin Portal</title>
     <link rel="stylesheet" href="../global.css">
     <link rel="stylesheet" href="style.css">
-    <script src="../mockData.js" defer></script>
+    <script src="../api.js" defer></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -36,16 +36,7 @@
             <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <span>System Issues</span>
-        </button>
-        
-        <button class="nav-item" onclick="navigateTo('escalated-issues')">
-          <svg class="nav-icon" viewBox="0 0 24 24">
-            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>Escalated Issues</span>
+          <span>Complaints</span>
         </button>
         
         <button class="nav-item" onclick="navigateTo('users-roles')">
@@ -55,23 +46,14 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <span>Users & Roles</span>
-        </button>
-        
-        <button class="nav-item" onclick="navigateTo('system-settings')">
-          <svg class="nav-icon" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24m0-14.14l-4.24 4.24m-5.66 5.66L4.93 19.07" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>System Settings</span>
+          <span>Community Management</span>
         </button>
         
         <button class="nav-item" onclick="navigateTo('activity-monitor')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <span>Activity Monitor</span>
+          <span>Reports</span>
         </button>
         
         <button class="nav-item" onclick="navigateTo('profile')">
@@ -795,15 +777,15 @@
         <!-- Users & Roles Page -->
         <div id="page-users-roles" class="hidden">
           <div class="page-header">
-            <h1 class="page-title">Users & Roles Management</h1>
-            <p class="page-description">Manage system users, roles, and departments</p>
+            <h1 class="page-title">Community Management</h1>
+            <p class="page-description">Manage community hierarchy, users, and maintenance workforce.</p>
           </div>
 
           <div class="tabs">
             <div class="tab-list">
               <button class="tab-button active" onclick="switchTab('users', 'users-tab')">Users</button>
-              <button class="tab-button" onclick="switchTab('users', 'roles-tab')">Roles</button>
-              <button class="tab-button" onclick="switchTab('users', 'departments-tab')">Departments</button>
+              <button class="tab-button" onclick="switchTab('users', 'roles-tab')">Shared Maintenance Workforce</button>
+              <button class="tab-button" onclick="switchTab('users', 'departments-tab')">Community Hierarchy</button>
             </div>
 
             <!-- Users Tab -->
