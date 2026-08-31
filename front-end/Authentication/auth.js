@@ -1,10 +1,10 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BACKEND_ROLE_PORTALS = {
   SUPER_ADMIN: "../Super Admin/index.html",
-  COMMUNITY_ADMIN: "../Admin/index.html",
-  TOWER_REPRESENTATIVE: "../Dept Officer/index.html",
-  RESIDENT: "../Citizen/index.html",
-  MAINTENANCE_WORKER: "../FieldWorker/index.html",
+  COMMUNITY_ADMIN: "../Community Admin/index.html",
+  TOWER_REPRESENTATIVE: "../Tower Representative/index.html",
+  RESIDENT: "../Resident/index.html",
+  MAINTENANCE_WORKER: "../Maintenance Worker/index.html",
 };
 
 function showMessage(message, type = "error") {

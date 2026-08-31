@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URBANITY - Admin Portal</title>
+    <title>URBANITY - Community Admin Portal</title>
     <link rel="stylesheet" href="../global.css">
     <link rel="stylesheet" href="style.css">
     <script src="../api.js" defer></script>
-    <script src="script.js" defer></script>
+    <script src="script.js?v=20260831-user-creation-fix" defer></script>
 </head>
 <body>
   <div class="app-container">
@@ -15,7 +15,7 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1 class="sidebar-title">URBANITY</h1>
-        <p class="sidebar-subtitle">ADMIN PORTAL</p>
+        <p class="sidebar-subtitle">COMMUNITY ADMIN PORTAL</p>
       </div>
       <div class="sidebar-divider"></div>
       
@@ -39,7 +39,7 @@
           <span>Complaints</span>
         </button>
         
-        <button class="nav-item" onclick="navigateTo('users-roles')">
+        <button class="nav-item" onclick="navigateTo('community-management')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -47,6 +47,11 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span>Community Management</span>
+        </button>
+
+        <button class="nav-item" onclick="navigateTo('users')">
+          <svg class="nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Users</span>
         </button>
         
         <button class="nav-item" onclick="navigateTo('activity-monitor')">
@@ -81,7 +86,7 @@
     <div class="main-content">
       <!-- Header -->
       <header class="header">
-        <h2 class="header-title">Admin Service Portal</h2>
+        <h2 class="header-title">Community Admin Service Portal</h2>
         <div class="header-right">
           <button class="notification-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -817,17 +822,6 @@
                       </thead>
                       <tbody id="usersTableBody">
                         <tr>
-                          <td><span class="font-semibold">John Smith</span></td>
-                          <td>john.smith@urbanity.gov</td>
-                          <td><span class="badge badge-blue">Department Head</span></td>
-                          <td>Public Works</td>
-                          <td><span class="badge badge-green">Active</span></td>
-                          <td>2 hours ago</td>
-                          <td>
-                            <button class="btn btn-outline btn-sm">Edit</button>
-                          </td>
-                        </tr>
-                        <tr>
                           <td><span class="font-semibold">Sarah Davis</span></td>
                           <td>sarah.davis@urbanity.gov</td>
                           <td><span class="badge badge-blue">Department Officer</span></td>
@@ -871,14 +865,6 @@
                 </div>
                 <div class="card-content">
                   <div class="grid-2" id="rolesGrid">
-                    <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-                      <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Department Head</h4>
-                      <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Full department management authority</p>
-                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 4px;"><span class="font-semibold">Users:</span> 4</p>
-                      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;"><span class="font-semibold">Permissions:</span> Full Access</p>
-                      <button class="btn btn-outline btn-sm">Edit Role</button>
-                    </div>
-
                     <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
                       <h4 style="font-weight: 600; font-size: 16px; color: #111827; margin-bottom: 8px;">Department Officer</h4>
                       <p style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">Issue validation and assignment</p>
@@ -1883,7 +1869,6 @@
           <label class="form-label">Notify</label>
           <select class="form-select" id="ruleNotifyInput">
             <option>Select notification recipients</option>
-            <option>Department Head</option>
             <option>Department Officer</option>
             <option>Emergency Response Team</option>
             <option>System Admin</option>
@@ -2010,7 +1995,6 @@
           <label class="form-label">Role</label>
           <select class="form-select" id="addUserRole">
             <option>Select role</option>
-            <option>Department Head</option>
             <option>Department Officer</option>
             <option>Field Worker</option>
             <option>Citizen</option>

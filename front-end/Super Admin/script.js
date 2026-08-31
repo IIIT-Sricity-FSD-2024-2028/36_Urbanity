@@ -2,8 +2,9 @@
   "use strict";
 
   const state = { user: null, communities: [], towers: [], floors: [], apartments: [], users: [], workers: [], complaints: [], report: null, dashboard: null, previewUrl: null };
+  let activePage = "dashboard";
   const titles = { dashboard: "Platform Dashboard", communities: "Communities", admins: "Community Admin Accounts", users: "Platform Users", workforce: "Workforce", complaints: "Global Complaints", reports: "Reports", profile: "Profile" };
-  const api = (path, options) => window.UrbanityApi.apiRequest(path, options);
+  const api = (path, options = {}) => window.UrbanityApi.apiRequest(path, { ...options, redirectOnUnauthorized: false });
   const data = (response) => response?.data;
   const escape = (value) => String(value ?? "—").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const notice = (message, success) => { const node = document.getElementById("notice"); node.textContent = message || ""; node.classList.toggle("success", Boolean(success)); };
@@ -19,6 +20,23 @@
     return undefined;
   }
   function roleLabel(role) { return String(role || "").replaceAll("_", " "); }
+  function renderTopbar() {
+    const user = state.user || {};
+    const initials = (user.name || "Super Admin").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+    const openComplaints = state.complaints.filter((item) => !["RESOLVED", "REVIEWED", "CLOSED"].includes(item.status)).length;
+    const unprofiledWorkers = state.users.filter((item) => item.role === "MAINTENANCE_WORKER" && !state.workers.some((worker) => worker.userId === item.id)).length;
+    const notifications = [
+      openComplaints && { icon: "!", title: `${openComplaints} open complaint${openComplaints === 1 ? "" : "s"}`, detail: "Review the current complaint queue." },
+      unprofiledWorkers && { icon: "i", title: `${unprofiledWorkers} worker account${unprofiledWorkers === 1 ? "" : "s"} need a profile`, detail: "Complete workforce setup from the Workforce workspace." },
+      { icon: "✓", title: "Platform data is up to date", detail: "Live data is loaded from Urbanity services." },
+    ].filter(Boolean);
+    document.getElementById("topbar-avatar").textContent = initials || "SA";
+    document.getElementById("profile-menu-name").textContent = user.name || "Urbanity Administrator";
+    document.getElementById("profile-menu-email").textContent = user.email || "Account unavailable";
+    document.getElementById("notifications-list").innerHTML = notifications.map((item) => `<article class="notification-item"><span class="notification-icon">${escape(item.icon)}</span><div><b>${escape(item.title)}</b><p>${escape(item.detail)}</p></div></article>`).join("");
+    document.getElementById("notification-count").textContent = `${notifications.length} unread`;
+    document.getElementById("notification-dot").classList.toggle("hidden", notifications.length === 0);
+  }
   function renderDashboard() {
     const metrics = state.dashboard || {};
     const hierarchy = metrics.hierarchy || {};
@@ -47,7 +65,7 @@
       const towerIds = new Set(state.towers.filter((tower) => tower.communityId === community.id).map((tower) => tower.id));
       const floorIds = new Set(state.floors.filter((floor) => towerIds.has(floor.towerId)).map((floor) => floor.id));
       const apartments = count(state.apartments, (apartment) => floorIds.has(apartment.floorId));
-      return row([escape(community.name), escape(community.address), towers, apartments, `<span class="actions"><button class="secondary" data-edit-community="${escape(community.id)}">Edit</button><button class="danger" data-delete-community="${escape(community.id)}">Delete</button></span>`]);
+      return row([escape(community.name), escape(community.address), towers, apartments, `<span class="actions"><button type="button" class="secondary" data-edit-community="${escape(community.id)}">Edit</button><button type="button" class="danger" data-delete-community="${escape(community.id)}">Delete</button></span>`]);
     }));
     document.getElementById("admin-community").innerHTML = `<option value="">Select a community</option>${state.communities.map((community) => `<option value="${escape(community.id)}">${escape(community.name)}</option>`).join("")}`;
   }
@@ -55,14 +73,14 @@
     const admins = state.users.filter((user) => user.role === "COMMUNITY_ADMIN");
     document.getElementById("admins-content").innerHTML = table(["Name", "Email", "Community", "Role"], admins.map((user) => row([escape(user.name), escape(user.email), escape(communityName(user.communityId)), `<span class="badge">${escape(roleLabel(user.role))}</span>`])));
   }
-  function renderUsers() { document.getElementById("users-content").innerHTML = table(["Name", "Email", "Role", "Community", "Actions"], state.users.map((user) => row([escape(user.name), escape(user.email), `<span class="badge">${escape(roleLabel(user.role))}</span>`, escape(communityName(communityForUser(user))), `<button class="secondary" data-user-detail="${escape(user.id)}">View / edit</button>`]))); }
+  function renderUsers() { document.getElementById("users-content").innerHTML = table(["Name", "Email", "Role", "Community", "Actions"], state.users.map((user) => row([escape(user.name), escape(user.email), `<span class="badge">${escape(roleLabel(user.role))}</span>`, escape(communityName(communityForUser(user))), `<button type="button" class="secondary" data-user-detail="${escape(user.id)}">View / edit</button>`]))); }
   function renderWorkforce() {
-    document.getElementById("workforce-content").innerHTML = table(["Worker", "Community", "Specialization", "Status", "Rating", "Completed", "History", "Actions"], state.workers.map((worker) => { const user = state.users.find((item) => item.id === worker.userId); return row([escape(user?.name || worker.userId), escape(communityName(worker.communityId)), escape(worker.specialization), `<span class="badge">${escape(worker.status)}</span>`, escape(worker.rating), escape(worker.completedWorkCount), escape((worker.workHistory || []).length), `<button class="secondary" data-worker-detail="${escape(worker.id)}">View</button>`]); }));
+    document.getElementById("workforce-content").innerHTML = table(["Worker", "Community", "Specialization", "Status", "Rating", "Completed", "History", "Actions"], state.workers.map((worker) => { const user = state.users.find((item) => item.id === worker.userId); return row([escape(user?.name || worker.userId), escape(communityName(worker.communityId)), escape(worker.specialization), `<span class="badge">${escape(worker.status)}</span>`, escape(worker.rating), escape(worker.completedWorkCount), escape((worker.workHistory || []).length), `<button type="button" class="secondary" data-worker-detail="${escape(worker.id)}">View</button>`]); }));
     const profiledUsers = new Set(state.workers.map((worker) => worker.userId));
     const candidates = state.users.filter((user) => user.role === "MAINTENANCE_WORKER" && !profiledUsers.has(user.id));
     document.getElementById("worker-user").innerHTML = `<option value="">Select a worker user</option>${candidates.map((user) => `<option value="${escape(user.id)}">${escape(user.name)} · ${escape(communityName(user.communityId))}</option>`).join("")}`;
   }
-  function renderComplaints() { document.getElementById("complaints-content").innerHTML = table(["Title", "Community", "Type", "Status", "Work type", "Responsible authority", "Worker", "Created", "Actions"], state.complaints.map((complaint) => { const worker = state.workers.find((item) => item.id === complaint.assignedWorkerId); return row([escape(complaint.title), escape(communityName(complaint.communityId)), escape(complaint.type), `<span class="badge">${escape(complaint.status)}</span>`, escape(complaint.requiredWorkType), escape(complaint.responsibleUserName), escape(worker ? state.users.find((user) => user.id === worker.userId)?.name : "Not assigned"), escape(new Date(complaint.createdAt).toLocaleString()), `<button class="secondary" data-complaint-detail="${escape(complaint.id)}">View details</button>`]); })); }
+  function renderComplaints() { document.getElementById("complaints-content").innerHTML = table(["Title", "Community", "Type", "Status", "Work type", "Responsible authority", "Worker", "Created", "Actions"], state.complaints.map((complaint) => { const worker = state.workers.find((item) => item.id === complaint.assignedWorkerId); return row([escape(complaint.title), escape(communityName(complaint.communityId)), escape(complaint.type), `<span class="badge">${escape(complaint.status)}</span>`, escape(complaint.requiredWorkType), escape(complaint.responsibleUserName), escape(worker ? state.users.find((user) => user.id === worker.userId)?.name : "Not assigned"), escape(new Date(complaint.createdAt).toLocaleString()), `<button type="button" class="secondary" data-complaint-detail="${escape(complaint.id)}">View details</button>`]); })); }
   function renderReports() { const report = state.report || {}; const summary = state.communities.map((community) => { const towers = state.towers.filter((item) => item.communityId === community.id); const towerIds = new Set(towers.map((item) => item.id)); const floorIds = new Set(state.floors.filter((item) => towerIds.has(item.towerId)).map((item) => item.id)); const complaints = state.complaints.filter((item) => item.communityId === community.id); return row([escape(community.name), towers.length, count(state.apartments, (item) => floorIds.has(item.floorId)), count(state.users, (user) => user.role === "RESIDENT" && communityForUser(user) === community.id), count(state.workers, (worker) => worker.communityId === community.id), complaints.length, count(complaints, (item) => !["RESOLVED", "REVIEWED", "CLOSED"].includes(item.status))]); }); document.getElementById("reports-content").innerHTML = `<p class="muted">Generated ${escape(report.generatedAt ? new Date(report.generatedAt).toLocaleString() : "")}</p><div class="stats">${[[report.complaints?.total, "Complaints"], [report.workforce?.total, "Workers"], [report.hierarchy?.communities, "Communities"], [report.workforce?.completedWorkCount, "Completed work"]].map(([value, label]) => `<article class="stat"><b>${escape(value ?? 0)}</b><span>${escape(label)}</span></article>`).join("")}</div><h2>Required work types</h2><p>${Object.entries(report.requiredWorkTypes || {}).map(([key, value]) => `<span class="badge">${escape(key)}: ${escape(value)}</span>`).join(" ") || "No report data."}</p><h2>Community summary</h2>${table(["Community", "Towers", "Apartments", "Residents", "Workers", "Complaints", "Open"], summary)}`; }
   function renderProfile() {
     const user = state.user || {};
@@ -94,19 +112,37 @@
     const results = await Promise.all([api("/dashboard/summary"), api("/reports/overview"), api("/communities"), api("/towers"), api("/floors"), api("/apartments"), api("/users"), api("/workforce/workers"), api("/complaints")]);
     [state.dashboard, state.report, state.communities, state.towers, state.floors, state.apartments, state.users, state.workers, state.complaints] = results.map(data);
     renderAll();
+    renderTopbar();
   }
-  function openPage(name) { document.querySelectorAll(".page").forEach((page) => page.classList.toggle("active", page.id === name)); document.querySelectorAll(".nav").forEach((button) => button.classList.toggle("active", button.dataset.page === name)); document.getElementById("page-title").textContent = titles[name]; }
+  async function refreshSummary() {
+    const [dashboard, report] = await Promise.all([api("/dashboard/summary"), api("/reports/overview")]);
+    state.dashboard = data(dashboard);
+    state.report = data(report);
+    renderDashboard();
+    renderReports();
+    renderProfile();
+    renderTopbar();
+    openPage(activePage);
+  }
+  function updateRecord(collection, record) {
+    const index = state[collection].findIndex((item) => item.id === record.id);
+    if (index >= 0) state[collection][index] = record;
+    else state[collection].push(record);
+  }
+  function openPage(name) { activePage = name; document.querySelectorAll(".page").forEach((page) => page.classList.toggle("active", page.id === name)); document.querySelectorAll(".nav").forEach((button) => button.classList.toggle("active", button.dataset.page === name)); document.getElementById("page-title").textContent = titles[name]; }
   async function refresh() { notice("Refreshing platform data…"); try { await loadData(); notice("Platform data refreshed.", true); } catch (error) { notice(error.message || "Unable to load platform data."); } }
-  async function createCommunity(event) { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); try { await api("/communities", { method: "POST", body: values }); form.reset(); await refresh(); notice("Community created.", true); } catch (error) { notice(error.message || "Unable to create community."); } }
-  async function createAdmin(event) { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); try { await api("/users", { method: "POST", body: { ...values, role: "COMMUNITY_ADMIN" } }); form.reset(); await refresh(); notice("Community Admin created.", true); } catch (error) { notice(error.message || "Unable to create the Community Admin account."); } }
-  async function createWorkerProfile(event) { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); try { await api("/workforce/workers", { method: "POST", body: values }); form.reset(); await refresh(); notice("Worker profile created.", true); } catch (error) { notice(error.message || "Unable to create worker profile."); } }
+  const panelValues = (panel) => Object.fromEntries([...panel.querySelectorAll("[name]")].map((field) => [field.name, field.value]));
+  const clearPanel = (panel) => panel.querySelectorAll("input, textarea, select").forEach((field) => { field.value = ""; });
+  async function createCommunity(panel) { const values = panelValues(panel); const button = panel.querySelector("[data-create-community]"); if (!values.name?.trim() || !values.address?.trim()) return notice("Name and address are required."); button.disabled = true; try { const created = data(await api("/communities", { method: "POST", body: values })); updateRecord("communities", created); clearPanel(panel); renderCommunities(); await refreshSummary(); notice("Community created.", true); } catch (error) { notice(error.message || "Unable to create community."); } finally { button.disabled = false; } }
+  async function createAdmin(panel) { const values = panelValues(panel); const button = panel.querySelector("[data-create-admin]"); if (!values.name?.trim() || !values.email?.trim() || !values.password || !values.communityId) return notice("Complete all required Community Admin fields."); button.disabled = true; try { const created = data(await api("/users", { method: "POST", body: { ...values, role: "COMMUNITY_ADMIN" } })); updateRecord("users", created); clearPanel(panel); renderAdmins(); renderUsers(); renderWorkforce(); await refreshSummary(); notice("Community Admin created.", true); } catch (error) { notice(error.message || "Unable to create the Community Admin account."); } finally { button.disabled = false; } }
+  async function createWorkerProfile(panel) { const values = panelValues(panel); const button = panel.querySelector("[data-create-worker]"); if (!values.userId || !values.specialization) return notice("Select a worker user and specialization."); button.disabled = true; try { const created = data(await api("/workforce/workers", { method: "POST", body: values })); updateRecord("workers", created); clearPanel(panel); renderWorkforce(); await refreshSummary(); notice("Worker profile created.", true); } catch (error) { notice(error.message || "Unable to create worker profile."); } finally { button.disabled = false; } }
   function closeDetail() { if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = null; } document.getElementById("detail-modal").classList.add("hidden"); document.getElementById("detail-content").innerHTML = ""; }
   function openDetail(title, content) { closeDetail(); document.getElementById("detail-title").textContent = title; document.getElementById("detail-content").innerHTML = content; document.getElementById("detail-modal").classList.remove("hidden"); }
-  async function viewUser(id) { const user = data(await api(`/users/${id}`)); openDetail("User details", `<p><b>${escape(user.name)}</b></p><p>${escape(user.email)}</p><p>${escape(roleLabel(user.role))} · ${escape(communityName(communityForUser(user)))}</p><div class="actions"><button id="edit-user">Edit name and email</button><button class="danger" id="delete-user">Delete</button></div>`); document.getElementById("edit-user").onclick = async () => { const name = window.prompt("Name", user.name); const email = window.prompt("Email", user.email); if (!name?.trim() || !email?.trim()) return; try { await api(`/users/${id}`, { method: "PATCH", body: { name: name.trim(), email: email.trim() } }); closeDetail(); await refresh(); } catch (error) { notice(error.message || "Unable to update user."); } }; document.getElementById("delete-user").onclick = async () => { if (!window.confirm("Delete this user?")) return; try { await api(`/users/${id}`, { method: "DELETE" }); closeDetail(); await refresh(); } catch (error) { notice(error.message || "Unable to delete user."); } }; }
+  async function viewUser(id) { const user = data(await api(`/users/${id}`)); openDetail("User details", `<p><b>${escape(user.name)}</b></p><p>${escape(user.email)}</p><p>${escape(roleLabel(user.role))} · ${escape(communityName(communityForUser(user)))}</p><div class="actions"><button type="button" id="edit-user">Edit name and email</button><button type="button" class="danger" id="delete-user">Delete</button></div>`); document.getElementById("edit-user").onclick = async () => { const name = window.prompt("Name", user.name); const email = window.prompt("Email", user.email); if (!name?.trim() || !email?.trim()) return; try { const updated = data(await api(`/users/${id}`, { method: "PATCH", body: { name: name.trim(), email: email.trim() } })); updateRecord("users", updated); closeDetail(); renderAdmins(); renderUsers(); renderWorkforce(); await refreshSummary(); notice("User updated.", true); } catch (error) { notice(error.message || "Unable to update user."); } }; document.getElementById("delete-user").onclick = async () => { if (!window.confirm("Delete this user? This cannot be undone.")) return; try { await api(`/users/${id}`, { method: "DELETE" }); state.users = state.users.filter((item) => item.id !== id); closeDetail(); renderAdmins(); renderUsers(); renderWorkforce(); await refreshSummary(); notice("User deleted.", true); } catch (error) { notice(error.message || "Unable to delete user."); } }; }
   async function viewWorker(id) { const worker = data(await api(`/workforce/workers/${id}`)); const user = state.users.find((item) => item.id === worker.userId); openDetail("Worker profile", `<p><b>${escape(user?.name || "Maintenance Worker")}</b></p><p>${escape(communityName(worker.communityId))} · ${escape(worker.specialization)}</p><p>Status: ${escape(worker.status)} · Rating: ${escape(worker.rating)} · Completed: ${escape(worker.completedWorkCount)}</p><p class="hint">Work history: ${escape((worker.workHistory || []).join(", ") || "No completed work yet")}</p>`); }
   async function viewComplaint(id) { const complaint = data(await api(`/complaints/${id}`)); const [attachmentsResult, reviewResult] = await Promise.allSettled([api(`/complaints/${id}/attachments`), api(`/complaints/${id}/review`)]); const attachments = attachmentsResult.status === "fulfilled" ? data(attachmentsResult.value) : []; const review = reviewResult.status === "fulfilled" ? data(reviewResult.value) : null; const history = (complaint.statusHistory || []).map((item) => `<li>${escape(item.status)} · ${escape(new Date(item.changedAt).toLocaleString())}</li>`).join(""); openDetail("Complaint details", `<p><b>${escape(complaint.title)}</b></p><p>${escape(complaint.description)}</p><p>${escape(communityName(complaint.communityId))} · ${escape(complaint.type)} · ${escape(complaint.status)}</p><p>Work type: ${escape(complaint.requiredWorkType)} · Responsible authority: ${escape(complaint.responsibleUserName)}</p><p>Created: ${escape(new Date(complaint.createdAt).toLocaleString())}</p><h3>Status history</h3><ul>${history || "<li>No history available.</li>"}</ul><h3>Attachments</h3>${attachments.length ? attachments.map((item) => `<p>${escape(item.originalName)} · ${escape(item.mimeType)} · ${escape(item.size)} bytes <button class="secondary" data-preview-attachment="${escape(item.id)}">Preview</button></p>`).join("") : "<p class=\"muted\">No attachments.</p>"}<h3>Resident review</h3>${review ? `<p>${escape(review.rating)} / 5${review.feedback ? ` · ${escape(review.feedback)}` : ""}</p><p class="hint">${escape(new Date(review.createdAt).toLocaleString())}</p>` : "<p class=\"muted\">Awaiting resident review.</p>"}`); document.querySelectorAll("[data-preview-attachment]").forEach((button) => button.onclick = async () => { if (state.previewUrl) URL.revokeObjectURL(state.previewUrl); const blob = await api(`/complaints/${id}/attachments/${button.dataset.previewAttachment}`, { responseType: "blob" }); state.previewUrl = URL.createObjectURL(blob); const preview = document.getElementById("attachment-preview") || document.createElement("img"); preview.id = "attachment-preview"; preview.className = "attachment-preview"; preview.src = state.previewUrl; document.getElementById("detail-content").append(preview); }); }
-  async function detailAction(event) { const button = event.target.closest("button"); if (!button) return; try { if (button.dataset.userDetail) await viewUser(button.dataset.userDetail); if (button.dataset.workerDetail) await viewWorker(button.dataset.workerDetail); if (button.dataset.complaintDetail) await viewComplaint(button.dataset.complaintDetail); } catch (error) { notice(error.message || "Unable to load details."); } }
-  async function communityAction(event) { const editId = event.target.dataset.editCommunity; const deleteId = event.target.dataset.deleteCommunity; if (deleteId) { if (!window.confirm("Delete this community? The backend may reject communities with hierarchy records.")) return; try { await api(`/communities/${deleteId}`, { method: "DELETE" }); await refresh(); } catch (error) { notice(error.message || "Unable to delete community."); } } if (editId) { const community = state.communities.find((item) => item.id === editId); const name = window.prompt("Community name", community?.name); if (!name?.trim()) return; try { await api(`/communities/${editId}`, { method: "PATCH", body: { name: name.trim() } }); await refresh(); } catch (error) { notice(error.message || "Unable to update community."); } } }
+  async function detailAction(event) { const button = event.target.closest("button"); if (!button) return; event.preventDefault(); event.stopPropagation(); try { if (button.dataset.userDetail) await viewUser(button.dataset.userDetail); if (button.dataset.workerDetail) await viewWorker(button.dataset.workerDetail); if (button.dataset.complaintDetail) await viewComplaint(button.dataset.complaintDetail); } catch (error) { notice(error.message || "Unable to load details."); } }
+  async function communityAction(event) { const editId = event.target.dataset.editCommunity; const deleteId = event.target.dataset.deleteCommunity; if (!editId && !deleteId) return; event.preventDefault(); event.stopPropagation(); if (deleteId) { if (!window.confirm("Delete this community? This may affect associated towers, residents, and workers.")) return; try { await api(`/communities/${deleteId}`, { method: "DELETE" }); state.communities = state.communities.filter((item) => item.id !== deleteId); renderCommunities(); await refreshSummary(); notice("Community deleted.", true); } catch (error) { notice(error.message || "Unable to delete community."); } } if (editId) { const community = state.communities.find((item) => item.id === editId); const name = window.prompt("Community name", community?.name); if (!name?.trim()) return; try { const updated = data(await api(`/communities/${editId}`, { method: "PATCH", body: { name: name.trim() }})); updateRecord("communities", updated); renderCommunities(); await refreshSummary(); notice("Community updated.", true); } catch (error) { notice(error.message || "Unable to update community."); } } }
   async function initialize() {
     if (!window.UrbanityApi?.getAccessToken()) { window.UrbanityApi?.logout(); return; }
     try {
@@ -117,11 +153,18 @@
     } catch (error) { if (error?.status !== 401) notice(error.message || "Unable to verify your session."); }
   }
   document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("#communities-content button, #users-content button, #workforce-content button, #complaints-content button");
+      if (actionButton) event.preventDefault();
+    }, true);
+    document.addEventListener("submit", (event) => {
+      event.preventDefault();
+    }, true);
     document.querySelectorAll(".nav").forEach((button) => button.addEventListener("click", () => openPage(button.dataset.page)));
     document.querySelectorAll(".refresh").forEach((button) => button.addEventListener("click", refresh));
-    document.getElementById("community-form").addEventListener("submit", createCommunity);
-    document.getElementById("admin-form").addEventListener("submit", createAdmin);
-    document.getElementById("worker-form").addEventListener("submit", createWorkerProfile);
+    document.querySelector("[data-create-community]").addEventListener("click", () => createCommunity(document.getElementById("community-form")));
+    document.querySelector("[data-create-admin]").addEventListener("click", () => createAdmin(document.getElementById("admin-form")));
+    document.querySelector("[data-create-worker]").addEventListener("click", () => createWorkerProfile(document.getElementById("worker-form")));
     document.getElementById("communities-content").addEventListener("click", communityAction);
     document.getElementById("users-content").addEventListener("click", detailAction);
     document.getElementById("workforce-content").addEventListener("click", detailAction);
@@ -137,6 +180,25 @@
     document.getElementById("detail-close").addEventListener("click", closeDetail);
     document.getElementById("detail-modal").addEventListener("click", (event) => { if (event.target.id === "detail-modal") closeDetail(); });
     document.getElementById("logout").addEventListener("click", () => window.UrbanityApi.logout());
+    const closeTopbarMenus = () => {
+      document.querySelectorAll(".topbar-menu").forEach((menu) => menu.classList.add("hidden"));
+      document.querySelectorAll("#notifications-toggle, #profile-toggle").forEach((button) => button.setAttribute("aria-expanded", "false"));
+    };
+    const toggleTopbarMenu = (buttonId, menuId) => {
+      const button = document.getElementById(buttonId);
+      const menu = document.getElementById(menuId);
+      const opening = menu.classList.contains("hidden");
+      closeTopbarMenus();
+      menu.classList.toggle("hidden", !opening);
+      button.setAttribute("aria-expanded", String(opening));
+    };
+    document.getElementById("notifications-toggle").addEventListener("click", () => toggleTopbarMenu("notifications-toggle", "notifications-menu"));
+    document.getElementById("profile-toggle").addEventListener("click", () => toggleTopbarMenu("profile-toggle", "profile-menu"));
+    document.getElementById("mark-notifications-read").addEventListener("click", () => { document.getElementById("notification-count").textContent = "All caught up"; document.getElementById("notification-dot").classList.add("hidden"); });
+    document.querySelector("[data-topbar-page='profile']").addEventListener("click", () => { openPage("profile"); closeTopbarMenus(); });
+    document.getElementById("topbar-help").addEventListener("click", () => { notice("For platform support, contact the Urbanity administration team."); closeTopbarMenus(); });
+    document.getElementById("topbar-logout").addEventListener("click", () => window.UrbanityApi.logout());
+    document.addEventListener("click", (event) => { if (!event.target.closest(".topbar-dropdown")) closeTopbarMenus(); });
     initialize();
   });
 })();

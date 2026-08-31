@@ -1,7 +1,9 @@
 const ADMIN_MODULES = [
   "dashboard",
   "system-issues",
+  "community-management",
   "users-roles",
+  "users",
   "activity-monitor",
   "profile",
 ];
@@ -9,6 +11,18 @@ const ADMIN_MODULES = [
 const ADMIN_PAGE_STATE_KEY = "urbanity.admin.lastPage";
 let authenticatedAdmin = false;
 let authenticatedAdminUser = null;
+
+// A failed mutation must remain in the current workspace so its error can be
+// shown there. Initial authentication continues to use UrbanityApi directly.
+function adminApiRequest(path, options = {}) {
+  return window.UrbanityApi.apiRequest(path, { ...options, redirectOnUnauthorized: false });
+}
+
+// This file is loaded only by the Community Admin portal. Native form
+// navigation is never valid here; every form is handled asynchronously below.
+document.addEventListener("submit", (event) => {
+  event.preventDefault();
+}, true);
 
 function showAdminToast(message, type = "info") {
   if (window.UIFeedback?.toast) {
@@ -69,8 +83,42 @@ function applyCurrentUserToAdminUI() {
 
   const profilePage = document.getElementById("page-profile");
   if (profilePage) {
-    profilePage.innerHTML = `<div class="page-header"><h1 class="page-title">My Profile</h1><p class="page-description">Authenticated Community Admin account details.</p></div><section class="card"><div class="card-content"><div class="flex items-center gap-4"><div class="avatar-large" id="adminProfileAvatar">${hierarchyEscape(initials)}</div><div><h2 class="text-xl font-semibold" id="adminProfileName">${hierarchyEscape(displayName)}</h2><p class="text-gray-500" id="adminInfoEmail">${hierarchyEscape(currentUser.email || "Not available")}</p><p class="text-sm text-gray-500">${hierarchyEscape(complaintLabel(currentUser.role || "COMMUNITY_ADMIN"))}</p></div></div></div></section>`;
+    const towers = hierarchyState.towers.length;
+    const floors = hierarchyState.floors.length;
+    const residents = userManagementState.users.filter((user) => user.role === "RESIDENT").length;
+    const openComplaints = complaintManagementState.complaints.filter((item) => !["RESOLVED", "REVIEWED", "CLOSED"].includes(item.status)).length;
+    profilePage.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Admin Profile</h1><p class="page-description">Your authenticated access, community scope, and operational overview.</p></div><button class="btn btn-primary" type="button" id="editCommunityAdminProfile">Edit profile</button></div><section class="community-profile-hero"><div class="community-profile-avatar">${hierarchyEscape(initials)}</div><div><p>COMMUNITY ADMIN</p><h2>${hierarchyEscape(displayName)}</h2><span>${hierarchyEscape(currentUser.email || "Not available")}</span></div><div class="community-profile-status">✓ Active authenticated session</div></section><div class="community-profile-grid"><section class="card"><div class="card-header"><h3 class="card-title">Account &amp; access</h3></div><div class="card-content profile-detail-grid"><div><span>Role</span><b>Community Admin</b></div><div><span>Community scope</span><b>${hierarchyEscape(hierarchyState.communities.map((community) => community.name).join(", ") || "Loading community")}</b></div><div><span>Email</span><b>${hierarchyEscape(currentUser.email || "Not available")}</b></div><div><span>Permissions</span><b>Community operations</b></div></div></section><section class="card"><div class="card-header"><h3 class="card-title">Your community at a glance</h3></div><div class="card-content community-profile-stats"><div><b>${towers}</b><span>Towers</span></div><div><b>${floors}</b><span>Floors</span></div><div><b>${residents}</b><span>Residents</span></div><div><b>${openComplaints}</b><span>Open complaints</span></div></div></section></div><section class="card"><div class="card-header"><h3 class="card-title">Quick actions</h3></div><div class="card-content community-profile-actions"><button type="button" class="btn btn-outline" data-community-admin-page="users-roles">Manage residents</button><button type="button" class="btn btn-outline" data-community-admin-page="users-roles">Set up towers &amp; floors</button><button type="button" class="btn btn-outline" data-community-admin-page="system-issues">Review complaints</button><button type="button" class="btn btn-outline" data-community-admin-page="activity-monitor">View reports</button></div></section>`;
+    document.getElementById("editCommunityAdminProfile")?.addEventListener("click", editCommunityAdminProfile);
+    profilePage.querySelectorAll("[data-community-admin-page]").forEach((button) => button.addEventListener("click", () => navigateTo(button.textContent.includes("towers") ? "community-management" : button.textContent.includes("residents") ? "users" : button.dataset.communityAdminPage)));
   }
+}
+
+async function editCommunityAdminProfile() {
+  const currentUser = getCurrentSessionUser();
+  if (!currentUser?.id) return;
+  document.getElementById("communityAdminProfileModal")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "communityAdminProfileModal";
+  overlay.className = "modal-overlay active";
+  overlay.innerHTML = `<div class="modal"><div class="modal-header"><h3 class="modal-title">Edit Profile</h3><button class="modal-close" type="button" data-close>&times;</button></div><form id="communityAdminProfileForm"><div class="modal-body"><label class="form-label">Full name</label><input class="form-input" name="name" value="${hierarchyEscape(currentUser.name || "")}" required><label class="form-label">Email</label><input class="form-input" type="email" name="email" value="${hierarchyEscape(currentUser.email || "")}" required><label class="form-label">Phone</label><input class="form-input" name="phone" value="${hierarchyEscape(currentUser.phone || "")}" placeholder="Optional phone number"></div><div class="modal-footer"><button class="btn btn-outline" type="button" data-close>Cancel</button><button class="btn btn-primary" type="submit">Save changes</button></div></form></div>`;
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (event) => { if (event.target === overlay || event.target.closest("[data-close]")) close(); });
+  overlay.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const submit = event.currentTarget.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      const body = { name: values.name.trim(), email: values.email.trim() };
+      if (values.phone.trim()) body.phone = values.phone.trim();
+    await adminApiRequest(`/users/${currentUser.id}`, { method: "PATCH", body });
+      authenticatedAdminUser = await window.UrbanityApi.getCurrentUser();
+      applyCurrentUserToAdminUI();
+      close();
+      showAdminToast("Profile updated successfully.", "success");
+    } catch (error) { showAdminToast(error.message || "Unable to update profile.", "error"); submit.disabled = false; }
+  };
+  document.body.appendChild(overlay);
 }
 
 function hasPermission(moduleName, action) {
@@ -97,12 +145,14 @@ function navigateTo(page, evt) {
     return;
   }
 
+  const resolvedPage = page === "users" ? "users-roles" : page;
+  if (page === "community-management") showCommunityManagement();
   // Hide all pages
   const pages = document.querySelectorAll('[id^="page-"]');
   pages.forEach((p) => p.classList.add("hidden"));
 
   // Show selected page
-  const selectedPage = document.getElementById("page-" + page);
+  const selectedPage = document.getElementById("page-" + resolvedPage);
   if (selectedPage) {
     selectedPage.classList.remove("hidden");
   }
@@ -123,7 +173,14 @@ function navigateTo(page, evt) {
   }
 
   persistAdminPage(page);
+  if (page === "users") showUsersWorkspace();
   if (page === "dashboard" || page === "activity-monitor") refreshAdminAnalytics();
+}
+
+function navigateToManagementTab(tabId) {
+  navigateTo("users-roles");
+  const tab = document.querySelector(`[onclick*="'${tabId}'"]`);
+  if (tab) tab.click();
 }
 
 // Tab Switching
@@ -222,7 +279,7 @@ const analyticsCard = (label, value) => `<div style="padding:12px;border:1px sol
 
 function renderAdminAnalyticsLoading() {
   const dashboard = document.getElementById("page-dashboard");
-  if (dashboard) dashboard.innerHTML = '<div class="page-header"><h1 class="page-title">Community Dashboard</h1><p class="page-description">Loading authenticated community data...</p></div>';
+  if (dashboard) dashboard.innerHTML = '<section class="community-dashboard-loading"><span class="dashboard-loader"></span><div><p class="eyebrow">COMMUNITY OPERATIONS</p><h1>Preparing your live workspace</h1><p>Loading community, resident, complaint, and workforce data.</p></div></section>';
 }
 
 function renderAdminAnalytics(data, unavailable = []) {
@@ -230,36 +287,89 @@ function renderAdminAnalytics(data, unavailable = []) {
   const status = (value) => analyticsCount(complaints, "status", value), type = (value) => analyticsCount(complaints, "type", value), workerStatus = (value) => analyticsCount(workers, "status", value);
   const totalCompleted = workers.reduce((sum, worker) => sum + Number(worker.completedWorkCount || 0), 0);
   const averageRating = workers.length ? (workers.reduce((sum, worker) => sum + Number(worker.rating || 0), 0) / workers.length).toFixed(2) : "0.00";
+  const occupiedApartments = users.filter((user) => user.role === "RESIDENT" && user.apartmentId).length;
+  const vacantApartments = Math.max(apartments.length - occupiedApartments, 0);
   const statusCards = ["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REVIEWED", "CLOSED"].map((value) => analyticsCard(complaintLabel(value), status(value))).join("");
   const workTypeCards = [...new Set(complaints.map((item) => item.requiredWorkType).filter(Boolean))].map((value) => analyticsCard(`${complaintLabel(value)} Complaints`, analyticsCount(complaints, "requiredWorkType", value))).join("");
   const warning = unavailable.length ? `<p class="text-sm" style="color:#b45309;margin-bottom:16px;">Some metrics are unavailable: ${hierarchyEscape(unavailable.join(", "))}.</p>` : "";
   const recent = [...complaints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
   const dashboard = document.getElementById("page-dashboard");
-  if (dashboard) dashboard.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Dashboard</h1><p class="page-description">Authenticated apartment-community complaint and maintenance overview.</p></div><button class="btn btn-outline" id="refreshCommunityDashboard">Refresh</button></div>${warning}<div class="stats-grid">${analyticsCard("Communities", communities.length)}${analyticsCard("Apartments", apartments.length)}${analyticsCard("Total Complaints", complaints.length)}${analyticsCard("Available Workers", workerStatus("AVAILABLE"))}</div><div class="grid-3" style="grid-template-columns:2fr 1fr;margin:24px 0;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Status</h3></div><div class="card-content"><div class="grid-4">${statusCards}</div></div></section><section class="card"><div class="card-header"><h3 class="card-title">Community Structure</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Towers", towers.length)}${analyticsCard("Floors", floors.length)}${analyticsCard("Apartments", apartments.length)}</div></section></div><div class="grid-3" style="margin-bottom:24px;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Types</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Apartment Complaints", type("APARTMENT"))}${analyticsCard("Tower Complaints", type("TOWER"))}${analyticsCard("Community Complaints", type("COMMUNITY"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Maintenance Workforce</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Available", workerStatus("AVAILABLE"))}${analyticsCard("Busy", workerStatus("BUSY"))}${analyticsCard("On Leave", workerStatus("ON_LEAVE"))}${analyticsCard("Inactive", workerStatus("INACTIVE"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Users & Performance</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Residents", analyticsCount(users, "role", "RESIDENT"))}${analyticsCard("Tower Representatives", analyticsCount(users, "role", "TOWER_REPRESENTATIVE"))}${analyticsCard("Maintenance Workers", analyticsCount(users, "role", "MAINTENANCE_WORKER"))}${analyticsCard("Completed Works", totalCompleted)}${analyticsCard("Average Worker Rating", averageRating)}</div></section></div><section class="card"><div class="card-header"><h3 class="card-title">Recent Complaints</h3></div><div class="card-content"><div style="overflow:auto;"><table><thead><tr><th>Complaint</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody>${recent.length ? recent.map((item) => `<tr><td>${hierarchyEscape(item.title)}</td><td>${hierarchyEscape(complaintLabel(item.type))}</td><td>${hierarchyEscape(complaintLabel(item.status))}</td><td>${hierarchyEscape(new Date(item.createdAt).toLocaleString())}</td></tr>`).join("") : '<tr><td colspan="4">No complaints found.</td></tr>'}</tbody></table></div></div></section>`;
+  if (dashboard) dashboard.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Operations Dashboard</h1><p class="page-description">A live overview of your community structure, residents, complaints, and maintenance workforce.</p></div><button class="btn btn-outline" id="refreshCommunityDashboard">Refresh</button></div>${warning}<div class="stats-grid">${analyticsCard("Total Towers", towers.length)}${analyticsCard("Total Floors", floors.length)}${analyticsCard("Total Apartments", apartments.length)}${analyticsCard("Occupied Apartments", occupiedApartments)}${analyticsCard("Vacant Apartments", vacantApartments)}${analyticsCard("Total Residents", analyticsCount(users, "role", "RESIDENT"))}${analyticsCard("Open Complaints", complaints.filter((item) => !["RESOLVED", "REVIEWED", "CLOSED"].includes(item.status)).length)}${analyticsCard("Available Workers", workerStatus("AVAILABLE"))}</div><div class="grid-3" style="grid-template-columns:2fr 1fr;margin:24px 0;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Status</h3></div><div class="card-content"><div class="grid-4">${statusCards}</div></div></section><section class="card"><div class="card-header"><h3 class="card-title">Community Occupancy</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Occupied", occupiedApartments)}${analyticsCard("Vacant", vacantApartments)}${analyticsCard("Apartments", apartments.length)}</div></section></div><div class="grid-3" style="margin-bottom:24px;"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Types</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Apartment", type("APARTMENT"))}${analyticsCard("Tower", type("TOWER"))}${analyticsCard("Community", type("COMMUNITY"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Maintenance Workforce</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Available", workerStatus("AVAILABLE"))}${analyticsCard("Busy", workerStatus("BUSY"))}${analyticsCard("On Leave", workerStatus("ON_LEAVE"))}${analyticsCard("Inactive", workerStatus("INACTIVE"))}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Performance</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Under Review", status("UNDER_REVIEW"))}${analyticsCard("Assigned", status("ASSIGNED"))}${analyticsCard("In Progress", status("IN_PROGRESS"))}${analyticsCard("Awaiting Review", status("RESOLVED"))}${analyticsCard("Closed", status("CLOSED"))}${analyticsCard("Average Worker Rating", averageRating)}</div></section></div><section class="card"><div class="card-header"><h3 class="card-title">Recent Complaints</h3></div><div class="card-content"><div style="overflow:auto;"><table><thead><tr><th>Complaint</th><th>Location</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody>${recent.length ? recent.map((item) => `<tr><td>${hierarchyEscape(item.title)}</td><td>${hierarchyEscape(complaintLocation(item))}</td><td>${hierarchyEscape(complaintLabel(item.type))}</td><td>${hierarchyEscape(complaintLabel(item.status))}</td><td>${hierarchyEscape(new Date(item.createdAt).toLocaleString())}</td></tr>`).join("") : '<tr><td colspan="5">No complaints found.</td></tr>'}</tbody></table></div></div></section>`;
   document.getElementById("refreshCommunityDashboard")?.addEventListener("click", refreshAdminAnalytics);
   const reports = document.getElementById("page-activity-monitor");
   if (reports) reports.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Reports</h1><p class="page-description">Backend-derived complaint, workforce, and community structure report.</p></div><button class="btn btn-outline" id="refreshCommunityReports">Refresh</button></div>${warning}<div class="grid-3"><section class="card"><div class="card-header"><h3 class="card-title">Complaint Summary</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Total Complaints", complaints.length)}${statusCards}${workTypeCards}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Workforce Report</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Available", workerStatus("AVAILABLE"))}${analyticsCard("Busy", workerStatus("BUSY"))}${analyticsCard("On Leave", workerStatus("ON_LEAVE"))}${analyticsCard("Inactive", workerStatus("INACTIVE"))}${analyticsCard("Completed Works", totalCompleted)}${analyticsCard("Average Rating", averageRating)}</div></section><section class="card"><div class="card-header"><h3 class="card-title">Community Structure</h3></div><div class="card-content" style="display:grid;gap:10px;">${analyticsCard("Communities", communities.length)}${analyticsCard("Towers", towers.length)}${analyticsCard("Floors", floors.length)}${analyticsCard("Apartments", apartments.length)}${analyticsCard("Community Admins", analyticsCount(users, "role", "COMMUNITY_ADMIN"))}</div></section></div>`;
   document.getElementById("refreshCommunityReports")?.addEventListener("click", refreshAdminAnalytics);
+  renderProfessionalCommunityDashboard(data, unavailable);
+}
+
+function renderProfessionalCommunityDashboard(data, unavailable = []) {
+  const dashboard = document.getElementById("page-dashboard");
+  if (!dashboard) return;
+  const complaints = data.complaints || [], workers = data.workers || [], towers = data.towers || [], floors = data.floors || [], apartments = data.apartments || [], users = data.users || [];
+  const residents = users.filter((user) => user.role === "RESIDENT");
+  const occupied = residents.filter((user) => user.apartmentId).length;
+  const vacant = Math.max(apartments.length - occupied, 0);
+  const openStatuses = ["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS"];
+  const openCount = complaints.filter((item) => openStatuses.includes(item.status)).length;
+  const available = workers.filter((worker) => worker.status === "AVAILABLE").length;
+  const occupancy = apartments.length ? Math.round((occupied / apartments.length) * 100) : null;
+  const pending = complaints.filter((item) => item.status === "SUBMITTED" || (item.status === "UNDER_REVIEW" && !item.assignedWorkerId) || item.status === "REVIEWED");
+  const statusOrder = ["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REVIEWED", "CLOSED"];
+  const statusRows = statusOrder.map((value) => { const count = analyticsCount(complaints, "status", value); const percent = complaints.length ? Math.round((count / complaints.length) * 100) : 0; return `<div class="workflow-row"><span class="status-dot status-${value.toLowerCase()}"></span><span>${hierarchyEscape(complaintLabel(value))}</span><div class="workflow-track"><i style="width:${percent}%"></i></div><b>${count}</b><small>${percent}%</small></div>`; }).join("");
+  const userName = (workerId) => { const worker = workers.find((item) => item.id === workerId); return users.find((item) => item.id === worker?.userId)?.name || "Unassigned"; };
+  const recent = [...complaints].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+  const warning = unavailable.length ? `<div class="dashboard-warning">Some live metrics are currently unavailable: ${hierarchyEscape(unavailable.join(", "))}.</div>` : "";
+  dashboard.innerHTML = `<section class="community-dashboard-hero"><div><p class="eyebrow">COMMUNITY OPERATIONS</p><h1>Good ${new Date().getHours() < 12 ? "morning" : "day"}, Community Admin</h1><p>Monitor occupancy, maintenance activity, and resident issues from one live workspace.</p></div><div class="dashboard-hero-actions"><button type="button" class="btn btn-primary" data-dashboard-page="community-management">Manage community</button><button type="button" class="btn btn-outline" id="refreshCommunityDashboard">Refresh data</button></div></section>${warning}<section class="dashboard-kpis"><article><span class="kpi-icon">⌂</span><div><small>Total apartments</small><b>${apartments.length}</b><em>${occupied} occupied</em></div></article><article><span class="kpi-icon kpi-green">●</span><div><small>Occupancy</small><b>${occupancy === null ? "—" : `${occupancy}%`}</b><em>${vacant} vacant apartments</em></div></article><article><span class="kpi-icon kpi-orange">!</span><div><small>Open complaints</small><b>${openCount}</b><em>${pending.length} need action</em></div></article><article><span class="kpi-icon kpi-purple">♧</span><div><small>Available workers</small><b>${available}</b><em>${workers.length} workforce profiles</em></div></article></section><section class="dashboard-layout"><div class="dashboard-main-column"><article class="dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">SERVICE DELIVERY</p><h2>Complaint operations</h2></div><button type="button" class="btn-link" data-dashboard-page="system-issues">View all complaints</button></div><div class="workflow-list">${statusRows}</div></article><article class="dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">LATEST ACTIVITY</p><h2>Recent complaints</h2></div></div><div class="dashboard-table-wrap"><table><thead><tr><th>Complaint</th><th>Location</th><th>Status</th><th>Assigned to</th><th></th></tr></thead><tbody>${recent.length ? recent.map((item) => `<tr><td><b>${hierarchyEscape(item.title)}</b><small>${hierarchyEscape(complaintLabel(item.requiredWorkType))}</small></td><td>${hierarchyEscape(complaintLocation(item))}</td><td><span class="status-badge status-${String(item.status).toLowerCase()}">${hierarchyEscape(complaintLabel(item.status))}</span></td><td>${hierarchyEscape(userName(item.assignedWorkerId))}</td><td><button type="button" class="btn-link dashboard-complaint-action" data-id="${item.id}">Open</button></td></tr>`).join("") : '<tr><td colspan="5" class="dashboard-empty">No complaints have been submitted yet.</td></tr>'}</tbody></table></div></article></div><aside class="dashboard-side-column"><article class="dashboard-panel occupancy-panel"><p class="eyebrow">COMMUNITY HEALTH</p><h2>Occupancy snapshot</h2><div class="occupancy-meter" style="--occupancy:${occupancy ?? 0}%"><div><b>${occupancy === null ? "—" : `${occupancy}%`}</b><span>occupied</span></div></div><div class="occupancy-stats"><span><b>${occupied}</b> Occupied</span><span><b>${vacant}</b> Vacant</span></div></article><article class="dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">ACTION REQUIRED</p><h2>Admin queue</h2></div></div><div class="attention-list">${pending.length ? pending.slice(0, 4).map((item) => `<button type="button" class="attention-item dashboard-complaint-action" data-id="${item.id}"><span><b>${hierarchyEscape(item.title)}</b><small>${hierarchyEscape(complaintLabel(item.status))} · ${hierarchyEscape(complaintLocation(item))}</small></span><i>›</i></button>`).join("") : '<p class="dashboard-empty">Nothing needs your attention right now.</p>'}</div></article><article class="dashboard-panel quick-panel"><p class="eyebrow">QUICK ACTIONS</p><h2>Manage your community</h2><button type="button" data-dashboard-page="community-management">Add tower, floor, or apartment <i>›</i></button><button type="button" data-dashboard-page="users">Create resident or worker <i>›</i></button><button type="button" data-dashboard-page="system-issues">Review complaints <i>›</i></button></article></aside></section>`;
+  dashboard.querySelector("#refreshCommunityDashboard")?.addEventListener("click", refreshAdminAnalytics);
+  dashboard.querySelectorAll("[data-dashboard-page]").forEach((button) => button.onclick = () => navigateTo(button.dataset.dashboardPage));
+  dashboard.querySelectorAll(".dashboard-complaint-action").forEach((button) => button.onclick = () => { navigateTo("system-issues"); viewManagedComplaint(button.dataset.id); });
+}
+
+function appendOperationalDashboard(data) {
+  const dashboard = document.getElementById("page-dashboard");
+  if (!dashboard) return;
+  const complaints = data.complaints || [];
+  const apartments = data.apartments || [];
+  const users = data.users || [];
+  const towers = data.towers || [];
+  const floors = data.floors || [];
+  const open = (item) => !["RESOLVED", "REVIEWED", "CLOSED"].includes(item.status);
+  const required = complaints.filter((item) => item.status === "SUBMITTED" || (item.status === "UNDER_REVIEW" && !item.assignedWorkerId) || item.status === "REVIEWED");
+  const residentFor = (id) => users.find((user) => user.role === "RESIDENT" && user.apartmentId === id);
+  const towerRows = towers.map((tower) => {
+    const towerFloors = floors.filter((floor) => floor.towerId === tower.id);
+    const towerApartments = apartments.filter((apartment) => towerFloors.some((floor) => floor.id === apartment.floorId));
+    const occupied = towerApartments.filter((apartment) => residentFor(apartment.id)).length;
+    const towerOpen = complaints.filter((complaint) => open(complaint) && (complaint.towerId === tower.id || towerApartments.some((apartment) => apartment.id === complaint.apartmentId))).length;
+    return `<tr><td><button type="button" class="btn-link tower-dashboard-link">${hierarchyEscape(tower.name)}</button></td><td>${towerFloors.length}</td><td>${towerApartments.length}</td><td>${occupied}</td><td>${towerApartments.length - occupied}</td><td>${towerOpen}</td></tr>`;
+  }).join("");
+  dashboard.insertAdjacentHTML("beforeend", `<div class="grid-2" style="margin-top:24px;"><section class="card"><div class="card-header"><h3 class="card-title">Action Required</h3></div><div class="card-content"><div style="overflow:auto"><table><thead><tr><th>Complaint</th><th>Location</th><th>Status</th><th>Action</th></tr></thead><tbody>${required.length ? required.map((item) => `<tr><td>${hierarchyEscape(item.title)}</td><td>${hierarchyEscape(complaintLocation(item))}</td><td>${hierarchyEscape(complaintLabel(item.status))}</td><td><button type="button" class="btn btn-outline btn-sm dashboard-complaint-action" data-id="${item.id}">${item.status === "SUBMITTED" ? "Review complaint" : item.status === "REVIEWED" ? "Close complaint" : "Assign worker"}</button></td></tr>`).join("") : '<tr><td colspan="4">No complaints currently require action.</td></tr>'}</tbody></table></div></div></section><section class="card"><div class="card-header"><h3 class="card-title">Quick Actions</h3></div><div class="card-content community-profile-actions"><button class="btn btn-outline" type="button" data-dashboard-page="users-roles">Add Tower</button><button class="btn btn-outline" type="button" data-dashboard-page="users-roles">Add Floor</button><button class="btn btn-outline" type="button" data-dashboard-page="users-roles">Add Apartment</button><button class="btn btn-outline" type="button" data-dashboard-page="users">Create Resident</button><button class="btn btn-outline" type="button" data-dashboard-page="users">Create Worker</button><button class="btn btn-outline" type="button" data-dashboard-page="system-issues">View Complaints</button></div></section></div><section class="card" style="margin-top:24px"><div class="card-header"><h3 class="card-title">Tower Overview</h3></div><div class="card-content"><div style="overflow:auto"><table><thead><tr><th>Tower</th><th>Floors</th><th>Apartments</th><th>Occupied</th><th>Vacant</th><th>Open Complaints</th></tr></thead><tbody>${towerRows || '<tr><td colspan="6">No towers found.</td></tr>'}</tbody></table></div></div></section>`);
+  dashboard.querySelectorAll(".dashboard-complaint-action").forEach((button) => button.onclick = () => { navigateTo("system-issues"); viewManagedComplaint(button.dataset.id); });
+  dashboard.querySelectorAll("[data-dashboard-page]").forEach((button) => button.onclick = () => navigateTo(button.textContent.startsWith("Add") ? "community-management" : button.dataset.dashboardPage));
+  dashboard.querySelectorAll(".tower-dashboard-link").forEach((button) => button.onclick = () => navigateTo("users-roles"));
 }
 
 async function refreshAdminAnalytics() {
   if (adminAnalyticsState.loading) return;
   adminAnalyticsState.loading = true;
-  ["page-dashboard", "page-activity-monitor"].forEach((id) => { const page = document.getElementById(id); if (page) page.innerHTML = '<div class="page-header"><h1 class="page-title">Community Dashboard</h1><p class="page-description">Loading authenticated community data...</p></div>'; });
+  renderAdminAnalyticsLoading();
   const resources = { complaints: "/complaints", workers: "/workforce/workers", communities: "/communities", towers: "/towers", floors: "/floors", apartments: "/apartments", users: "/users" };
-  const results = await Promise.allSettled(Object.entries(resources).map(async ([key, path]) => [key, await window.UrbanityApi.apiRequest(path)]));
-  const data = {}, unavailable = [];
-  results.forEach((result, index) => { const key = Object.keys(resources)[index]; if (result.status === "fulfilled") data[key] = result.value[1].data || []; else { data[key] = []; unavailable.push(key); } });
-  adminAnalyticsState.loading = false;
-  renderAdminAnalytics(data, unavailable);
+  try {
+    const results = await Promise.allSettled(Object.entries(resources).map(async ([key, path]) => [key, await adminApiRequest(path)]));
+    const data = {}, unavailable = [];
+    results.forEach((result, index) => { const key = Object.keys(resources)[index]; if (result.status === "fulfilled") data[key] = result.value[1].data || []; else { data[key] = []; unavailable.push(key); } });
+    renderAdminAnalytics(data, unavailable);
+  } finally {
+    adminAnalyticsState.loading = false;
+  }
 }
 
 async function loadHierarchyData() {
   const [communities, towers, floors, apartments] = await Promise.all([
-    window.UrbanityApi.apiRequest("/communities"),
-    window.UrbanityApi.apiRequest("/towers"),
-    window.UrbanityApi.apiRequest("/floors"),
-    window.UrbanityApi.apiRequest("/apartments"),
+    adminApiRequest("/communities"),
+    adminApiRequest("/towers"),
+    adminApiRequest("/floors"),
+    adminApiRequest("/apartments"),
   ]);
   hierarchyState.communities = communities.data || [];
   hierarchyState.towers = towers.data || [];
@@ -271,8 +381,20 @@ function hierarchyOptions(items, selectedId, labelFor) {
   return `<option value="">Select parent</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${hierarchyEscape(labelFor(item))}</option>`).join("")}`;
 }
 
+function showCommunityManagement() {
+  let page = document.getElementById("page-community-management");
+  if (!page) {
+    page = document.createElement("div");
+    page.id = "page-community-management";
+    page.className = "hidden";
+    document.getElementById("pageContent")?.appendChild(page);
+  }
+  page.innerHTML = `<div class="page-header"><h1 class="page-title">Community Management</h1><p class="page-description">Manage your physical community structure: towers, floors, and apartments.</p></div><div id="communityManagementHierarchy"></div>`;
+  renderHierarchyManagement();
+}
+
 function renderHierarchyManagement() {
-  const container = document.getElementById("tab-departments-tab");
+  const container = document.getElementById("communityManagementHierarchy");
   if (!container) return;
   const communityName = (id) => hierarchyState.communities.find((item) => item.id === id)?.name || "Unknown community";
   const towerName = (id) => hierarchyState.towers.find((item) => item.id === id)?.name || "Unknown tower";
@@ -281,17 +403,55 @@ function renderHierarchyManagement() {
   container.innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">Community Hierarchy Management</h3></div><div class="card-content"><p style="margin-bottom:16px;">Community → Tower → Floor → Apartment</p><div class="grid-2"><form id="communityForm"><h4>Community</h4><input class="form-input" name="name" placeholder="Community name" required><input class="form-input" name="address" placeholder="Community address" required><textarea class="form-input" name="description" placeholder="Description (optional)"></textarea><button class="btn btn-primary" type="submit">Add Community</button></form><form id="towerForm"><h4>Tower</h4><select class="form-select" name="communityId" required>${hierarchyOptions(hierarchyState.communities, "", (item) => item.name)}</select><input class="form-input" name="name" placeholder="Tower name" required><input class="form-input" name="code" placeholder="Tower code" required><button class="btn btn-primary" type="submit">Add Tower</button></form><form id="floorForm"><h4>Floor</h4><select class="form-select" name="towerId" required>${hierarchyOptions(hierarchyState.towers, "", (item) => `${item.name} (${communityName(item.communityId)})`)}</select><input class="form-input" name="floorNumber" type="number" min="0" placeholder="Floor number" required><input class="form-input" name="label" placeholder="Floor label" required><button class="btn btn-primary" type="submit">Add Floor</button></form><form id="apartmentForm"><h4>Apartment</h4><select class="form-select" name="floorId" required>${hierarchyOptions(hierarchyState.floors, "", (item) => `${item.label} (${towerName(item.towerId)})`)}</select><input class="form-input" name="apartmentNumber" placeholder="Apartment number" required><input class="form-input" name="label" placeholder="Apartment label" required><button class="btn btn-primary" type="submit">Add Apartment</button></form></div></div></div>${list("Communities", hierarchyState.communities.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b><br><small>${hierarchyEscape(item.address)}</small></td><td>${hierarchyEscape(item.description || "")}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('communities','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('communities','${item.id}')">Delete</button></td></tr>`), "No communities found.")}${list("Towers", hierarchyState.towers.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b> (${hierarchyEscape(item.code)})</td><td>${hierarchyEscape(communityName(item.communityId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('towers','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('towers','${item.id}')">Delete</button></td></tr>`), "No towers found.")}${list("Floors", hierarchyState.floors.map((item) => `<tr><td><b>${item.floorNumber}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(towerName(item.towerId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('floors','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('floors','${item.id}')">Delete</button></td></tr>`), "No floors found.")}${list("Apartments", hierarchyState.apartments.map((item) => `<tr><td><b>${hierarchyEscape(item.apartmentNumber)}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(floorName(item.floorId))}</td><td><button class="btn btn-outline btn-sm" onclick="editHierarchy('apartments','${item.id}')">Edit</button> <button class="btn btn-outline btn-sm" onclick="deleteHierarchy('apartments','${item.id}')">Delete</button></td></tr>`), "No apartments found.")}`;
   // Community records are platform-owned; this portal can only display them.
   container.querySelector("#communityForm")?.remove();
+  // Keep hierarchy creation entirely out of the browser's native form path.
+  container.querySelectorAll("#towerForm, #floorForm, #apartmentForm").forEach((form) => {
+    const panel = document.createElement("div");
+    panel.id = form.id;
+    panel.className = `${form.className} hierarchy-form`;
+    panel.innerHTML = form.innerHTML;
+    form.replaceWith(panel);
+    const saveButton = panel.querySelector('button[type="submit"]');
+    if (saveButton) { saveButton.type = "button"; saveButton.dataset.hierarchySave = ""; }
+  });
   container.querySelectorAll("[onclick*=\"'communities'\"]").forEach((button) => button.remove());
-  document.getElementById("towerForm").onsubmit = (event) => submitHierarchy(event, "towers");
-  document.getElementById("floorForm").onsubmit = (event) => submitHierarchy(event, "floors");
-  document.getElementById("apartmentForm").onsubmit = (event) => submitHierarchy(event, "apartments");
+  container.insertAdjacentHTML("afterbegin", `<div class="page-header"><h2 class="page-title">Community setup</h2><p class="page-description">Follow the required order: Tower → Floor → Apartment → Resident.</p></div><div class="hierarchy-steps"><span>1. Create tower</span><i>→</i><span>2. Add floor</span><i>→</i><span>3. Add apartment</span><i>→</i><span>4. Create &amp; associate resident</span></div>`);
+  const bindHierarchyForm = (selector, resource) => {
+    const panel = container.querySelector(selector);
+    panel.querySelector("[data-hierarchy-save]").onclick = () => submitHierarchy(panel, resource);
+  };
+  bindHierarchyForm("#towerForm", "towers");
+  bindHierarchyForm("#floorForm", "floors");
+  bindHierarchyForm("#apartmentForm", "apartments");
+  container.querySelectorAll('button:not([type])').forEach((button) => { button.type = "button"; });
+  container.querySelectorAll("section.card").forEach((section, index) => { section.dataset.hierarchyRecords = ["communities", "towers", "floors", "apartments"][index]; });
 }
 
-async function submitHierarchy(event, resource) {
-  event.preventDefault();
-  const data = Object.fromEntries(new FormData(event.currentTarget));
+function refreshHierarchyRecords() {
+  const container = document.getElementById("communityManagementHierarchy");
+  if (!container) return;
+  const communityName = (id) => hierarchyState.communities.find((item) => item.id === id)?.name || "Community";
+  const towerName = (id) => hierarchyState.towers.find((item) => item.id === id)?.name || "Tower";
+  const floorName = (id) => hierarchyState.floors.find((item) => item.id === id)?.label || "Floor";
+  const rows = {
+    communities: hierarchyState.communities.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b><br><small>${hierarchyEscape(item.address)}</small></td><td>${hierarchyEscape(item.description || "")}</td></tr>`),
+    towers: hierarchyState.towers.map((item) => `<tr><td><b>${hierarchyEscape(item.name)}</b> (${hierarchyEscape(item.code)})</td><td>${hierarchyEscape(communityName(item.communityId))}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editHierarchy('towers','${item.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deleteHierarchy('towers','${item.id}')">Delete</button></td></tr>`),
+    floors: hierarchyState.floors.map((item) => `<tr><td><b>${item.floorNumber}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(towerName(item.towerId))}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editHierarchy('floors','${item.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deleteHierarchy('floors','${item.id}')">Delete</button></td></tr>`),
+    apartments: hierarchyState.apartments.map((item) => `<tr><td><b>${hierarchyEscape(item.apartmentNumber)}</b> · ${hierarchyEscape(item.label)}</td><td>${hierarchyEscape(floorName(item.floorId))}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editHierarchy('apartments','${item.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deleteHierarchy('apartments','${item.id}')">Delete</button></td></tr>`),
+  };
+  container.querySelectorAll("[data-hierarchy-records]").forEach((section) => {
+    const resource = section.dataset.hierarchyRecords;
+    const body = section.querySelector("tbody");
+    if (body) body.innerHTML = rows[resource]?.join("") || `<tr><td colspan="3">No ${resource} found.</td></tr>`;
+  });
+}
+
+async function submitHierarchy(panel, resource) {
+  const submitButton = panel.querySelector("[data-hierarchy-save]");
+  if (submitButton?.disabled) return;
+  const data = Object.fromEntries([...panel.querySelectorAll("[name]")].map((field) => [field.name, field.value]));
   if (resource === "floors") data.floorNumber = Number(data.floorNumber);
-  try { await window.UrbanityApi.apiRequest(`/${resource}`, { method: "POST", body: data }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast(`${resource.slice(0, -1)} created successfully.`, "success"); } catch (error) { showAdminToast(error.message || "Unable to save hierarchy record.", "error"); }
+  if (submitButton) { submitButton.disabled = true; submitButton.textContent = `Creating ${resource.slice(0, -1)}...`; }
+  try { await adminApiRequest(`/${resource}`, { method: "POST", body: data }); await loadHierarchyData(); refreshHierarchyRecords(); panel.querySelectorAll("input").forEach((input) => { input.value = ""; }); showAdminToast(`${resource.slice(0, -1)} created successfully.`, "success"); if (submitButton) { submitButton.disabled = false; submitButton.textContent = `Add ${resource.slice(0, -1)}`; } } catch (error) { showAdminToast(error.message || "Unable to save hierarchy record.", "error"); if (submitButton) { submitButton.disabled = false; submitButton.textContent = `Add ${resource.slice(0, -1)}`; } }
 }
 
 async function editHierarchy(resource, id) {
@@ -305,16 +465,16 @@ async function editHierarchy(resource, id) {
     if (field !== "description" && !nextValue.trim()) return;
     body[field] = field === "floorNumber" ? Number(nextValue) : nextValue.trim();
   }
-  try { await window.UrbanityApi.apiRequest(`/${resource}/${id}`, { method: "PATCH", body }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast("Hierarchy record updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update hierarchy record.", "error"); }
+  try { await adminApiRequest(`/${resource}/${id}`, { method: "PATCH", body }); await loadHierarchyData(); refreshHierarchyRecords(); showAdminToast("Hierarchy record updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update hierarchy record.", "error"); }
 }
 
 async function deleteHierarchy(resource, id) {
   if (!window.confirm("Delete this hierarchy record? Child records must be removed first.")) return;
-  try { await window.UrbanityApi.apiRequest(`/${resource}/${id}`, { method: "DELETE" }); await loadHierarchyData(); renderHierarchyManagement(); showAdminToast("Hierarchy record deleted.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete hierarchy record.", "error"); }
+  try { await adminApiRequest(`/${resource}/${id}`, { method: "DELETE" }); await loadHierarchyData(); refreshHierarchyRecords(); showAdminToast("Hierarchy record deleted.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete hierarchy record.", "error"); }
 }
 
 async function loadManagedUsers() {
-  const response = await window.UrbanityApi.apiRequest("/users");
+  const response = await adminApiRequest("/users");
   userManagementState.users = response.data || [];
 }
 
@@ -326,6 +486,44 @@ function apartmentChain(apartmentId) {
   const tower = floor && hierarchyState.towers.find((item) => item.id === floor.towerId);
   const community = tower && hierarchyState.communities.find((item) => item.id === tower.communityId);
   return apartment ? `${apartment.label || apartment.apartmentNumber} · ${floor?.label || ""} · ${tower?.name || ""} · ${community?.name || ""}` : "Unassigned";
+}
+
+let activeUsersSection = "residents";
+
+function showUsersWorkspace(section = activeUsersSection) {
+  activeUsersSection = section;
+  const page = document.getElementById("page-users-roles");
+  if (!page) return;
+  const residents = userManagementState.users.filter((user) => user.role === "RESIDENT");
+  const representatives = userManagementState.users.filter((user) => user.role === "TOWER_REPRESENTATIVE");
+  const workerName = (id) => userManagementState.users.find((user) => user.id === id)?.name || "Worker account";
+  const table = (rows, empty, headings) => `<section class="card"><div class="card-content"><div style="overflow:auto"><table><thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead><tbody>${rows || `<tr><td colspan="${headings.length}">${empty}</td></tr>`}</tbody></table></div></div></section>`;
+  const residentRows = residents.map((user) => `<tr><td>${hierarchyEscape(user.name)}</td><td>${hierarchyEscape(user.email)}</td><td>${hierarchyEscape(apartmentChain(user.apartmentId))}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editManagedUser('${user.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deleteManagedUser('${user.id}')">Delete</button></td></tr>`).join("");
+  const representativeRows = representatives.map((user) => `<tr><td>${hierarchyEscape(user.name)}</td><td>${hierarchyEscape(user.email)}</td><td>${hierarchyEscape(hierarchyState.towers.find((tower) => tower.id === user.towerId)?.name || "Not Assigned")}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editManagedUser('${user.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deleteManagedUser('${user.id}')">Delete</button></td></tr>`).join("");
+  const workerRows = workforceManagementState.workers.map((worker) => `<tr><td>${hierarchyEscape(workerName(worker.userId))}</td><td>${hierarchyEscape(workforceLabel(worker.specialization))}</td><td>${hierarchyEscape(workforceLabel(worker.status))}</td><td>${hierarchyEscape(worker.rating)}</td><td>${hierarchyEscape(worker.completedWorkCount)}</td><td><button type="button" class="btn btn-outline btn-sm" onclick="editManagedWorker('${worker.id}')">Edit</button> <button type="button" class="btn btn-outline btn-sm" onclick="deactivateManagedWorker('${worker.id}')">Delete</button></td></tr>`).join("");
+  const labels = { residents: "Resident", representatives: "Tower Representative", workers: "Worker" };
+  const content = section === "residents" ? table(residentRows, "No residents found.", ["Resident", "Email", "Apartment", "Actions"]) : section === "representatives" ? table(representativeRows, "No tower representatives found.", ["Representative", "Email", "Tower", "Actions"]) : table(workerRows, "No maintenance workers found.", ["Worker", "Work Type", "Status", "Rating", "Completed Work", "Actions"]);
+  page.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Users</h1><p class="page-description">Manage residents, tower representatives, and the shared maintenance workforce.</p></div><button type="button" class="btn btn-primary" id="openContextCreate">+ Create ${labels[section]}</button></div><div class="tabs"><div class="tab-buttons"><button class="tab-button ${section === "residents" ? "active" : ""}" type="button" data-user-section="residents">Residents</button><button class="tab-button ${section === "representatives" ? "active" : ""}" type="button" data-user-section="representatives">Tower Representatives</button><button class="tab-button ${section === "workers" ? "active" : ""}" type="button" data-user-section="workers">Workers</button></div></div>${content}`;
+  page.querySelectorAll("[data-user-section]").forEach((button) => button.onclick = () => showUsersWorkspace(button.dataset.userSection));
+  document.getElementById("openContextCreate").onclick = () => openContextCreateModal(section);
+}
+
+function openContextCreateModal(section) {
+  document.getElementById("contextCreateModal")?.remove();
+  const towerOptions = hierarchyState.towers.map((tower) => `<option value="${tower.id}">${hierarchyEscape(tower.name)}</option>`).join("");
+  const workerOptions = WORKER_SPECIALIZATIONS.map((type) => `<option value="${type}">${hierarchyEscape(workforceLabel(type))}</option>`).join("");
+  const extra = section === "residents" ? `<label class="form-label">Tower</label><select class="form-select" name="towerId" required><option value="">Select tower</option>${towerOptions}</select><label class="form-label">Floor</label><select class="form-select" name="floorId" required disabled><option value="">Select tower first</option></select><label class="form-label">House no.</label><select class="form-select" name="apartmentId" required disabled><option value="">Select floor first</option></select>` : section === "representatives" ? `<label class="form-label">Tower name</label><select class="form-select" name="towerId" required><option value="">Select tower</option>${towerOptions}</select>` : `<label class="form-label">Work type</label><select class="form-select" name="specialization" required><option value="">Select work type</option>${workerOptions}</select>`;
+  const role = section === "residents" ? "RESIDENT" : section === "representatives" ? "TOWER_REPRESENTATIVE" : "MAINTENANCE_WORKER";
+  const title = section === "residents" ? "Create Resident" : section === "representatives" ? "Create Tower Representative" : "Create Worker";
+  const overlay = document.createElement("div"); overlay.id = "contextCreateModal"; overlay.className = "modal-overlay active";
+  overlay.innerHTML = `<div class="modal"><div class="modal-header"><h3 class="modal-title">${title}</h3><button type="button" class="modal-close" data-close>&times;</button></div><form id="contextCreateForm"><div class="modal-body"><label class="form-label">Name</label><input class="form-input" name="name" required><label class="form-label">Email</label><input class="form-input" type="email" name="email" required><label class="form-label">Phone</label><input class="form-input" name="phone" placeholder="Optional"><label class="form-label">Temporary password</label><input class="form-input" type="password" name="password" minlength="8" required>${extra}</div><div class="modal-footer"><button type="button" class="btn btn-outline" data-close>Cancel</button><button type="submit" class="btn btn-primary">Create</button></div></form></div>`;
+  const close = () => overlay.remove(); overlay.onclick = (event) => { if (event.target === overlay || event.target.closest("[data-close]")) close(); };
+  const form = overlay.querySelector("form");
+  const towerSelect = form.elements.towerId, floorSelect = form.elements.floorId, apartmentSelect = form.elements.apartmentId;
+  if (towerSelect && floorSelect) towerSelect.onchange = () => { const floors = hierarchyState.floors.filter((floor) => floor.towerId === towerSelect.value); floorSelect.innerHTML = `<option value="">Select floor</option>${floors.map((floor) => `<option value="${floor.id}">${hierarchyEscape(floor.label || floor.floorNumber)}</option>`).join("")}`; floorSelect.disabled = !towerSelect.value; apartmentSelect.innerHTML = '<option value="">Select floor first</option>'; apartmentSelect.disabled = true; };
+  if (floorSelect && apartmentSelect) floorSelect.onchange = () => { const apartments = hierarchyState.apartments.filter((apartment) => apartment.floorId === floorSelect.value); apartmentSelect.innerHTML = `<option value="">Select house no.</option>${apartments.map((apartment) => `<option value="${apartment.id}">${hierarchyEscape(apartment.label || apartment.apartmentNumber)}</option>`).join("")}`; apartmentSelect.disabled = !floorSelect.value; };
+  form.onsubmit = async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const submit = form.querySelector('[type="submit"]'); submit.disabled = true; try { const userBody = { name: data.name, email: data.email, password: data.password, ...(data.phone ? { phone: data.phone } : {}), role, ...(section === "residents" ? { apartmentId: data.apartmentId } : {}), ...(section === "representatives" ? { towerId: data.towerId } : {}) }; const user = (await adminApiRequest("/users", { method: "POST", body: userBody })).data; if (section === "workers") await adminApiRequest("/workforce/workers", { method: "POST", body: { userId: user.id, specialization: data.specialization, status: "AVAILABLE" } }); await Promise.all([loadManagedUsers(), loadManagedWorkers(), loadHierarchyData()]); close(); showUsersWorkspace(section); showAdminToast(`${title} created successfully.`, "success"); } catch (error) { showAdminToast(error.message || `Unable to create ${title.toLowerCase()}.`, "error"); submit.disabled = false; } };
+  document.body.appendChild(overlay);
 }
 
 function renderUserManagement() {
@@ -351,11 +549,11 @@ async function editManagedUser(id) {
   const name = window.prompt("Update name", user.name); if (name === null || !name.trim()) return;
   const email = window.prompt("Update email", user.email); if (email === null || !email.trim()) return;
   const phone = window.prompt("Update phone (optional)", user.phone || ""); if (phone === null) return;
-  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "PATCH", body: { name: name.trim(), email: email.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) } }); await refreshUserManagement(); showAdminToast("User updated successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update user.", "error"); }
+  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "PATCH", body: { name: name.trim(), email: email.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) } }); await Promise.all([loadManagedUsers(), loadHierarchyData()]); showUsersWorkspace(); showAdminToast("User updated successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update user.", "error"); }
 }
 async function deleteManagedUser(id) {
   if (!window.confirm("Delete this user permanently?")) return;
-  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "DELETE" }); await refreshUserManagement(); showAdminToast("User deleted successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete user.", "error"); }
+  try { await window.UrbanityApi.apiRequest(`/users/${id}`, { method: "DELETE" }); await Promise.all([loadManagedUsers(), loadHierarchyData()]); showUsersWorkspace(); showAdminToast("User deleted successfully.", "success"); } catch (error) { showAdminToast(error.message || "Unable to delete user.", "error"); }
 }
 async function associateUser(event, associationPath, relationshipField) {
   event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); if (!data.userId || !data[relationshipField]) return;
@@ -363,7 +561,7 @@ async function associateUser(event, associationPath, relationshipField) {
 }
 
 function workforceLabel(value) { return String(value || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
-async function loadManagedWorkers() { const response = await window.UrbanityApi.apiRequest("/workforce/workers"); workforceManagementState.workers = response.data || []; }
+async function loadManagedWorkers() { const response = await adminApiRequest("/workforce/workers"); workforceManagementState.workers = response.data || []; }
 function renderWorkforceManagement() {
   const container = document.getElementById("tab-roles-tab");
   if (!container) return;
@@ -378,7 +576,7 @@ async function refreshWorkforceManagement() { await Promise.all([loadManagedWork
 async function createManagedWorker(event) { event.preventDefault(); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form)); try { await window.UrbanityApi.apiRequest("/workforce/workers", { method: "POST", body: data }); form.reset(); await refreshWorkforceManagement(); showAdminToast("Worker profile created.", "success"); } catch (error) { showAdminToast(error.message || "Unable to create worker profile.", "error"); } }
 async function viewManagedWorker(id) { try { const worker = (await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`)).data; window.alert(`Specialization: ${workforceLabel(worker.specialization)}\nStatus: ${workforceLabel(worker.status)}\nRating: ${worker.rating}\nCompleted work: ${worker.completedWorkCount}\nWork history: ${(worker.workHistory || []).join(", ") || "No completed work history found."}`); } catch (error) { showAdminToast(error.message || "Unable to load worker details.", "error"); } }
 async function editManagedWorker(id) { const worker = workforceManagementState.workers.find((entry) => entry.id === id); if (!worker) return; const specialization = window.prompt(`Specialization (${WORKER_SPECIALIZATIONS.join(", ")})`, worker.specialization); if (specialization === null || !WORKER_SPECIALIZATIONS.includes(specialization.trim().toUpperCase())) return; const status = window.prompt(`Status (${ADMIN_MANAGED_WORKER_STATUSES.join(", ")})`, worker.status); if (status === null || !ADMIN_MANAGED_WORKER_STATUSES.includes(status.trim().toUpperCase())) return; try { await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`, { method: "PATCH", body: { specialization: specialization.trim().toUpperCase(), status: status.trim().toUpperCase() } }); await refreshWorkforceManagement(); showAdminToast("Worker profile updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update worker profile.", "error"); } }
-async function deactivateManagedWorker(id) { if (!window.confirm("Deactivate this worker profile? The profile and history will be retained.")) return; try { await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`, { method: "DELETE" }); await refreshWorkforceManagement(); showAdminToast("Worker profile deactivated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to deactivate worker profile.", "error"); } }
+async function deactivateManagedWorker(id) { if (!window.confirm("Deactivate this worker profile? The profile and history will be retained.")) return; try { await window.UrbanityApi.apiRequest(`/workforce/workers/${id}`, { method: "DELETE" }); await Promise.all([loadManagedWorkers(), loadManagedUsers()]); showUsersWorkspace(); showAdminToast("Worker profile deactivated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to deactivate worker profile.", "error"); } }
 
 function complaintLabel(value) { return String(value || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function complaintLocation(complaint) {
@@ -388,7 +586,7 @@ function complaintLocation(complaint) {
   const community = hierarchyState.communities.find((item) => item.id === complaint.communityId) || (tower && hierarchyState.communities.find((item) => item.id === tower.communityId));
   return [apartment?.label || apartment?.apartmentNumber, floor?.label, tower?.name, community?.name].filter(Boolean).join(" · ") || "Location unavailable";
 }
-async function loadManagedComplaints() { const response = await window.UrbanityApi.apiRequest("/complaints"); complaintManagementState.complaints = response.data || []; complaintManagementState.loaded = true; }
+async function loadManagedComplaints() { const response = await adminApiRequest("/complaints"); complaintManagementState.complaints = response.data || []; complaintManagementState.loaded = true; }
 function renderComplaintManagement() {
   const page = document.getElementById("page-system-issues"); if (!page) return;
   const all = complaintManagementState.complaints;
@@ -397,6 +595,10 @@ function renderComplaintManagement() {
   page.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Community Complaints</h1><p class="page-description">Read-only global complaint view from the authenticated backend.</p></div></div><div class="card"><div class="card-content"><div class="grid-3" style="margin-bottom:16px;"><select id="complaintTypeFilter" class="form-select">${option(all.map((item) => item.type), complaintManagementState.filter.type, "All complaint types")}</select><select id="complaintStatusFilter" class="form-select">${option(all.map((item) => item.status), complaintManagementState.filter.status, "All statuses")}</select><select id="complaintWorkTypeFilter" class="form-select">${option(all.map((item) => item.requiredWorkType), complaintManagementState.filter.workType, "All work types")}</select></div><div style="overflow:auto;"><table><thead><tr><th>Complaint</th><th>Type</th><th>Work Type</th><th>Status</th><th>Location</th><th>Responsible Authority</th><th>Assigned Worker</th><th>Created</th></tr></thead><tbody>${filtered.length ? filtered.map((complaint) => `<tr><td><button class="btn-link managed-complaint" data-id="${complaint.id}">${hierarchyEscape(complaint.title)}</button></td><td>${hierarchyEscape(complaintLabel(complaint.type))}</td><td>${hierarchyEscape(complaintLabel(complaint.requiredWorkType))}</td><td>${hierarchyEscape(complaintLabel(complaint.status))}</td><td>${hierarchyEscape(complaintLocation(complaint))}</td><td>${hierarchyEscape(complaint.responsibleUserName || complaintLabel(complaint.responsibleRole))}</td><td>${hierarchyEscape(complaint.assignedWorkerId || "Unassigned")}</td><td>${hierarchyEscape(new Date(complaint.createdAt).toLocaleString())}</td></tr>`).join("") : '<tr><td colspan="8">No complaints found.</td></tr>'}</tbody></table></div></div></div>`;
   ["type", "status", "workType"].forEach((key) => document.getElementById(`complaint${key[0].toUpperCase()}${key.slice(1)}Filter`).onchange = (event) => { complaintManagementState.filter[key] = event.target.value; renderComplaintManagement(); });
   document.querySelectorAll(".managed-complaint").forEach((button) => { button.onclick = () => viewManagedComplaint(button.dataset.id); });
+  const complaintTitle = page.querySelector(".page-title");
+  const complaintDescription = page.querySelector(".page-description");
+  if (complaintTitle) complaintTitle.textContent = "Complaint Management";
+  if (complaintDescription) complaintDescription.textContent = "Review, assign eligible workers, and close reviewed complaints for your community.";
 }
 function formatAttachmentSize(size) {
   const bytes = Number(size);
@@ -917,18 +1119,6 @@ function getDefaultEscalationRules() {
       timeline: "Immediate",
       department: "All Departments",
       autoAssign: true,
-      enabled: true,
-    },
-    {
-      id: "RULE-DEFAULT-2",
-      name: "High Citizen Impact",
-      triggerType: "Affected Citizen Count",
-      triggerCondition: "Affected Citizens > 50, Severity: High",
-      priority: "P1 - High Priority",
-      notify: "Department Head",
-      timeline: "1 Hour",
-      department: "All Departments",
-      autoAssign: false,
       enabled: true,
     },
   ];
@@ -1797,7 +1987,6 @@ function getNextUserId() {
 }
 
 function getRoleCodePrefix(role) {
-  if (role === "Department Head") return "DH";
   if (role === "Department Officer") return "DO";
   if (role === "Field Worker") return "FW";
   if (role === "Citizen") return "CT";
@@ -1813,12 +2002,6 @@ function getEmployeeCode(role) {
 
 function isPlaceholderOption(value) {
   return (value || "").toLowerCase().startsWith("select");
-}
-
-function findHeadByDepartment(department) {
-  return adminCrudState.users.find(
-    (user) => user.role === "Department Head" && user.department === department,
-  );
 }
 
 function findOfficerByDepartment(department) {
@@ -1897,20 +2080,11 @@ function handleAddUser() {
   }
 
   let mapping = {};
-  if (role === "Department Officer") {
-    const head = findHeadByDepartment(department);
-    if (head) {
-      mapping = { reportsTo: head.id, headId: head.id };
-    }
-  }
-
   if (role === "Field Worker") {
     const officer = findOfficerByDepartment(department);
-    const head = findHeadByDepartment(department);
     mapping = {
       officerId: officer?.id,
-      reportsTo: officer?.id || head?.id,
-      headId: officer?.headId || head?.id,
+      reportsTo: officer?.id,
     };
   }
 
@@ -2224,13 +2398,11 @@ async function initializeAdminPortal() {
 
     try {
       await loadHierarchyData();
-      renderHierarchyManagement();
       await loadManagedUsers();
-      renderUserManagement();
       await loadManagedWorkers();
-      renderWorkforceManagement();
       await loadManagedComplaints();
       renderComplaintManagement();
+      applyCurrentUserToAdminUI();
     } catch (error) {
       showAdminToast(error.message || "Unable to load Admin management data.", "error");
     }

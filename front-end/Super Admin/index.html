@@ -6,7 +6,7 @@
   <title>Urbanity | Super Admin</title>
   <link rel="stylesheet" href="style.css">
   <script src="../api.js" defer></script>
-  <script src="script.js" defer></script>
+  <script src="script.js?v=20260831-api-actions" defer></script>
 </head>
 <body>
   <div class="shell">
@@ -26,25 +26,30 @@
     </aside>
     <main>
       <div class="topbar">
-        <p class="topbar-context">Platform workspace</p>
+        <p class="topbar-context">Super Admin Service Portal</p>
         <div class="topbar-actions">
-          <button class="icon-button" type="button" aria-label="Notifications" title="Notifications">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9"/></svg>
-            <span class="notification-dot" aria-hidden="true"></span>
-          </button>
-          <button class="profile-control nav" type="button" data-page="profile" aria-label="Open profile">
-            <span class="profile-avatar" aria-hidden="true">SA</span>
-            <span>Profile</span>
-          </button>
+          <div class="topbar-dropdown">
+            <button id="notifications-toggle" class="icon-button" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notifications-menu">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9"/></svg>
+              <span id="notification-dot" class="notification-dot" aria-hidden="true"></span>
+            </button>
+            <section id="notifications-menu" class="topbar-menu notifications-menu hidden" aria-label="Notifications"><div class="topbar-menu-heading"><div><span>Notifications</span><small id="notification-count">0 unread</small></div><button id="mark-notifications-read" type="button">Mark all read</button></div><div id="notifications-list" class="notifications-list"></div></section>
+          </div>
+          <div class="topbar-dropdown">
+            <button id="profile-toggle" class="profile-control" type="button" aria-expanded="false" aria-controls="profile-menu">
+              <span id="topbar-avatar" class="profile-avatar" aria-hidden="true">SA</span><span id="topbar-profile-label">Profile</span><span class="dropdown-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <section id="profile-menu" class="topbar-menu profile-menu hidden" aria-label="Profile menu"><div class="profile-menu-user"><b id="profile-menu-name">Urbanity Administrator</b><span id="profile-menu-email">Loading account…</span></div><button type="button" data-topbar-page="profile">View profile</button><button type="button" id="topbar-help">Help &amp; support</button><button type="button" id="topbar-logout" class="menu-danger">Log out</button></section>
+          </div>
         </div>
       </div>
       <header><div><p class="eyebrow">Platform administration</p><h1 id="page-title">Platform Dashboard</h1></div><div id="session-profile" class="profile">Loading session…</div></header>
       <p id="notice" class="notice" role="status"></p>
       <section id="dashboard" class="page active"><div id="dashboard-content" class="loading">Loading authoritative platform metrics…</div></section>
-      <section id="communities" class="page"><div class="split"><form id="community-form" class="panel"><h2>Create community</h2><label>Name<input name="name" required maxlength="200"></label><label>Address<input name="address" required maxlength="500"></label><label>Description<textarea name="description" maxlength="1000"></textarea></label><button>Create community</button></form><div class="panel grow"><div class="panel-heading"><h2>Communities</h2><button class="secondary refresh">Refresh</button></div><div id="communities-content"></div></div></div></section>
-      <section id="admins" class="page"><div class="split"><form id="admin-form" class="panel"><h2>Create Community Admin</h2><label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required minlength="8"></label><label>Community<select name="communityId" id="admin-community" required></select></label><button>Create Community Admin</button><p class="hint">The backend validates the selected community association.</p></form><div class="panel grow"><div class="panel-heading"><h2>Community Admin Accounts</h2><button class="secondary refresh">Refresh</button></div><div id="admins-content"></div></div></div></section>
+      <section id="communities" class="page"><div class="split"><div id="community-form" class="panel"><h2>Create community</h2><label>Name<input name="name" required maxlength="200"></label><label>Address<input name="address" required maxlength="500"></label><label>Description<textarea name="description" maxlength="1000"></textarea></label><button type="button" data-create-community>Create community</button></div><div class="panel grow"><div class="panel-heading"><h2>Communities</h2><button type="button" class="secondary refresh">Refresh</button></div><div id="communities-content"></div></div></div></section>
+      <section id="admins" class="page"><div class="split"><div id="admin-form" class="panel"><h2>Create Community Admin</h2><label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required minlength="8"></label><label>Community<select name="communityId" id="admin-community" required></select></label><button type="button" data-create-admin>Create Community Admin</button><p class="hint">The backend validates the selected community association.</p></div><div class="panel grow"><div class="panel-heading"><h2>Community Admin Accounts</h2><button type="button" class="secondary refresh">Refresh</button></div><div id="admins-content"></div></div></div></section>
       <section id="users" class="page"><div class="panel"><div class="panel-heading"><h2>Platform user directory</h2><button class="secondary refresh">Refresh</button></div><div id="users-content"></div></div></section>
-      <section id="workforce" class="page"><div class="split"><form id="worker-form" class="panel"><h2>Create worker profile</h2><label>Maintenance Worker user<select name="userId" id="worker-user" required></select></label><label>Specialization<select name="specialization" required><option value="PLUMBING">Plumbing</option><option value="ELECTRICAL">Electrical</option><option value="LIFT_MAINTENANCE">Lift maintenance</option><option value="HVAC">HVAC</option><option value="CLEANING">Cleaning</option></select></label><button>Create profile</button><p class="hint">Community is derived by the backend from the selected worker user. Busy status is system-managed.</p></form><div class="panel grow"><div class="panel-heading"><h2>Global workforce</h2><button class="secondary refresh">Refresh</button></div><div id="workforce-content"></div></div></div></section>
+      <section id="workforce" class="page"><div class="split"><div id="worker-form" class="panel"><h2>Create worker profile</h2><label>Maintenance Worker user<select name="userId" id="worker-user" required></select></label><label>Specialization<select name="specialization" required><option value="PLUMBING">Plumbing</option><option value="ELECTRICAL">Electrical</option><option value="LIFT_MAINTENANCE">Lift maintenance</option><option value="HVAC">HVAC</option><option value="CLEANING">Cleaning</option></select></label><button type="button" data-create-worker>Create profile</button><p class="hint">Community is derived by the backend from the selected worker user. Busy status is system-managed.</p></div><div class="panel grow"><div class="panel-heading"><h2>Global workforce</h2><button type="button" class="secondary refresh">Refresh</button></div><div id="workforce-content"></div></div></div></section>
       <section id="complaints" class="page"><div class="panel"><div class="panel-heading"><h2>Global complaints</h2><button class="secondary refresh">Refresh</button></div><div id="complaints-content"></div></div></section>
       <section id="reports" class="page"><div class="panel"><div class="panel-heading"><h2>Global reports</h2><button class="secondary refresh">Refresh</button></div><div id="reports-content"></div></div></section>
       <section id="profile" class="page"><div id="profile-content" class="panel"></div></section>
