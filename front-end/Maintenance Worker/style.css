@@ -368,6 +368,1060 @@ body {
     border-radius: 8px;
     padding: 24px;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.content-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.task {
+    border: none;
+    padding: 0;
+    background: none;
+    color: #2563eb;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+}
+
+.task:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e8f0fb;
+    color: #265587;
+}
+
+.status-assigned { background: #dbeafe; color: #1e40af; }
+.status-in-progress { background: #cffafe; color: #0e7490; }
+.status-resolved, .status-reviewed, .status-closed { background: #d1fae5; color: #065f46; }
+.status-available { background: #dcfce7; color: #166534; }
+.status-busy { background: #fef3c7; color: #92400e; }
+.status-on-leave, .status-inactive { background: #f3f4f6; color: #4b5563; }
+
+.worker-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+}
+
+.worker-summary div {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.worker-summary dt {
+    color: #6b7280;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.worker-summary dd {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.history-section {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 24px;
+    padding-top: 20px;
+}
+
+.history-list {
+    color: #4b5563;
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding-left: 20px;
+}
+
+.loading-state {
+    color: #6b7280;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+}
+
+/* Active worker workspace: aligned with the established management portal shell. */
+.page-content {
+    background: #f6f8fb;
+}
+
+.header {
+    min-height: 74px;
+    padding: 0 32px;
+    box-shadow: 0 2px 9px rgba(16, 42, 74, 0.05);
+}
+
+.header-title {
+    color: #172033;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.sidebar {
+    background: #0b1d35;
+}
+
+.sidebar-title {
+    font-size: 24px;
+    letter-spacing: 0.04em;
+}
+
+.sidebar-subtitle {
+    color: #90a4bd;
+    font-weight: 700;
+}
+
+.sidebar-divider {
+    border-color: #1c426b;
+}
+
+.nav-item {
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.nav-item.active {
+    background: #19395f;
+}
+
+.signout-btn {
+    background: #19395f;
+    color: #c9d6e8;
+}
+
+.signout-btn:hover {
+    background: #275280;
+}
+
+.profile-dropdown {
+    border: 1px solid #dfe6ef;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    background: #dbeafe;
+    color: #265587;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.profile-btn-name {
+    font-size: 13px;
+}
+
+.profile-btn-email {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-eyebrow,
+.section-eyebrow {
+    color: #28689f;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    margin: 0 0 7px;
+    text-transform: uppercase;
+}
+
+.page-title {
+    color: #172033;
+    font-size: 26px;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 7px 0 0;
+}
+
+.stats-grid {
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.stat-card,
+.content-card {
+    border-color: #dfe6ef;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(16, 42, 74, 0.05);
+}
+
+.stat-card {
+    min-height: 142px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.stat-value {
+    color: #172033;
+    font-size: 30px;
+    line-height: 1.1;
+}
+
+.stat-label {
+    color: #41617e;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.metric-detail {
+    color: #718096;
+    font-size: 12px;
+}
+
+.content-card {
+    padding: 24px;
+}
+
+.table-header {
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.table-title {
+    color: #172033;
+    font-size: 19px;
+    font-weight: 750;
+    margin: 0;
+}
+
+.table-count {
+    background: #e8f0fb;
+    border-radius: 999px;
+    color: #265587;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 5px 9px;
+}
+
+.table-container {
+    border-color: #edf2f7;
+    border-radius: 10px;
+    overflow-x: auto;
+    padding: 0;
+}
+
+.tasks-table {
+    min-width: 700px;
+}
+
+.tasks-table th {
+    background: #f8fafc;
+    color: #718096;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.tasks-table td {
+    color: #334155;
+    vertical-align: middle;
+}
+
+.task {
+    color: #265f96;
+}
+
+.task-description,
+.task-date {
+    color: #718096;
+    font-size: 12px;
+}
+
+.task-description {
+    display: block;
+    margin-top: 4px;
+}
+
+.status-badge {
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.empty-state {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    min-height: 220px;
+    padding: 36px 24px;
+}
+
+.empty-state-icon {
+    align-items: center;
+    background: #eef6fd;
+    border-radius: 10px;
+    color: #28689f;
+    display: inline-flex;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.empty-state-icon svg {
+    height: 22px;
+    width: 22px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin: 0;
+}
+
+.profile-hero {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #dfe6ef;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(16, 42, 74, 0.05);
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 22px 24px;
+}
+
+.profile-hero-avatar {
+    align-items: center;
+    background: #dbeafe;
+    border-radius: 50%;
+    color: #265587;
+    display: flex;
+    flex: 0 0 auto;
+    font-size: 18px;
+    font-weight: 800;
+    height: 56px;
+    justify-content: center;
+    width: 56px;
+}
+
+.profile-hero-copy h2 {
+    color: #172033;
+    font-size: 20px;
+    margin: 0;
+}
+
+.profile-hero-copy p:not(.section-eyebrow) {
+    color: #64748b;
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
+.profile-role,
+.profile-verified {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-top: 10px;
+    padding: 4px 9px;
+}
+
+.profile-role {
+    background: #e8f0fb;
+    color: #265587;
+}
+
+.profile-verified {
+    background: #ecfdf3;
+    color: #15803d;
+    gap: 5px;
+    margin: 0 0 0 auto;
+}
+
+.profile-performance {
+    margin-top: 0;
+}
+
+.worker-summary div {
+    background: #fbfdff;
+    border-color: #dfe6ef;
+    padding: 18px;
+}
+
+.worker-summary dt {
+    color: #718096;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.worker-summary dd {
+    color: #172033;
+    font-size: 15px;
+}
+
+.history-section {
+    border-color: #edf2f7;
+}
+
+.modal-overlay.active {
+    background: rgba(11, 29, 53, 0.52);
+}
+
+.modal {
+    border: 1px solid #dfe6ef;
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.24);
+    max-width: 760px;
+}
+
+.modal-header,
+.modal-content,
+.modal-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.modal-title {
+    color: #172033;
+    font-size: 20px;
+}
+
+.modal-task-title {
+    color: #172033;
+    font-size: 20px;
+    margin: 0;
+}
+
+.modal-description {
+    color: #475569;
+    line-height: 1.6;
+    margin: 8px 0 0;
+}
+
+.modal-grid {
+    gap: 16px;
+}
+
+.modal-grid > div {
+    background: #f8fafc;
+    border: 1px solid #edf2f7;
+    border-radius: 9px;
+    padding: 13px;
+}
+
+.modal-label {
+    color: #718096;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.modal-value {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.attachment-section {
+    border-top: 1px solid #edf2f7;
+    margin-top: 24px;
+    padding-top: 18px;
+}
+
+.modal-btn {
+    font-size: 15px;
+    padding: 13px;
+}
+
+/* Final active typography cascade: kept after legacy stylesheet declarations. */
+.page-title { font-size: 24px; line-height: 1.25; }
+.worker-hero h1,
+.worker-profile-account h1 { font-size: 26px; line-height: 1.25; }
+.stat-value { font-size: 28px; line-height: 1.1; }
+.table-title,
+.worker-context-heading h2 { font-size: 18px; }
+.page-subtitle,
+.empty-state p,
+.modal-description,
+.loading-state,
+.profile-details-grid dd,
+.task,
+.tasks-table td,
+.modal-value,
+.worker-context-list dd { font-size: 14px; }
+.profile-btn-email,
+.metric-detail,
+.task-description,
+.task-date,
+.worker-context-list dt { font-size: 12px; }
+.sidebar-subtitle,
+.page-eyebrow,
+.section-eyebrow,
+.stat-label,
+.modal-label,
+.profile-details-grid dt,
+.worker-hero-eyebrow,
+.tasks-table th,
+.status-badge,
+.table-count,
+.profile-managed-pill,
+.worker-profile-role,
+.worker-verified,
+.dashboard-secondary-button { font-size: 11px; }
+.modal-title,
+.modal-task-title { font-size: 20px; line-height: 1.3; }
+.modal-btn { font-size: 14px; }
+.urbanity-toast,
+.form-feedback,
+.completion-form-error { font-size: 13px; }
+.completion-form-label,
+.completion-form-input,
+.completion-form-textarea,
+.completion-form-file,
+.completion-form-task { font-size: 14px; }
+.completion-form-hint { font-size: 12px; }
+
+@media (max-width: 640px) {
+    .page-title { font-size: 22px; }
+    .worker-hero h1,
+    .worker-profile-account h1 { font-size: 24px; }
+}
+
+/* Typography normalization: match the existing Resident/shared Urbanity scale. */
+body,
+button,
+input,
+select,
+textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+}
+
+.sidebar-title {
+    font-size: 22px;
+}
+
+.sidebar-subtitle,
+.page-eyebrow,
+.section-eyebrow,
+.stat-label,
+.modal-label,
+.profile-details-grid dt,
+.worker-hero-eyebrow {
+    font-size: 11px;
+}
+
+.nav-item,
+.signout-btn {
+    font-size: 15px;
+}
+
+.header-title {
+    font-size: 18px;
+}
+
+.profile-btn-name {
+    font-size: 13px;
+}
+
+.profile-btn-email,
+.metric-detail,
+.task-description,
+.task-date,
+.worker-context-list dt {
+    font-size: 12px;
+}
+
+.page-title {
+    font-size: 24px;
+    line-height: 1.25;
+}
+
+.page-subtitle,
+.empty-state p,
+.modal-description,
+.loading-state,
+.profile-details-grid dd {
+    font-size: 14px;
+}
+
+.worker-hero h1,
+.worker-profile-account h1 {
+    font-size: 26px;
+    line-height: 1.25;
+}
+
+.worker-hero > div:first-child > p:last-child,
+.worker-profile-account > div > p:not(.worker-hero-eyebrow) {
+    font-size: 14px;
+}
+
+.stat-value {
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.table-title,
+.worker-context-heading h2 {
+    font-size: 18px;
+}
+
+.task,
+.tasks-table td,
+.modal-value,
+.worker-context-list dd {
+    font-size: 14px;
+}
+
+.tasks-table th,
+.status-badge,
+.table-count,
+.profile-managed-pill,
+.worker-profile-role,
+.worker-verified,
+.dashboard-secondary-button {
+    font-size: 11px;
+}
+
+.modal-title,
+.modal-task-title {
+    font-size: 20px;
+    line-height: 1.3;
+}
+
+.modal-btn {
+    font-size: 14px;
+}
+
+.urbanity-toast,
+.form-feedback,
+.completion-form-error {
+    font-size: 13px;
+}
+
+.completion-form-label,
+.completion-form-input,
+.completion-form-textarea,
+.completion-form-file,
+.completion-form-task {
+    font-size: 14px;
+}
+
+.completion-form-hint {
+    font-size: 12px;
+}
+
+@media (max-width: 640px) {
+    .page-title {
+        font-size: 22px;
+    }
+
+    .worker-hero h1,
+    .worker-profile-account h1 {
+        font-size: 24px;
+    }
+}
+
+/* Worker dashboard follows the active Resident workspace composition. */
+.worker-hero {
+    align-items: center;
+    background: linear-gradient(112deg, #102f52 0%, #164d7d 54%, #2d76b5 100%);
+    border: 1px solid #2d6698;
+    border-radius: 14px;
+    box-shadow: 0 12px 26px rgba(26, 73, 116, 0.18);
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    min-height: 168px;
+    overflow: hidden;
+    padding: 28px 30px;
+}
+
+.worker-hero-eyebrow {
+    color: #9bd3ff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    margin: 0 0 9px;
+    text-transform: uppercase;
+}
+
+.worker-hero h1 {
+    font-size: 29px;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.worker-hero > div:first-child > p:last-child {
+    color: #d9edff;
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 9px 0 0;
+    max-width: 620px;
+}
+
+.worker-hero-status {
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    gap: 8px;
+    padding: 12px 14px;
+}
+
+.worker-hero-status > span {
+    color: #d9edff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.worker-hero-status .status-badge {
+    background: #ffffff;
+    color: #265587;
+}
+
+.worker-metrics {
+    gap: 16px;
+}
+
+.worker-metric-card {
+    min-height: 146px;
+    padding: 18px 20px;
+}
+
+.metric-icon {
+    align-items: center;
+    border-radius: 10px;
+    display: inline-flex;
+    height: 40px;
+    justify-content: center;
+    margin-bottom: 4px;
+    width: 40px;
+}
+
+.metric-icon svg {
+    height: 20px;
+    width: 20px;
+}
+
+.metric-icon-blue { background: #e5f2fd; color: #2b719f; }
+.metric-icon-orange { background: #fff0e8; color: #c56a32; }
+.metric-icon-green { background: #e7f6ed; color: #258451; }
+.metric-icon-purple { background: #efefff; color: #5d68c8; }
+
+.worker-dashboard-grid {
+    align-items: stretch;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(270px, 0.65fr) minmax(0, 1.65fr);
+}
+
+.worker-context-card,
+.worker-recent-card {
+    min-height: 100%;
+}
+
+.worker-context-card {
+    background: #ffffff;
+    border: 1px solid #dfe6ef;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(16, 42, 74, 0.05);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+}
+
+.worker-context-heading {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+}
+
+.worker-context-heading h2 {
+    color: #172033;
+    font-size: 19px;
+    margin: 0;
+}
+
+.worker-context-icon {
+    align-items: center;
+    background: #e7f3fd;
+    border-radius: 10px;
+    color: #2b719f;
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    width: 44px;
+}
+
+.worker-context-icon svg {
+    height: 22px;
+    width: 22px;
+}
+
+.worker-context-list {
+    display: grid;
+    gap: 0;
+    margin: 22px 0 18px;
+}
+
+.worker-context-list > div {
+    border-bottom: 1px solid #edf2f7;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 13px 0;
+}
+
+.worker-context-list dt {
+    color: #718096;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.worker-context-list dd {
+    color: #203d59;
+    font-size: 13px;
+    font-weight: 750;
+    margin: 0;
+    text-align: right;
+}
+
+.dashboard-secondary-button {
+    background: #f4f8fc;
+    border: 1px solid #dfe6ef;
+    border-radius: 8px;
+    color: #284966;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 9px 12px;
+}
+
+.dashboard-secondary-button:hover {
+    background: #eaf3fb;
+    border-color: #c8ddec;
+}
+
+.worker-context-card > .dashboard-secondary-button {
+    margin-top: auto;
+    width: 100%;
+}
+
+.worker-recent-card .empty-state {
+    min-height: 215px;
+}
+
+@media (max-width: 1024px) {
+    .worker-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .worker-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        min-height: 0;
+        padding: 24px;
+    }
+
+    .worker-hero h1 {
+        font-size: 25px;
+    }
+
+    .worker-hero-status {
+        width: 100%;
+    }
+}
+
+/* Profile uses the same workspace hero, metric cards, and activity panel as the dashboard. */
+.worker-profile-workspace {
+    min-height: 176px;
+    position: relative;
+}
+
+.worker-profile-workspace::after {
+    border: 70px solid rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+    content: "";
+    height: 250px;
+    position: absolute;
+    right: -60px;
+    top: -110px;
+    width: 250px;
+}
+
+.worker-profile-account {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.profile-workspace-avatar {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 50%;
+    color: #ffffff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 21px;
+    font-weight: 800;
+    height: 58px;
+    justify-content: center;
+    width: 58px;
+}
+
+.worker-profile-account .worker-hero-eyebrow {
+    margin-bottom: 6px;
+}
+
+.worker-profile-account h1 {
+    font-size: 26px;
+}
+
+.worker-profile-account > div > p:not(.worker-hero-eyebrow) {
+    margin-top: 5px;
+}
+
+.worker-profile-role,
+.worker-verified {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 800;
+    margin-top: 9px;
+    padding: 5px 9px;
+}
+
+.worker-profile-workspace .worker-hero-status {
+    position: relative;
+    z-index: 1;
+}
+
+.profile-page-header {
+    margin-bottom: 18px;
+}
+
+.profile-details-card {
+    margin-top: 20px;
+    min-height: 0;
+}
+
+.profile-managed-pill {
+    background: #eef6fd;
+    border-radius: 999px;
+    color: #28689f;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 10px;
+    text-align: right;
+}
+
+.profile-details-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 20px 0 0;
+}
+
+.profile-details-grid > div {
+    background: #fbfdff;
+    border: 1px solid #dfe6ef;
+    border-radius: 10px;
+    min-height: 82px;
+    padding: 16px;
+}
+
+.profile-details-grid dt {
+    color: #718096;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.profile-details-grid dd {
+    color: #203d59;
+    font-size: 14px;
+    font-weight: 750;
+    margin: 9px 0 0;
+}
+
+.worker-profile-role {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.worker-verified {
+    background: #ecfdf3;
+    color: #15803d;
+    gap: 5px;
+    margin: 0;
+}
+
+.profile-history-card {
+    min-height: 330px;
+}
+
+.profile-history-card .empty-state {
+    min-height: 215px;
+}
+
+@media (max-width: 640px) {
+    .worker-profile-account {
+        align-items: flex-start;
+    }
+
+    .worker-profile-account h1 {
+        font-size: 23px;
+    }
+
+    .profile-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-managed-pill {
+        text-align: left;
+    }
 }
 
 .stat-content {
@@ -838,7 +1892,8 @@ td {
     z-index: 2000;
 }
 
-.modal-overlay.show {
+.modal-overlay.show,
+.modal-overlay.active {
     display: block;
 }
 
@@ -1084,6 +2139,20 @@ td {
         grid-template-columns: 1fr;
     }
 
+    .worker-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-hero {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .profile-verified {
+        margin-left: 0;
+        width: 100%;
+    }
+
     .worker-profile-name {
         font-size: 20px;
     }
@@ -1101,4 +2170,123 @@ td {
     .completion-form-actions {
         grid-template-columns: 1fr;
     }
+}
+
+/* Keep the active task modal and empty states aligned with the management portals. */
+.empty-state {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    min-height: 220px;
+    padding: 36px 24px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin: 0;
+}
+
+.modal {
+    border: 1px solid #dfe6ef;
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.24);
+    max-width: 760px;
+}
+
+.modal-header,
+.modal-content,
+.modal-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.modal-title {
+    color: #172033;
+    font-size: 20px;
+}
+
+.modal-grid {
+    gap: 16px;
+}
+
+.modal-grid > div {
+    background: #f8fafc;
+    border: 1px solid #edf2f7;
+    border-radius: 9px;
+    padding: 13px;
+}
+
+.modal-label {
+    color: #718096;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.modal-value {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.modal-btn {
+    font-size: 15px;
+    padding: 13px;
+}
+
+/* Final active typography cascade: kept after all legacy stylesheet declarations. */
+.page-title { font-size: 24px; line-height: 1.25; }
+.worker-hero h1,
+.worker-profile-account h1 { font-size: 26px; line-height: 1.25; }
+.stat-value { font-size: 28px; line-height: 1.1; }
+.table-title,
+.worker-context-heading h2 { font-size: 18px; }
+.page-subtitle,
+.empty-state p,
+.modal-description,
+.loading-state,
+.profile-details-grid dd,
+.task,
+.tasks-table td,
+.modal-value,
+.worker-context-list dd { font-size: 14px; }
+.profile-btn-email,
+.metric-detail,
+.task-description,
+.task-date,
+.worker-context-list dt { font-size: 12px; }
+.sidebar-subtitle,
+.page-eyebrow,
+.section-eyebrow,
+.stat-label,
+.modal-label,
+.profile-details-grid dt,
+.worker-hero-eyebrow,
+.tasks-table th,
+.status-badge,
+.table-count,
+.profile-managed-pill,
+.worker-profile-role,
+.worker-verified,
+.dashboard-secondary-button { font-size: 11px; }
+.modal-title,
+.modal-task-title { font-size: 20px; line-height: 1.3; }
+.modal-btn { font-size: 14px; }
+.urbanity-toast,
+.form-feedback,
+.completion-form-error { font-size: 13px; }
+.completion-form-label,
+.completion-form-input,
+.completion-form-textarea,
+.completion-form-file,
+.completion-form-task { font-size: 14px; }
+.completion-form-hint { font-size: 12px; }
+
+@media (max-width: 640px) {
+    .page-title { font-size: 22px; }
+    .worker-hero h1,
+    .worker-profile-account h1 { font-size: 24px; }
 }
