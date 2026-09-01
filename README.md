@@ -1,98 +1,109 @@
-# Urbanity - Urban Service Request & Issue Management Platform
+# Urbanity - Multi-Community Apartment Operations Platform
 
 ## Problem Statement
 
-Modern cities face challenges in efficiently managing civic issues such as road damage, waste management, water supply problems, streetlight failures, and other public service complaints.  
-The lack of a centralized, transparent, and trackable system leads to delayed resolutions, poor coordination between departments, and low citizen trust.
+Apartment communities often manage maintenance issues through calls, chat messages, and disconnected records. This makes it difficult to identify the exact complaint location, route the issue to the responsible authority, assign an eligible maintenance worker, and verify that the work was completed correctly.
 
-This project aims to build a **Smart City Urban Service Request & Issue Management Platform** that allows citizens to raise service requests, enables departments to process and assign tasks efficiently, and ensures accountability through role-based workflows and real-time tracking.
+The absence of a centralized, transparent, and trackable workflow can lead to delayed repairs, poor coordination between residents and authorities, and limited accountability for maintenance work.
+
+This project aims to build a **multi-community apartment operations platform** that allows Residents to report complaints, enables Community Admins and Tower Representatives to manage and assign work, and ensures accountability through verified proof of work and resident feedback.
 
 ---
 
 ## Identified Actors
 
-1. **Citizen**
-2. **Department Officer**
-3. **Field Worker**
-4. **Department Head**
-5. **Admin**
+1. **Super Admin**
+2. **Community Admin**
+3. **Tower Representative**
+4. **Resident**
+5. **Maintenance Worker**
 
 ---
 
 ## Planned Features (Actor-wise)
 
-### Citizen
-- Raise a service request/complaint with category, description, and location
-- Upload images or supporting details for better clarity
-- Track the progress of submitted requests
-- Support or upvote existing complaints to avoid duplicate reporting
-- Provide feedback after issue resolution
+### Super Admin
+
+- Manage communities and platform-level users
+- Monitor cross-community complaints, workforce, dashboards, and reports
+- Maintain platform-wide visibility and administration
+- Manage Community Admin accounts and platform operations
 
 ---
 
-### Department Officer
-- View incoming service requests assigned to the department
-- Verify and analyze request details
-- Assign requests to appropriate field workers
-- Update request status (Pending, In Progress, Resolved)
-- Communicate internally regarding request handling
+### Community Admin
+
+- Manage the Community -> Tower -> Floor -> Apartment hierarchy
+- Create and manage Residents, Tower Representatives, and Maintenance Workers
+- Review and assign community-level complaints to eligible workers
+- Verify proof of work for Community complaints
+- Monitor community dashboards, workforce availability, and resident feedback
 
 ---
 
-### Field Worker
-- View assigned tasks and service requests
-- Access location and issue details
-- Update task progress from the field
-- Upload proof of work (images, notes)
-- Mark tasks as completed
+### Tower Representative
+
+- View complaints routed to the assigned tower
+- Review Apartment and Tower complaints before assignment
+- Assign eligible and available Maintenance Workers
+- Verify submitted proof of work and rate worker quality
+- View tower residents, complaint activity, and worker performance
 
 ---
 
-### Department Head
-- Monitor department-wide request statistics
-- Approve or escalate critical requests
-- Track performance of officers and field workers
-- Generate reports on resolution time and efficiency
-- Ensure compliance with service-level agreements (SLAs)
+### Resident
+
+- Raise Apartment, Tower, or Community complaints
+- Upload supporting images for better issue clarity
+- Track the progress of submitted complaints
+- Receive resolution updates after authority verification
+- Rate completed work on speed, quality, and communication
+- Provide optional written feedback after issue resolution
 
 ---
 
-### Admin
-- Manage users and roles across the system
-- Add, update, or remove departments and categories
-- Monitor overall system activity
-- Handle system-level configurations
-- Ensure data security and platform availability
+### Maintenance Worker
+
+- View authorized assigned maintenance tasks
+- Access complaint type, exact location, issue details, and required specialization
+- Start assigned work and update work progress
+- Submit proof of work with resolution notes and supporting images
+- Track assigned, in-progress, and completed work
 
 ---
 
 ## Project Goals
 
-- Improve transparency in urban service management
-- Reduce issue resolution time
-- Enable accountability at every level
-- Enhance citizen satisfaction through real-time tracking
-- Provide data-driven insights for smart city governance
+- Improve transparency in apartment maintenance management
+- Reduce issue-resolution time through clear routing and assignment
+- Enable accountability at every stage of the complaint lifecycle
+- Improve resident satisfaction through verified resolutions and feedback
+- Maintain secure community, tower, resident, and worker scope boundaries
+- Provide data-driven insights into complaint activity and worker performance
 
 ---
 
 ## Tech Stack (Planned)
 
-- **Frontend:** HTML, CSS, JavaScript / React
-- **Backend:** Node.js / Express
-- **Database:** MongoDB
-- **APIs:** Maps & Notification Services
-- **Authentication:** Role-based access control (RBAC)
+- **Frontend:** HTML, CSS, and JavaScript
+- **Backend:** Node.js, NestJS, and TypeScript
+- **Data:** In-memory development repositories; persistent storage is planned
+- **API Documentation:** Swagger / OpenAPI
+- **Authentication:** JWT-based role-based access control (RBAC)
+- **Validation and Security:** class-validator, bcrypt password hashing, Helmet, CORS, guards, and backend ownership checks
+- **Testing:** Jest and Supertest
 
 ---
 
 ## Future Enhancements
 
-- AI-based issue prioritization
-- Analytics dashboard with charts
-- Mobile application support
-- Integration with IoT sensors for automated issue detection
+- Persistent database storage and migrations
+- Real-time notifications for complaint lifecycle events
+- Advanced analytics dashboards and resolution-time reports
+- Configurable escalation and service-level policies
+- Mobile-friendly experience and accessibility improvements
+- Production deployment, monitoring, backups, and audit tooling
 
 ---
 
-> This project is developed as part of an academic full-stack development course with a focus on real-world smart city applications.
+> This project is developed as part of an academic full-stack development course with a focus on real-world apartment-community operations and maintenance management.
