@@ -652,8 +652,13 @@ function renderManagedAssignmentSection(complaint) {
   return `<h4>Eligible Maintenance Workers</h4><p><b>Required Work Type:</b> ${hierarchyEscape(complaintLabel(complaint.requiredWorkType))}</p><div id="managedAssignmentState">Loading eligible maintenance workers...</div>`;
 }
 
+function managedAuthorityRatingStars() {
+  return `<div class="authority-star-rating" role="radiogroup" aria-label="Work quality rating" onmouseleave="clearManagedAuthorityRatingHover()">${[1, 2, 3, 4, 5].map((rating) => `<input type="radio" id="managed-authority-rating-${rating}" name="managedAuthorityRating" value="${rating}" onchange="setManagedAuthorityRating(${rating})"><label for="managed-authority-rating-${rating}" class="authority-star" data-managed-authority-star="${rating}" title="${rating} out of 5" aria-label="${rating} out of 5" onmouseenter="setManagedAuthorityRatingHover(${rating})">★</label>`).join("")}</div>`;
+}
+
 function renderManagedLifecycleSection(complaint) {
   if (complaint.status === "SUBMITTED") return '<h4>Complaint Lifecycle</h4><p>Review this complaint before assigning a maintenance worker.</p><button class="btn btn-primary" type="button" data-lifecycle-status="UNDER_REVIEW">Start Review</button>';
+  if (complaint.status === "PENDING_VERIFICATION" && complaint.responsibleRole === "COMMUNITY_ADMIN") return `<h4>Resolution Verification</h4><p>Review the worker's proof of work, then rate the completed work.</p><form id="managedVerificationForm" class="managed-verification-form"><label>Rate worker quality</label>${managedAuthorityRatingStars()}<button class="btn btn-primary" type="submit">Verify resolution</button></form>`;
   if (complaint.status === "REVIEWED") return '<h4>Complaint Lifecycle</h4><p>The resident review is complete.</p><button class="btn btn-primary" type="button" data-lifecycle-status="CLOSED">Close Complaint</button>';
   if (complaint.status === "RESOLVED") return '<h4>Complaint Lifecycle</h4><p>Awaiting Resident Review.</p>';
   return '<h4>Complaint Lifecycle</h4><p>No Admin lifecycle action is available for this status.</p>';
@@ -666,7 +671,7 @@ function noManagedReviewMessage(complaint) {
 }
 
 function renderManagedReview(review) {
-  return `<div id="managedReviewState" class="card" style="margin:0;"><div class="card-content" style="padding:12px;"><p><b>Rating:</b> ${hierarchyEscape(review.rating)} / 5</p>${review.feedback ? `<p><b>Feedback:</b><br>${hierarchyEscape(review.feedback)}</p>` : "<p>No written feedback provided.</p>"}<p><b>Reviewed at:</b> ${hierarchyEscape(new Date(review.createdAt).toLocaleString())}</p></div></div>`;
+  return `<div id="managedReviewState" class="card" style="margin:0;"><div class="card-content" style="padding:12px;"><p><b>Overall:</b> ${hierarchyEscape(review.rating)} / 5</p><p><b>Speed:</b> ${hierarchyEscape(review.speedRating)} / 5 · <b>Quality:</b> ${hierarchyEscape(review.qualityRating)} / 5 · <b>Communication:</b> ${hierarchyEscape(review.communicationRating)} / 5</p>${review.feedback ? `<p><b>Feedback:</b><br>${hierarchyEscape(review.feedback)}</p>` : "<p>No written feedback provided.</p>"}<p><b>Reviewed at:</b> ${hierarchyEscape(new Date(review.createdAt).toLocaleString())}</p></div></div>`;
 }
 
 async function loadManagedReview(overlay, complaint, requestId) {
@@ -701,6 +706,37 @@ async function updateManagedComplaintLifecycle(button, overlay, complaint, nextS
     showAdminToast(error.message || "Unable to update complaint status.", "error");
     if (activeManagedComplaintModal === overlay && overlay.isConnected) { button.disabled = false; button.textContent = nextStatus === "UNDER_REVIEW" ? "Start Review" : "Close Complaint"; }
   } finally { managedLifecycleState.updating = false; }
+}
+
+async function verifyManagedResolution(event, overlay, complaint, requestId) {
+  event.preventDefault();
+  if (activeManagedComplaintModal !== overlay || managedLifecycleState.requestId !== requestId) return;
+  const authorityRating = Number(overlay.querySelector('input[name="managedAuthorityRating"]:checked')?.value);
+  if (!Number.isInteger(authorityRating) || authorityRating < 1 || authorityRating > 5) return showAdminToast("Select a work-quality rating from 1 to 5.", "error");
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    await window.UrbanityApi.apiRequest(`/complaints/${complaint.id}/verify-resolution`, { method: "PATCH", body: { authorityRating } });
+    showAdminToast("Resolution verified. The resident can now submit feedback.", "success");
+    await Promise.all([loadManagedComplaints(), loadManagedWorkers()]);
+    renderComplaintManagement();
+    if (activeManagedComplaintModal === overlay && overlay.isConnected) await viewManagedComplaint(complaint.id);
+  } catch (error) {
+    showAdminToast(error.message || "Unable to verify the resolution.", "error");
+    if (activeManagedComplaintModal === overlay && overlay.isConnected) submitButton.disabled = false;
+  }
+}
+
+function setManagedAuthorityRating(value) {
+  document.querySelectorAll("[data-managed-authority-star]").forEach((star) => star.classList.toggle("selected", Number(star.dataset.managedAuthorityStar) <= value));
+}
+
+function setManagedAuthorityRatingHover(value) {
+  document.querySelectorAll("[data-managed-authority-star]").forEach((star) => star.classList.toggle("hover-selected", Number(star.dataset.managedAuthorityStar) <= value));
+}
+
+function clearManagedAuthorityRatingHover() {
+  document.querySelectorAll("[data-managed-authority-star]").forEach((star) => star.classList.remove("hover-selected"));
 }
 
 function renderEligibleManagedWorkers(workers) {
@@ -790,7 +826,11 @@ async function viewManagedComplaint(id) {
     overlay.addEventListener("click", (event) => { if (event.target === overlay || event.target.closest("[data-close]")) closeManagedComplaintModal(); });
     activeManagedComplaintModal = overlay;
     document.body.appendChild(overlay);
+    if (complaint.resolutionProof) {
+      overlay.querySelector(".modal-body").insertAdjacentHTML("beforeend", `<section><h4>Resolution Proof</h4><p><b>Problem identified:</b> ${hierarchyEscape(complaint.resolutionProof.problemFound)}</p><p><b>Resolution:</b> ${hierarchyEscape(complaint.resolutionProof.resolutionSummary)}</p>${complaint.resolutionVerification ? `<p><b>Authority rating:</b> ${hierarchyEscape(complaint.resolutionVerification.authorityRating)} / 5</p>` : ""}</section>`);
+    }
     overlay.querySelectorAll("[data-lifecycle-status]").forEach((button) => { button.onclick = () => updateManagedComplaintLifecycle(button, overlay, complaint, button.dataset.lifecycleStatus, lifecycleRequestId); });
+    overlay.querySelector("#managedVerificationForm")?.addEventListener("submit", (event) => verifyManagedResolution(event, overlay, complaint, lifecycleRequestId));
     if (!complaint.assignedWorkerId && complaint.status === "UNDER_REVIEW") loadEligibleManagedWorkers(overlay, complaint, assignmentRequestId);
     loadManagedReview(overlay, complaint, reviewRequestId);
     try {

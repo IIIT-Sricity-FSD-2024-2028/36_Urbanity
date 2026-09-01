@@ -17,9 +17,10 @@ export class AttachmentsService {
   upload(complaintId: string, file: any, actor: AuthenticatedUser) {
     const complaint = this.complaints.findById(complaintId);
     this.complaints.assertCanViewComplaint(actor, complaint);
-    if (actor.role !== RoleName.Resident || complaint.residentId !== actor.id) {
-      throw new ForbiddenException('Only the resident who submitted the complaint may upload attachments');
-    }
+    const isResidentAttachment = actor.role === RoleName.Resident && complaint.residentId === actor.id;
+    const isResolutionProof = actor.role === RoleName.MaintenanceWorker;
+    if (isResolutionProof) this.complaints.assertCanUploadResolutionProof(actor, complaint);
+    if (!isResidentAttachment && !isResolutionProof) throw new ForbiddenException('Only the complaint resident or assigned maintenance worker may upload attachments');
     if (!file) throw new BadRequestException('No file was uploaded.');
     if (file.size > MAX_IMAGE_SIZE_BYTES) throw new BadRequestException('Image exceeds the maximum allowed size of 5 MB.');
     const extension = IMAGE_TYPES.get(file.mimetype);
@@ -28,7 +29,7 @@ export class AttachmentsService {
     const target = this.safePath(storedName);
     writeFileSync(target, file.buffer, { flag: 'wx' });
     const attachmentId = randomUUID();
-    const attachment: ComplaintAttachment = { id: attachmentId, originalName: basename(file.originalname), storedName, mimeType: file.mimetype, size: file.size, relativePath: `complaints/${storedName}`, uploadedAt: new Date().toISOString(), uploadedByRole: actor.role, retrievalUrl: `/complaints/${complaintId}/attachments/${attachmentId}` };
+    const attachment: ComplaintAttachment = { id: attachmentId, originalName: basename(file.originalname), storedName, mimeType: file.mimetype, size: file.size, relativePath: `complaints/${storedName}`, uploadedAt: new Date().toISOString(), uploadedByRole: actor.role, ...(isResolutionProof ? { purpose: 'RESOLUTION_PROOF' as const } : { purpose: 'COMPLAINT' as const }), retrievalUrl: `/complaints/${complaintId}/attachments/${attachmentId}` };
     try {
       this.complaints.addAttachment(complaintId, attachment);
     } catch (error) {

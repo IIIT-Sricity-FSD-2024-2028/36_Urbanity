@@ -24,7 +24,7 @@ Before editing, identify the actor, resource, allowed scope, endpoint/DTO, curre
 
 The hierarchy is **Community → Tower → Floor → Apartment**. Maintenance workers are community-scoped and are not permanently assigned to towers.
 
-Complaints follow `SUBMITTED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → RESOLVED → REVIEWED → CLOSED`; each transition is backend-authorized.
+Complaints follow `SUBMITTED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → PENDING_VERIFICATION → RESOLVED → REVIEWED → CLOSED`. A worker submits proof before the responsible authority verifies the resolution; each transition is backend-authorized.
 
 ## Architecture rules
 

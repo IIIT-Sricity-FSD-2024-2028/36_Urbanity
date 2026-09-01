@@ -10,7 +10,7 @@ import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { CommunityService } from '../community/community.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import { WorkerStatus } from '../workforce/workforce.dto';
-import { AssignWorkerDto, CommunityComplaint, ComplaintAssignment, ComplaintAssignmentStatus, ComplaintAttachment, ComplaintReview, ComplaintType, CreateCommunityComplaintDto, CreateComplaintReviewDto, TransitionComplaintStatusDto, UpdateCommunityComplaintDto } from './complaints.dto';
+import { AssignWorkerDto, CommunityComplaint, ComplaintAssignment, ComplaintAssignmentStatus, ComplaintAttachment, ComplaintReview, ComplaintType, CreateCommunityComplaintDto, CreateComplaintReviewDto, ResolveWorkDto, TransitionComplaintStatusDto, UpdateCommunityComplaintDto, VerifyResolutionDto } from './complaints.dto';
 
 const seededAt = '2026-01-01T00:00:00.000Z';
 const seededComplaints: CommunityComplaint[] = [
@@ -27,23 +27,23 @@ export class ComplaintsService {
   constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>, private readonly community: CommunityService, private readonly workforce: WorkforceService) {}
   findAll() { return this.crud.findAll(); } findById(id: string) { return this.crud.findById(id); }
   findAllForActor(actor: AuthenticatedUser) {
-    if (actor.role === RoleName.SuperAdmin) return this.findAll().map((item) => this.assertComplaintCommunity(item));
+    if (actor.role === RoleName.SuperAdmin) return this.findAll().map((item) => this.toViewModel(this.assertComplaintCommunity(item)));
     if (actor.role === RoleName.CommunityAdmin) {
       const communityId = this.actorCommunityId(actor);
-      return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.communityId === communityId);
+      return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.communityId === communityId).map((item) => this.toViewModel(item));
     }
-    if (actor.role === RoleName.Resident) return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.residentId === actor.id);
+    if (actor.role === RoleName.Resident) return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.residentId === actor.id).map((item) => this.toViewModel(item));
     if (actor.role === RoleName.TowerRepresentative) {
       const representative = this.users.findById(actor.id);
-      return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.towerId === representative.towerId && item.type !== ComplaintType.Community);
+      return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.towerId === representative.towerId && item.type !== ComplaintType.Community).map((item) => this.toViewModel(item));
     }
     const worker = this.authenticatedWorker(actor);
-    return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.communityId === worker.communityId && this.assignments.some((assignment) => assignment.complaintId === item.id && assignment.workerId === worker.id));
+    return this.findAll().map((item) => this.assertComplaintCommunity(item)).filter((item) => item.communityId === worker.communityId && this.assignments.some((assignment) => assignment.complaintId === item.id && assignment.workerId === worker.id)).map((item) => this.toViewModel(item));
   }
   findByIdForActor(actor: AuthenticatedUser, id: string) {
     const complaint = this.findById(id);
     this.assertCanViewComplaint(actor, complaint);
-    return complaint;
+    return this.toViewModel(complaint);
   }
   create(actor: AuthenticatedUser, dto: CreateCommunityComplaintDto) {
     if (actor.role !== RoleName.Resident) throw new ForbiddenException('Only RESIDENT users may create complaints');
@@ -95,18 +95,48 @@ export class ComplaintsService {
     const now = new Date().toISOString(); assignment.status = ComplaintAssignmentStatus.InProgress; assignment.startedAt = now;
     return this.updateStatus(complaint, ComplaintStatus.InProgress, actor.role, { updatedAt: now, statusHistory: [...complaint.statusHistory, { status: ComplaintStatus.InProgress, changedAt: now, changedByRole: actor.role }] });
   }
-  resolveWork(id: string, actor: AuthenticatedUser) {
+  resolveWork(id: string, dto: ResolveWorkDto, actor: AuthenticatedUser) {
     const complaint = this.findById(id); const assignment = this.activeAssignment(id);
     this.ensureAssignedWorker(complaint, assignment, this.authenticatedWorker(actor), actor);
     if (complaint.status !== ComplaintStatus.InProgress) throw new BadRequestException('Only IN_PROGRESS complaints can be resolved');
+    const proofAttachmentIds = [...new Set(dto.proofAttachmentIds)];
+    if (proofAttachmentIds.length !== dto.proofAttachmentIds.length) throw new BadRequestException('Resolution proof attachments must be unique');
+    const proofAttachments = complaint.attachments.filter((attachment) => proofAttachmentIds.includes(attachment.id));
+    if (proofAttachments.length !== proofAttachmentIds.length || proofAttachments.some((attachment) => attachment.uploadedByRole !== RoleName.MaintenanceWorker || attachment.purpose !== 'RESOLUTION_PROOF')) {
+      throw new BadRequestException('Resolution proof must contain only your uploaded proof media');
+    }
     const now = new Date().toISOString(); assignment.status = ComplaintAssignmentStatus.Completed; assignment.completedAt = now;
-    this.workforce.updateSystemStatus(assignment.workerId, WorkerStatus.Available); this.workforce.addCompletedComplaint(assignment.workerId, id);
-    return this.updateStatus(complaint, ComplaintStatus.Resolved, actor.role, { updatedAt: now, statusHistory: [...complaint.statusHistory, { status: ComplaintStatus.Resolved, changedAt: now, changedByRole: actor.role }] });
+    this.workforce.updateSystemStatus(assignment.workerId, WorkerStatus.Available);
+    return this.updateStatus(complaint, ComplaintStatus.PendingVerification, actor.role, {
+      resolutionProof: { problemFound: dto.problemFound.trim(), resolutionSummary: dto.resolutionSummary.trim(), attachmentIds: proofAttachmentIds, submittedAt: now, submittedByWorkerId: assignment.workerId },
+      updatedAt: now,
+      statusHistory: [...complaint.statusHistory, { status: ComplaintStatus.PendingVerification, changedAt: now, changedByRole: actor.role }],
+    });
+  }
+  verifyResolution(id: string, dto: VerifyResolutionDto, actor: AuthenticatedUser) {
+    const complaint = this.findById(id);
+    this.assertCanActAsAuthority(actor, complaint);
+    if (complaint.status !== ComplaintStatus.PendingVerification || !complaint.resolutionProof) throw new BadRequestException('Only a complaint awaiting verification can be verified');
+    const assignment = this.assignmentForComplaint(id);
+    if (!assignment || assignment.status !== ComplaintAssignmentStatus.Completed) throw new BadRequestException('Complaint has no completed worker assignment');
+    const now = new Date().toISOString();
+    const verifier = this.users.findById(actor.id);
+    this.workforce.addCompletedComplaint(assignment.workerId, id);
+    return this.updateStatus(complaint, ComplaintStatus.Resolved, actor.role, {
+      resolutionVerification: { authorityRating: dto.authorityRating, verifiedAt: now, verifiedByUserId: actor.id, verifiedByUserName: verifier.name },
+      updatedAt: now,
+      statusHistory: [...complaint.statusHistory, { status: ComplaintStatus.Resolved, changedAt: now, changedByRole: actor.role }],
+    });
   }
   assignmentForComplaint(id: string) { return this.assignments.find((assignment) => assignment.complaintId === id); }
   addAttachment(id: string, attachment: ComplaintAttachment) {
     const complaint = this.findById(id);
     return this.crud.update(id, { attachments: [...complaint.attachments, attachment], updatedAt: new Date().toISOString() });
+  }
+  assertCanUploadResolutionProof(actor: AuthenticatedUser, complaint: CommunityComplaint) {
+    const assignment = this.activeAssignment(complaint.id);
+    this.ensureAssignedWorker(complaint, assignment, this.authenticatedWorker(actor), actor);
+    if (complaint.status !== ComplaintStatus.InProgress) throw new BadRequestException('Resolution proof can be uploaded only while work is in progress');
   }
   findReview(id: string) {
     const review = this.reviews.find((item) => item.complaintId === id);
@@ -122,15 +152,19 @@ export class ComplaintsService {
     const complaint = this.findById(id);
     if (actor.role !== RoleName.Resident) throw new ForbiddenException('Only a RESIDENT may submit a complaint review');
     if (complaint.residentId !== actor.id) throw new ForbiddenException('Residents may review only their own complaints');
-    if (complaint.status !== ComplaintStatus.Resolved) throw new BadRequestException('Only RESOLVED complaints can be reviewed');
+    if (complaint.status !== ComplaintStatus.Resolved || !complaint.resolutionVerification) throw new BadRequestException('Only authority-verified RESOLVED complaints can be reviewed');
     if (this.reviews.some((review) => review.complaintId === id)) throw new BadRequestException('A complaint can have only one review');
     const assignment = this.assignmentForComplaint(id);
     if (!assignment || assignment.status !== ComplaintAssignmentStatus.Completed) throw new BadRequestException('Complaint has no completed worker assignment');
     const worker = this.workforce.findById(assignment.workerId);
     const now = new Date().toISOString();
-    const review: ComplaintReview = { id: randomUUID(), complaintId: id, residentId: complaint.residentId, workerId: assignment.workerId, rating: dto.rating, ...(dto.feedback ? { feedback: dto.feedback.trim() } : {}), createdAt: now, updatedAt: now };
+    const residentRating = Number(((dto.speedRating + dto.qualityRating + dto.communicationRating) / 3).toFixed(2));
+    const review: ComplaintReview = { id: randomUUID(), complaintId: id, residentId: complaint.residentId, workerId: assignment.workerId, rating: residentRating, speedRating: dto.speedRating, qualityRating: dto.qualityRating, communicationRating: dto.communicationRating, ...(dto.feedback ? { feedback: dto.feedback.trim() } : {}), createdAt: now, updatedAt: now };
     const workerReviews = [...this.reviews.filter((item) => item.workerId === worker.id), review];
-    const rating = Number((workerReviews.reduce((sum, item) => sum + item.rating, 0) / workerReviews.length).toFixed(2));
+    const rating = Number((workerReviews.reduce((sum, item) => {
+      const reviewedComplaint = this.findById(item.complaintId);
+      return sum + ((item.rating + (reviewedComplaint.resolutionVerification?.authorityRating ?? item.rating)) / 2);
+    }, 0) / workerReviews.length).toFixed(2));
     this.reviews.push(review);
     this.workforce.updatePerformance(worker.id, rating, workerReviews.length);
     return this.updateStatus(complaint, ComplaintStatus.Reviewed, actor.role, { updatedAt: now, statusHistory: [...complaint.statusHistory, { status: ComplaintStatus.Reviewed, changedAt: now, changedByRole: actor.role }] });
@@ -191,7 +225,7 @@ export class ComplaintsService {
   private assertCanActAsAuthority(actor: AuthenticatedUser, complaint: CommunityComplaint) {
     const complaintCommunityId = this.assertComplaintCommunity(complaint).communityId;
     if (actor.role === RoleName.SuperAdmin) return;
-    if (actor.role === RoleName.CommunityAdmin && this.actorCommunityId(actor) === complaintCommunityId) return;
+    if (actor.role === RoleName.CommunityAdmin && complaint.responsibleRole === RoleName.CommunityAdmin && complaint.responsibleUserId === actor.id && this.actorCommunityId(actor) === complaintCommunityId) return;
     if (actor.role === RoleName.TowerRepresentative && complaint.responsibleRole === RoleName.TowerRepresentative && complaint.responsibleUserId === actor.id) return;
     throw new ForbiddenException('Only the responsible authority may perform this action');
   }
@@ -214,6 +248,21 @@ export class ComplaintsService {
       throw new ForbiddenException('Complaint location no longer matches the resident hierarchy');
     }
     return complaint;
+  }
+  private toViewModel(complaint: CommunityComplaint) {
+    const community = this.community.getCommunity(complaint.communityId);
+    const tower = this.community.getTower(complaint.towerId);
+    const floor = this.community.getFloor(complaint.floorId);
+    const apartment = this.community.getApartment(complaint.apartmentId);
+    return {
+      ...complaint,
+      location: {
+        communityName: community.name,
+        towerName: tower.name,
+        floorLabel: floor.label || String(floor.floorNumber),
+        apartmentNumber: apartment.apartmentNumber,
+      },
+    };
   }
   private updateStatus(complaint: CommunityComplaint, status: ComplaintStatus, _actorRole: RoleName, changes: Partial<CommunityComplaint>) { return this.crud.update(complaint.id, { ...changes, status }); }
 }

@@ -2592,7 +2592,45 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WorkerActionDto"
+                "$ref": "#/components/schemas/ResolveWorkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/complaints/{id}/verify-resolution": {
+      "patch": {
+        "operationId": "ComplaintsController_verifyResolution",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyResolutionDto"
               }
             }
           }
@@ -3636,6 +3674,7 @@
               "UNDER_REVIEW",
               "ASSIGNED",
               "IN_PROGRESS",
+              "PENDING_VERIFICATION",
               "RESOLVED",
               "REVIEWED",
               "CLOSED"
@@ -3661,10 +3700,55 @@
         "type": "object",
         "properties": {}
       },
+      "ResolveWorkDto": {
+        "type": "object",
+        "properties": {
+          "problemFound": {
+            "type": "string"
+          },
+          "resolutionSummary": {
+            "type": "string"
+          },
+          "proofAttachmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "problemFound",
+          "resolutionSummary",
+          "proofAttachmentIds"
+        ]
+      },
+      "VerifyResolutionDto": {
+        "type": "object",
+        "properties": {
+          "authorityRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "authorityRating"
+        ]
+      },
       "CreateComplaintReviewDto": {
         "type": "object",
         "properties": {
-          "rating": {
+          "speedRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "qualityRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "communicationRating": {
             "type": "number",
             "minimum": 1,
             "maximum": 5
@@ -3674,7 +3758,9 @@
           }
         },
         "required": [
-          "rating"
+          "speedRating",
+          "qualityRating",
+          "communicationRating"
         ]
       }
     }

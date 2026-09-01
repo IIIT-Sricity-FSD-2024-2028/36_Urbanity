@@ -22,6 +22,7 @@ const STATUS_LABELS = {
   UNDER_REVIEW: "Under Review",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
+  PENDING_VERIFICATION: "Awaiting Authority Verification",
   RESOLVED: "Resolved",
   REVIEWED: "Reviewed",
   CLOSED: "Closed",
@@ -129,6 +130,21 @@ async function loadResidentData() {
   state.hierarchy = hierarchyResponse.data;
   state.complaints = complaintsResponse.data || [];
   setHeader();
+  renderResolutionNotifications();
+}
+
+function renderResolutionNotifications() {
+  const resolved = state.complaints.filter((complaint) => complaint.status === "RESOLVED");
+  const badge = document.getElementById("notificationBadge");
+  const list = document.getElementById("notificationList");
+  if (badge) badge.textContent = String(resolved.length);
+  if (!list) return;
+  list.innerHTML = resolved.length
+    ? resolved.map((complaint) => `<button type="button" class="notification-item" data-notification-complaint="${escapeHtml(complaint.id)}"><b>Resolution verified</b><span>${escapeHtml(complaint.title)} is ready for your review.</span></button>`).join("")
+    : '<div class="dropdown-empty">You are all caught up.</div>';
+  list.querySelectorAll("[data-notification-complaint]").forEach((button) => {
+    button.addEventListener("click", () => { document.getElementById("notificationDropdown")?.classList.remove("active"); openComplaint(button.dataset.notificationComplaint); });
+  });
 }
 
 function statusPill(status) {
@@ -388,7 +404,7 @@ async function openComplaint(id) {
         await api(`/complaints/${id}/review`, { redirectOnUnauthorized: false })
       ).data;
     } catch (error) {
-      if (error.status !== 404) throw error;
+      if (![400, 404].includes(error.status)) throw error;
     }
     state.activeComplaint.review = review;
     showComplaintModal(state.activeComplaint);
@@ -406,13 +422,17 @@ function showComplaintModal(complaint) {
   document.getElementById("modalCategoryText").textContent = friendly(
     complaint.type,
   );
+  const reviewStars = (category, label) => `<fieldset class="resident-star-field"><legend>${label}</legend><div class="resident-star-rating" role="radiogroup" aria-label="${label} rating" onmouseleave="clearReviewHover('${category}')">${[1, 2, 3, 4, 5].map((rating) => `<input type="radio" id="${category}-${rating}" name="${category}" value="${rating}" onchange="setReviewRating('${category}', ${rating})"><label for="${category}-${rating}" class="resident-star" data-review-category="${category}" data-review-star="${rating}" title="${rating} out of 5" aria-label="${rating} out of 5" onmouseenter="setReviewHover('${category}', ${rating})">★</label>`).join("")}</div></fieldset>`;
+  const proofSection = complaint.resolutionProof ? `<section class="modal-description-section"><h3>Verified work summary</h3><p><b>Problem identified:</b> ${escapeHtml(complaint.resolutionProof.problemFound)}</p><p><b>Resolution:</b> ${escapeHtml(complaint.resolutionProof.resolutionSummary)}</p>${complaint.resolutionVerification ? `<p><b>Verified by:</b> ${escapeHtml(complaint.resolutionVerification.verifiedByUserName)}</p>` : ""}</section>` : "";
   const reviewSection = complaint.review
-    ? `<section class="modal-description-section"><h3>Your Review</h3><p>${"★".repeat(complaint.review.rating)}${"☆".repeat(5 - complaint.review.rating)} · ${escapeHtml(complaint.review.feedback || "No feedback provided")}</p><p>${escapeHtml(formatDate(complaint.review.createdAt))}</p></section>`
+    ? `<section class="modal-description-section"><h3>Your Review</h3><p><b>Overall:</b> ${escapeHtml(complaint.review.rating)} / 5</p><p>Speed: ${escapeHtml(complaint.review.speedRating)} / 5 · Quality: ${escapeHtml(complaint.review.qualityRating)} / 5 · Communication: ${escapeHtml(complaint.review.communicationRating)} / 5</p><p>${escapeHtml(complaint.review.feedback || "No feedback provided")}</p><p>${escapeHtml(formatDate(complaint.review.createdAt))}</p></section>`
     : complaint.status === "RESOLVED"
-      ? `<section class="modal-description-section"><h3>Review completed work</h3><form id="reviewForm"><label>Rating</label><select id="reviewRating" required><option value="">Select 1–5</option>${[1, 2, 3, 4, 5].map((rating) => `<option value="${rating}">${rating} star${rating > 1 ? "s" : ""}</option>`).join("")}</select><label>Feedback (optional)</label><textarea id="reviewFeedback" maxlength="2000"></textarea><button class="raise-issue-btn" type="submit">Submit Review</button></form></section>`
-      : "";
+      ? `<section class="modal-description-section"><h3>Review completed work</h3><form id="reviewForm">${reviewStars("reviewSpeedRating", "Speed")}${reviewStars("reviewQualityRating", "Quality")}${reviewStars("reviewCommunicationRating", "Communication")}<label for="reviewFeedback">Feedback (optional)</label><textarea id="reviewFeedback" maxlength="2000"></textarea><button class="raise-issue-btn" type="submit">Submit Review</button></form></section>`
+      : complaint.status === "PENDING_VERIFICATION"
+        ? `<section class="modal-description-section"><h3>Resolution update</h3><p>The worker has submitted proof of work. Your responsible authority must verify it before this complaint is ready for review.</p></section>`
+        : "";
   document.getElementById("modalBodyContent").innerHTML =
-    `<div class="modal-details"><div class="modal-detail-row"><div><div class="modal-detail-label">Location</div><div class="modal-detail-value">${escapeHtml(locationText())}</div></div></div><div class="modal-detail-row"><div><div class="modal-detail-label">Required Work</div><div class="modal-detail-value">${escapeHtml(friendly(complaint.requiredWorkType))}</div></div></div><div class="modal-detail-row"><div><div class="modal-detail-label">Responsible Authority</div><div class="modal-detail-value">${escapeHtml(complaint.responsibleUserName || friendly(complaint.responsibleRole))}</div></div></div><div class="modal-description-section"><div class="modal-detail-label">Description</div><div class="modal-description-text">${escapeHtml(complaint.description)}</div></div><section class="modal-description-section"><h3>Status History</h3>${(complaint.statusHistory || []).map((entry) => `<p>${escapeHtml(STATUS_LABELS[entry.status] || friendly(entry.status))} · ${escapeHtml(formatDate(entry.changedAt))} · ${escapeHtml(friendly(entry.changedByRole))}</p>`).join("")}</section><section class="modal-description-section"><h3>Attachments</h3><form id="attachmentForm"><input id="attachmentFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"><button class="link-button" type="submit">Upload media</button></form><div id="attachmentList">${complaint.attachments.length ? complaint.attachments.map((attachment) => `<div class="attachment-item" data-attachment="${attachment.id}">${escapeHtml(attachment.originalName)} (${Math.ceil(attachment.size / 1024)} KB) <span class="attachment-preview"></span></div>`).join("") : "No attachments."}</div></section>${reviewSection}</div>`;
+    `<div class="modal-details"><div class="modal-detail-row"><div><div class="modal-detail-label">Location</div><div class="modal-detail-value">${escapeHtml(complaint.location ? [complaint.location.communityName, complaint.location.towerName, complaint.location.floorLabel, complaint.location.apartmentNumber].filter(Boolean).join(" · ") : locationText())}</div></div></div><div class="modal-detail-row"><div><div class="modal-detail-label">Required Work</div><div class="modal-detail-value">${escapeHtml(friendly(complaint.requiredWorkType))}</div></div></div><div class="modal-detail-row"><div><div class="modal-detail-label">Responsible Authority</div><div class="modal-detail-value">${escapeHtml(complaint.responsibleUserName || friendly(complaint.responsibleRole))}</div></div></div><div class="modal-description-section"><div class="modal-detail-label">Description</div><div class="modal-description-text">${escapeHtml(complaint.description)}</div></div><section class="modal-description-section"><h3>Status History</h3>${(complaint.statusHistory || []).map((entry) => `<p>${escapeHtml(STATUS_LABELS[entry.status] || friendly(entry.status))} · ${escapeHtml(formatDate(entry.changedAt))} · ${escapeHtml(friendly(entry.changedByRole))}</p>`).join("")}</section><section class="modal-description-section"><h3>Attachments</h3><form id="attachmentForm"><input id="attachmentFile" type="file" accept="image/jpeg,image/png,image/webp"><button class="link-button" type="submit">Upload image</button></form><div id="attachmentList">${complaint.attachments.length ? complaint.attachments.map((attachment) => `<div class="attachment-item" data-attachment="${attachment.id}">${escapeHtml(attachment.originalName)} (${Math.ceil(attachment.size / 1024)} KB) <span class="attachment-preview"></span></div>`).join("") : "No attachments."}</div></section>${proofSection}${reviewSection}</div>`;
   document.getElementById("issueModal").classList.add("active");
   document
     .getElementById("attachmentForm")
@@ -471,14 +491,16 @@ async function uploadAttachment(event) {
 
 async function submitReview(event) {
   event.preventDefault();
-  const rating = Number(document.getElementById("reviewRating").value);
+  const speedRating = Number(document.querySelector('input[name="reviewSpeedRating"]:checked')?.value);
+  const qualityRating = Number(document.querySelector('input[name="reviewQualityRating"]:checked')?.value);
+  const communicationRating = Number(document.querySelector('input[name="reviewCommunicationRating"]:checked')?.value);
   const feedback = document.getElementById("reviewFeedback").value.trim();
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5)
-    return notify("Select a rating from 1 to 5.", "error");
+  if (![speedRating, qualityRating, communicationRating].every((rating) => Number.isInteger(rating) && rating >= 1 && rating <= 5))
+    return notify("Select a rating from 1 to 5 for every category.", "error");
   try {
     await api(`/complaints/${state.activeComplaint.id}/review`, {
       method: "POST",
-      body: feedback ? { rating, feedback } : { rating },
+      body: feedback ? { speedRating, qualityRating, communicationRating, feedback } : { speedRating, qualityRating, communicationRating },
     });
     await loadResidentData();
     notify("Review submitted.", "success");
@@ -486,6 +508,22 @@ async function submitReview(event) {
   } catch (error) {
     notify(error.message || "Unable to submit review.", "error");
   }
+}
+
+function setReviewRating(category, value) {
+  document.querySelectorAll(`[data-review-category="${category}"]`).forEach((star) => {
+    star.classList.toggle("selected", Number(star.dataset.reviewStar) <= value);
+  });
+}
+
+function setReviewHover(category, value) {
+  document.querySelectorAll(`[data-review-category="${category}"]`).forEach((star) => {
+    star.classList.toggle("hover-selected", Number(star.dataset.reviewStar) <= value);
+  });
+}
+
+function clearReviewHover(category) {
+  document.querySelectorAll(`[data-review-category="${category}"]`).forEach((star) => star.classList.remove("hover-selected"));
 }
 
 function closeIssueModal() {

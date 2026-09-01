@@ -99,7 +99,7 @@ function render(page = workerState.page) {
   workerState.page = page;
   let complaints = workerState.complaints;
   if (page === "in-progress") complaints = complaints.filter((complaint) => complaint.status === "IN_PROGRESS");
-  if (page === "completed") complaints = complaints.filter((complaint) => ["RESOLVED", "REVIEWED", "CLOSED"].includes(complaint.status));
+  if (page === "completed") complaints = complaints.filter((complaint) => ["PENDING_VERIFICATION", "RESOLVED", "REVIEWED", "CLOSED"].includes(complaint.status));
   const pageTitle = page === "in-progress" ? "In Progress Work" : page === "completed" ? "Completed Work" : "Assigned Maintenance Work";
   const pageDescription = page === "in-progress" ? "Work you have started and can resolve when complete." : page === "completed" ? "Maintenance work resolved by you." : "All maintenance work assigned to your worker profile.";
   document.getElementById("pageContent").innerHTML = page === "dashboard" ? dashboard() : page === "profile" ? profile() : `<section class="content-card"><div class="page-header"><p class="page-eyebrow">Maintenance workspace</p><h1 class="page-title">${pageTitle}</h1><p class="page-subtitle">${pageDescription}</p></div><div class="table-header"><div><p class="section-eyebrow">Assigned work</p><h2 class="table-title">${pageTitle}</h2></div><span class="table-count">${escapeHtml(complaints.length)} total</span></div>${rows(complaints)}</section>`;
@@ -119,31 +119,70 @@ async function openTask(id) {
     workerState.active = { ...complaintResponse.data, attachments: attachmentsResponse.data || [] };
     const complaint = workerState.active;
     document.getElementById("modalContent").innerHTML = `<div class="modal-section"><p class="section-eyebrow">Assigned maintenance work</p><h3 class="modal-task-title">${escapeHtml(complaint.title)}</h3><p class="modal-description">${escapeHtml(complaint.description)}</p></div><div class="modal-grid"><div><p class="modal-label">Complaint type</p><p class="modal-value">${escapeHtml(label(complaint.type))}</p></div><div><p class="modal-label">Specialization</p><p class="modal-value">${escapeHtml(label(complaint.requiredWorkType))}</p></div><div><p class="modal-label">Status</p><p class="modal-value">${statusBadge(complaint.status)}</p></div><div><p class="modal-label">Responsible authority</p><p class="modal-value">${escapeHtml(complaint.responsibleUserName || "—")}</p></div></div><div class="modal-section attachment-section"><p class="modal-label">Resident attachments</p>${complaint.attachments.length ? `<ul class="history-list">${complaint.attachments.map((attachment) => `<li>${escapeHtml(attachment.originalName)}</li>`).join("")}</ul>` : '<p class="modal-value">No attachments were provided.</p>'}</div>`;
+    const location = complaint.location ? [complaint.location.communityName, complaint.location.towerName, complaint.location.floorLabel, complaint.location.apartmentNumber].filter(Boolean).join(" / ") : "Location unavailable";
+    const proofSummary = complaint.resolutionProof ? `<div class="modal-section"><p class="modal-label">Resolution proof</p><p class="modal-value"><b>Problem identified:</b> ${escapeHtml(complaint.resolutionProof.problemFound)}</p><p class="modal-value"><b>Resolution:</b> ${escapeHtml(complaint.resolutionProof.resolutionSummary)}</p>${complaint.resolutionVerification ? `<p class="modal-value"><b>Verified by:</b> ${escapeHtml(complaint.resolutionVerification.verifiedByUserName)} (${escapeHtml(complaint.resolutionVerification.authorityRating)} / 5)</p>` : '<p class="modal-value">Awaiting responsible-authority verification.</p>'}</div>` : "";
+    const proofForm = complaint.status === "IN_PROGRESS" ? `<form id="resolutionProofForm" class="modal-section attachment-section completion-form"><p class="section-eyebrow">Submit proof of work</p><label class="completion-form-label" for="problemFound">Problem identified</label><textarea id="problemFound" class="completion-form-textarea" maxlength="2000" placeholder="Describe the issue found" required></textarea><label class="completion-form-label" for="resolutionSummary">How was it resolved?</label><textarea id="resolutionSummary" class="completion-form-textarea" maxlength="2000" placeholder="Explain the completed work" required></textarea><label class="completion-form-label" for="resolutionProofFiles">Proof media</label><input id="resolutionProofFiles" class="completion-form-file" type="file" accept="image/jpeg,image/png,image/webp" multiple required><p class="completion-form-hint">Attach at least one JPEG, PNG, or WebP image (up to 5 MB each).</p><button class="modal-btn modal-btn-blue" type="submit">Submit proof for verification</button></form>` : "";
+    document.getElementById("modalContent").insertAdjacentHTML("beforeend", `<div class="modal-section"><p class="modal-label">Complaint location</p><p class="modal-value">${escapeHtml(location)}</p></div>${proofSummary}${proofForm}`);
     const actionButton = document.getElementById("modalActionBtn");
-    const canAct = ["ASSIGNED", "IN_PROGRESS"].includes(complaint.status);
+    const canAct = complaint.status === "ASSIGNED";
     actionButton.hidden = !canAct;
+    actionButton.closest(".modal-footer").hidden = !canAct;
     actionButton.disabled = false;
-    actionButton.textContent = complaint.status === "ASSIGNED" ? "Start Work" : "Resolve Work";
-    actionButton.onclick = () => workerAction(complaint.id, complaint.status === "ASSIGNED" ? "start" : "resolve");
+    actionButton.textContent = "Start Work";
+    actionButton.onclick = () => workerAction(complaint.id);
+    document.getElementById("resolutionProofForm")?.addEventListener("submit", submitResolutionProof);
     document.getElementById("modalOverlay").classList.add("active");
   } catch (error) {
     notify(error.message || "Unable to load task details.");
   }
 }
 
-async function workerAction(id, action) {
+async function workerAction(id) {
   const actionButton = document.getElementById("modalActionBtn");
   actionButton.disabled = true;
   try {
-    await api(`/complaints/${id}/${action}`, { method: "PATCH", body: {} });
+    await api(`/complaints/${id}/start`, { method: "PATCH", body: {} });
     await loadWorker();
     closeModal();
     render();
-    notify(action === "start" ? "Work started." : "Work resolved.", "success");
+    notify("Work started.", "success");
   } catch (error) {
     notify(error.message || "Unable to update work status.");
   } finally {
     actionButton.disabled = false;
+  }
+}
+
+async function submitResolutionProof(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitButton = form.querySelector('[type="submit"]');
+  const problemFound = document.getElementById("problemFound").value.trim();
+  const resolutionSummary = document.getElementById("resolutionSummary").value.trim();
+  const files = [...document.getElementById("resolutionProofFiles").files];
+  const unsupported = files.find((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type));
+  const oversized = files.find((file) => file.size > 5 * 1024 * 1024);
+  if (!problemFound || !resolutionSummary || !files.length) return notify("Describe the work and attach proof media.");
+  if (unsupported) return notify(`${unsupported.name} is not a supported proof image.`);
+  if (oversized) return notify(`${oversized.name} exceeds the 5 MB limit.`);
+  submitButton.disabled = true;
+  try {
+    const uploads = await Promise.all(files.map(async (file) => {
+      const data = new FormData();
+      data.append("file", file);
+      return api(`/complaints/${workerState.active.id}/attachments`, { method: "POST", body: data });
+    }));
+    await api(`/complaints/${workerState.active.id}/resolve`, {
+      method: "PATCH",
+      body: { problemFound, resolutionSummary, proofAttachmentIds: uploads.map((upload) => upload.data.id) },
+    });
+    await loadWorker();
+    closeModal();
+    render();
+    notify("Proof submitted for authority verification.", "success");
+  } catch (error) {
+    notify(error.message || "Unable to submit proof of work.");
+    submitButton.disabled = false;
   }
 }
 

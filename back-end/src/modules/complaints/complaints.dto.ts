@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import { ComplaintStatus } from '../../common/enums/status.enum';
 import { WorkType } from '../workforce/workforce.dto';
 
@@ -12,8 +12,28 @@ export class ComplaintAttachment {
   @ApiProperty() uploadedAt!: string;
   @ApiProperty() retrievalUrl!: string;
   @ApiProperty() uploadedByRole!: string;
+  @ApiPropertyOptional({ enum: ['COMPLAINT', 'RESOLUTION_PROOF'] }) purpose?: 'COMPLAINT' | 'RESOLUTION_PROOF';
   storedName!: string;
   relativePath!: string;
+}
+export class ResolutionProof {
+  @ApiProperty() problemFound!: string;
+  @ApiProperty() resolutionSummary!: string;
+  @ApiProperty({ type: [String] }) attachmentIds!: string[];
+  @ApiProperty() submittedAt!: string;
+  @ApiProperty() submittedByWorkerId!: string;
+}
+export class ResolutionVerification {
+  @ApiProperty() authorityRating!: number;
+  @ApiProperty() verifiedAt!: string;
+  @ApiProperty() verifiedByUserId!: string;
+  @ApiProperty() verifiedByUserName!: string;
+}
+export class ComplaintLocationSummary {
+  @ApiProperty() communityName!: string;
+  @ApiProperty() towerName!: string;
+  @ApiProperty() floorLabel!: string;
+  @ApiProperty() apartmentNumber!: string;
 }
 export class CommunityComplaint {
   @ApiProperty() id!: string;
@@ -35,6 +55,9 @@ export class CommunityComplaint {
   @ApiProperty() createdAt!: string;
   @ApiProperty() updatedAt!: string;
   @ApiPropertyOptional() assignedWorkerId?: string;
+  @ApiPropertyOptional({ type: ResolutionProof }) resolutionProof?: ResolutionProof;
+  @ApiPropertyOptional({ type: ResolutionVerification }) resolutionVerification?: ResolutionVerification;
+  @ApiPropertyOptional({ type: ComplaintLocationSummary }) location?: ComplaintLocationSummary;
 }
 export class CreateCommunityComplaintDto {
   @ApiProperty({ enum: ComplaintType }) @IsEnum(ComplaintType) type!: ComplaintType;
@@ -59,6 +82,14 @@ export class TransitionComplaintStatusDto {
 }
 export class AssignWorkerDto { @ApiProperty() @IsUUID('4') workerId!: string; }
 export class WorkerActionDto {}
+export class ResolveWorkDto {
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(2000) problemFound!: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(2000) resolutionSummary!: string;
+  @ApiProperty({ type: [String] }) @IsArray() @ArrayMinSize(1) @IsUUID('4', { each: true }) proofAttachmentIds!: string[];
+}
+export class VerifyResolutionDto {
+  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) authorityRating!: number;
+}
 export enum ComplaintAssignmentStatus { Assigned = 'ASSIGNED', InProgress = 'IN_PROGRESS', Completed = 'COMPLETED' }
 export class ComplaintAssignment {
   @ApiProperty() id!: string;
@@ -75,11 +106,16 @@ export class ComplaintReview {
   @ApiProperty() residentId!: string;
   @ApiProperty() workerId!: string;
   @ApiProperty({ minimum: 1, maximum: 5 }) rating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) speedRating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) qualityRating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) communicationRating!: number;
   @ApiPropertyOptional() feedback?: string;
   @ApiProperty() createdAt!: string;
   @ApiProperty() updatedAt!: string;
 }
 export class CreateComplaintReviewDto {
-  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) rating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) speedRating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) qualityRating!: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) communicationRating!: number;
   @ApiPropertyOptional() @IsOptional() @IsString() @IsNotEmpty() @MaxLength(2000) feedback?: string;
 }

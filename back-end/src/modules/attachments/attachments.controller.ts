@@ -16,7 +16,7 @@ import { AttachmentsService, MAX_IMAGE_SIZE_BYTES } from './attachments.service'
 @Controller('complaints/:complaintId/attachments')
 export class AttachmentsController {
   constructor(private readonly service: AttachmentsService) {}
-  @Post() @Roles(RoleName.Resident)
+  @Post() @Roles(RoleName.Resident, RoleName.MaintenanceWorker)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE_BYTES } }))
   @ApiConsumes('multipart/form-data') @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   upload(@Param('complaintId', ParseUUIDPipe) complaintId: string, @UploadedFile() file: any, @CurrentUser() user: AuthenticatedUser) { return { success: true, data: this.service.upload(complaintId, file, user) }; }

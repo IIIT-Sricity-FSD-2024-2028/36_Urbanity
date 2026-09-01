@@ -52,11 +52,16 @@
       UNDER_REVIEW: '<span class="status-badge status-review">Under Review</span>',
       ASSIGNED: '<span class="status-badge status-assigned">Assigned</span>',
       IN_PROGRESS: '<span class="status-badge status-progress">In Progress</span>',
+      PENDING_VERIFICATION: '<span class="status-badge status-review">Awaiting Verification</span>',
       RESOLVED: '<span class="status-badge status-resolved">Resolved</span>',
       REVIEWED: '<span class="status-badge status-reviewed">Reviewed</span>',
       CLOSED: '<span class="status-badge status-closed">Closed</span>',
     };
     return map[status] || `<span class="status-badge">${escapeHtml(labelEnum(status))}</span>`;
+  }
+
+  function authorityRatingStars() {
+    return `<div class="authority-star-rating" role="radiogroup" aria-label="Work quality rating" onmouseleave="clearAuthorityRatingHover()">${[1, 2, 3, 4, 5].map((rating) => `<input type="radio" id="authority-rating-${rating}" name="authorityRating" value="${rating}" onchange="setAuthorityRating(${rating})"><label for="authority-rating-${rating}" class="authority-star" data-authority-star="${rating}" title="${rating} out of 5" aria-label="${rating} out of 5" onmouseenter="setAuthorityRatingHover(${rating})">★</label>`).join('')}</div>`;
   }
 
   function typeBadge(type) {
@@ -452,8 +457,10 @@
       state.activeComplaint = complaint;
 
       let reviewHtml = '';
+      let residentReview = null;
       try {
         const reviewRes = await api(`/complaints/${id}/review`);
+        residentReview = reviewRes.data;
         if (reviewRes.data) reviewHtml = `<div class="modal-section"><h4>Review</h4><p>Rating: ${reviewRes.data.rating}/5 ${reviewRes.data.feedback ? `— ${escapeHtml(reviewRes.data.feedback)}` : ''}</p></div>`;
       } catch { /* no review yet */ }
 
@@ -469,6 +476,12 @@
       document.getElementById('complaintModalBody').innerHTML = `<div class="modal-section"><div class="modal-grid"><div><span class="modal-label">Status</span><span>${statusBadge(complaint.status)}</span></div><div><span class="modal-label">Required work</span><span>${escapeHtml(labelEnum(complaint.requiredWorkType))}</span></div><div><span class="modal-label">Created</span><span>${formatDate(complaint.createdAt)}</span></div><div><span class="modal-label">Updated</span><span>${formatDate(complaint.updatedAt)}</span></div></div></div><div class="modal-section"><h4>Resident & apartment</h4><p><b>${escapeHtml(residentLabel(context))}</b><br>${escapeHtml(apartmentLabel(context))}${context.floor?.name ? ` · ${escapeHtml(context.floor.name)}` : ''}</p></div><div class="modal-section"><h4>Description</h4><p>${escapeHtml(complaint.description || 'No description provided.')}</p></div><div class="modal-section"><h4>Scope</h4><p>${escapeHtml(labelEnum(complaint.type))} complaint within ${escapeHtml(state.hierarchy?.tower?.name || 'your tower')}${assignedWorker ? `<br>Assigned Worker Profile: ${escapeHtml(workerReference(assignedWorker))}` : ''}</p></div><div class="modal-section"><h4>Status timeline</h4><ol class="status-timeline">${timeline}</ol></div>${reviewHtml}<div class="modal-section"><h4>Attachments</h4>${attachments}</div>`;
 
       document.getElementById('complaintModalBody').insertAdjacentHTML('afterbegin', `<div class="modal-section lifecycle-guidance"><h4>Next step</h4><p>${escapeHtml(lifecycleGuidance(complaint.status))}</p></div>`);
+      if (residentReview) {
+        document.getElementById('complaintModalBody').insertAdjacentHTML('beforeend', `<div class="modal-section"><h4>Resident review details</h4><p>Speed: ${escapeHtml(residentReview.speedRating)} / 5 · Quality: ${escapeHtml(residentReview.qualityRating)} / 5 · Communication: ${escapeHtml(residentReview.communicationRating)} / 5</p></div>`);
+      }
+      if (complaint.resolutionProof) {
+        document.getElementById('complaintModalBody').insertAdjacentHTML('beforeend', `<div class="modal-section"><h4>Resolution proof</h4><p><b>Problem identified:</b> ${escapeHtml(complaint.resolutionProof.problemFound)}</p><p><b>Resolution:</b> ${escapeHtml(complaint.resolutionProof.resolutionSummary)}</p>${complaint.resolutionVerification ? `<p><b>Authority rating:</b> ${escapeHtml(complaint.resolutionVerification.authorityRating)} / 5</p>` : '<p class="text-muted">Awaiting your verification.</p>'}</div>`);
+      }
       const footer = document.getElementById('complaintModalFooter');
       let actions = '<button type="button" class="btn btn-outline" onclick="closeComplaintModal()">Close</button>';
 
@@ -476,6 +489,8 @@
         actions = `<button type="button" class="btn btn-outline" onclick="closeComplaintModal()">Close</button><button type="button" class="btn btn-primary" onclick="transitionComplaint('${id}', 'UNDER_REVIEW')">Mark Under Review</button>`;
       } else if (complaint.status === 'UNDER_REVIEW') {
         actions = `<button type="button" class="btn btn-outline" onclick="closeComplaintModal()">Close</button><button type="button" class="btn btn-primary" onclick="openWorkerSelection('${id}')">Assign Worker</button>`;
+      } else if (complaint.status === 'PENDING_VERIFICATION') {
+        actions = `<button type="button" class="btn btn-outline" onclick="closeComplaintModal()">Close</button><div class="authority-rating-control"><span class="modal-label">Rate worker quality</span>${authorityRatingStars()}</div><button type="button" class="btn btn-primary" onclick="verifyResolution('${id}')">Verify resolution</button>`;
       } else if (complaint.status === 'REVIEWED') {
         actions = `<button type="button" class="btn btn-outline" onclick="closeComplaintModal()">Close</button><button type="button" class="btn btn-primary" onclick="transitionComplaint('${id}', 'CLOSED')">Close Complaint</button>`;
       }
@@ -503,6 +518,32 @@
     } catch (err) {
       toast(err.message || 'Unable to update complaint status.', 'error');
     }
+  }
+
+  async function verifyResolution(id) {
+    const authorityRating = Number(document.querySelector('input[name="authorityRating"]:checked')?.value);
+    if (!Number.isInteger(authorityRating) || authorityRating < 1 || authorityRating > 5) return toast('Select a work-quality rating from 1 to 5.', 'error');
+    try {
+      await api(`/complaints/${id}/verify-resolution`, { method: 'PATCH', body: { authorityRating } });
+      closeComplaintModal();
+      await Promise.all([loadComplaints(), loadDashboard()]);
+      if (state.currentPage === 'complaints') renderComplaints();
+      toast('Resolution verified. The resident can now submit feedback.', 'success');
+    } catch (err) {
+      toast(err.message || 'Unable to verify the resolution.', 'error');
+    }
+  }
+
+  function setAuthorityRating(value) {
+    document.querySelectorAll('[data-authority-star]').forEach((star) => star.classList.toggle('selected', Number(star.dataset.authorityStar) <= value));
+  }
+
+  function setAuthorityRatingHover(value) {
+    document.querySelectorAll('[data-authority-star]').forEach((star) => star.classList.toggle('hover-selected', Number(star.dataset.authorityStar) <= value));
+  }
+
+  function clearAuthorityRatingHover() {
+    document.querySelectorAll('[data-authority-star]').forEach((star) => star.classList.remove('hover-selected'));
   }
 
   async function openWorkerSelection(complaintId) {
@@ -697,6 +738,10 @@
   window.openComplaintDetail = openComplaintDetail;
   window.closeComplaintModal = closeComplaintModal;
   window.transitionComplaint = transitionComplaint;
+  window.verifyResolution = verifyResolution;
+  window.setAuthorityRating = setAuthorityRating;
+  window.setAuthorityRatingHover = setAuthorityRatingHover;
+  window.clearAuthorityRatingHover = clearAuthorityRatingHover;
   window.openWorkerSelection = openWorkerSelection;
   window.selectWorker = selectWorker;
   window.confirmWorkerAssignment = confirmWorkerAssignment;

@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RoleName } from '../../common/enums/roles.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
-import { AssignWorkerDto, CreateCommunityComplaintDto, CreateComplaintReviewDto, TransitionComplaintStatusDto, UpdateCommunityComplaintDto, WorkerActionDto } from './complaints.dto';
+import { AssignWorkerDto, CreateCommunityComplaintDto, CreateComplaintReviewDto, ResolveWorkDto, TransitionComplaintStatusDto, UpdateCommunityComplaintDto, VerifyResolutionDto, WorkerActionDto } from './complaints.dto';
 import { ComplaintsService } from './complaints.service';
 @ApiTags('complaints') @ApiBearerAuth('bearerAuth') @UseGuards(RolesGuard) @Controller('complaints')
 export class ComplaintsController {
@@ -19,8 +19,9 @@ export class ComplaintsController {
   @Get(':id/eligible-workers') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative) eligibleWorkers(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.eligibleWorkers(user, id)); }
   @Post(':id/assign') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative) assignWorker(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AssignWorkerDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.assignWorker(id, dto, user)); }
   @Patch(':id/start') @Roles(RoleName.MaintenanceWorker) startWork(@Param('id', ParseUUIDPipe) id: string, @Body() _dto: WorkerActionDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.startWork(id, user)); }
-  @Patch(':id/resolve') @Roles(RoleName.MaintenanceWorker) resolveWork(@Param('id', ParseUUIDPipe) id: string, @Body() _dto: WorkerActionDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.resolveWork(id, user)); }
+  @Patch(':id/resolve') @Roles(RoleName.MaintenanceWorker) resolveWork(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ResolveWorkDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.resolveWork(id, dto, user)); }
+  @Patch(':id/verify-resolution') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative) verifyResolution(@Param('id', ParseUUIDPipe) id: string, @Body() dto: VerifyResolutionDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.verifyResolution(id, dto, user)); }
   @Post(':id/review') @Roles(RoleName.Resident) submitReview(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateComplaintReviewDto, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.submitReview(id, dto, user)); }
-  @Get(':id/review') @Roles(RoleName.SuperAdmin, RoleName.CommunityAdmin, RoleName.TowerRepresentative, RoleName.Resident) findReview(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.findReviewForActor(id, user)); }
+  @Get(':id/review') @Roles(RoleName.SuperAdmin, RoleName.CommunityAdmin, RoleName.TowerRepresentative, RoleName.Resident, RoleName.MaintenanceWorker) findReview(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.findReviewForActor(id, user)); }
   @Delete(':id') @Roles(RoleName.CommunityAdmin) delete(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) { return apiResponse(this.service.delete(user, id)); }
 }

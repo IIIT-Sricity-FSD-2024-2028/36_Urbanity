@@ -20,7 +20,7 @@ For scope-sensitive features, exercise allowed and denied cases across community
 
 ## Lifecycle regression checks
 
-When changing complaint code, test the supported sequence: create as the owning Resident; review as the responsible authority; assign only an eligible same-community worker; start/resolve as that assigned worker; review as the owning Resident; and close as the responsible authority. Also test one invalid transition and one cross-scope attempt.
+When changing complaint code, test the supported sequence: create as the owning Resident; review as the responsible authority; assign only an eligible same-community worker; start as that assigned worker; upload proof and submit the resolution; verify the proof as the responsible authority with a 1–5 quality rating; submit the resident's speed, quality, and communication review; and close as the responsible authority. Also test one invalid transition and one cross-scope attempt.
 
 ## Evidence to record
 
