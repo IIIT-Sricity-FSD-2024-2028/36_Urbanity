@@ -2,6 +2,7 @@ const ADMIN_MODULES = [
   "dashboard",
   "system-issues",
   "community-management",
+  "subscription",
   "users-roles",
   "users",
   "activity-monitor",
@@ -147,6 +148,7 @@ function navigateTo(page, evt) {
 
   const resolvedPage = page === "users" ? "users-roles" : page;
   if (page === "community-management") showCommunityManagement();
+  if (page === "subscription") showSubscriptionManagement();
   // Hide all pages
   const pages = document.querySelectorAll('[id^="page-"]');
   pages.forEach((p) => p.classList.add("hidden"));
@@ -451,21 +453,22 @@ async function submitHierarchy(panel, resource) {
   const data = Object.fromEntries([...panel.querySelectorAll("[name]")].map((field) => [field.name, field.value]));
   if (resource === "floors") data.floorNumber = Number(data.floorNumber);
   if (submitButton) { submitButton.disabled = true; submitButton.textContent = `Creating ${resource.slice(0, -1)}...`; }
-  try { await adminApiRequest(`/${resource}`, { method: "POST", body: data }); await loadHierarchyData(); refreshHierarchyRecords(); panel.querySelectorAll("input").forEach((input) => { input.value = ""; }); showAdminToast(`${resource.slice(0, -1)} created successfully.`, "success"); if (submitButton) { submitButton.disabled = false; submitButton.textContent = `Add ${resource.slice(0, -1)}`; } } catch (error) { showAdminToast(error.message || "Unable to save hierarchy record.", "error"); if (submitButton) { submitButton.disabled = false; submitButton.textContent = `Add ${resource.slice(0, -1)}`; } }
+  try { await adminApiRequest(`/${resource}`, { method: "POST", body: data }); await loadHierarchyData(); showCommunityManagement(); showAdminToast(`${resource.slice(0, -1)} created successfully.`, "success"); } catch (error) { showAdminToast(error.message || "Unable to save hierarchy record.", "error"); if (submitButton) { submitButton.disabled = false; submitButton.textContent = `Add ${resource.slice(0, -1)}`; } }
 }
 
 async function editHierarchy(resource, id) {
   const item = hierarchyState[resource].find((entry) => entry.id === id);
   if (!item) return;
   const fields = resource === "communities" ? ["name", "address", "description"] : resource === "towers" ? ["name", "code", "description"] : resource === "floors" ? ["floorNumber", "label"] : ["apartmentNumber", "label"];
-  const body = {};
-  for (const field of fields) {
-    const nextValue = window.prompt(`Update ${field}`, item[field] ?? "");
-    if (nextValue === null) return;
-    if (field !== "description" && !nextValue.trim()) return;
-    body[field] = field === "floorNumber" ? Number(nextValue) : nextValue.trim();
-  }
-  try { await adminApiRequest(`/${resource}/${id}`, { method: "PATCH", body }); await loadHierarchyData(); refreshHierarchyRecords(); showAdminToast("Hierarchy record updated.", "success"); } catch (error) { showAdminToast(error.message || "Unable to update hierarchy record.", "error"); }
+  document.getElementById("hierarchyEditModal")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "hierarchyEditModal"; overlay.className = "modal-overlay active";
+  const labels = { name: "Name", address: "Address", description: "Description", code: "Tower code", floorNumber: "Floor number", label: resource === "apartments" ? "Apartment label" : "Floor label", apartmentNumber: "Apartment number" };
+  const inputs = fields.map((field) => field === "description" ? `<label class="form-label">${labels[field]}<textarea class="form-input" name="${field}" maxlength="500">${hierarchyEscape(item[field] || "")}</textarea></label>` : `<label class="form-label">${labels[field]}<input class="form-input" name="${field}" type="${field === "floorNumber" ? "number" : "text"}" value="${hierarchyEscape(item[field] ?? "")}" ${field === "floorNumber" ? "min=\"0\"" : ""} required></label>`).join("");
+  overlay.innerHTML = `<div class="modal"><div class="modal-header"><h3 class="modal-title">Edit ${resource.slice(0, -1)}</h3><button class="modal-close" type="button" data-close>&times;</button></div><form id="hierarchyEditForm"><div class="modal-body">${inputs}</div><div class="modal-footer"><button class="btn btn-outline" type="button" data-close>Cancel</button><button class="btn btn-primary" type="submit">Save changes</button></div></form></div>`;
+  const close = () => overlay.remove(); overlay.onclick = (event) => { if (event.target === overlay || event.target.closest("[data-close]")) close(); };
+  overlay.querySelector("form").onsubmit = async (event) => { event.preventDefault(); const body = Object.fromEntries(new FormData(event.currentTarget)); if ("floorNumber" in body) body.floorNumber = Number(body.floorNumber); const submit = event.currentTarget.querySelector('[type="submit"]'); submit.disabled = true; try { await adminApiRequest(`/${resource}/${id}`, { method: "PATCH", body }); await loadHierarchyData(); showCommunityManagement(); close(); showAdminToast("Hierarchy record updated.", "success"); } catch (error) { submit.disabled = false; showAdminToast(error.message || "Unable to update hierarchy record.", "error"); } };
+  document.body.appendChild(overlay);
 }
 
 async function deleteHierarchy(resource, id) {
@@ -2416,6 +2419,42 @@ document.addEventListener("click", async (evt) => {
 
 document.getElementById("addUserRole")?.addEventListener("change", updateAddUserDepartmentField);
 
+function formatSubscriptionAmount(amount) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(amount) || 0);
+}
+
+async function showSubscriptionManagement() {
+  let page = document.getElementById("page-subscription");
+  if (!page) { page = document.createElement("div"); page.id = "page-subscription"; page.className = "hidden"; document.getElementById("pageContent")?.appendChild(page); }
+  page.innerHTML = '<section class="community-dashboard-loading"><span class="dashboard-loader"></span><div><p class="eyebrow">PLAN &amp; BILLING</p><h1>Loading your subscription</h1></div></section>';
+  try {
+    const subscription = (await adminApiRequest("/subscriptions/me")).data;
+    page.innerHTML = `<div class="page-header-with-action"><div><h1 class="page-title">Plan &amp; Billing</h1><p class="page-description">Review your contracted capacity and upgrade when your community grows.</p></div></div><section class="card"><div class="card-content"><div class="payment-details"><div><span>Current towers</span><b>${subscription.contractedTowers}</b></div><div><span>Current apartments</span><b>${subscription.contractedApartments}</b></div><div><span>Current plan amount</span><b>${formatSubscriptionAmount(subscription.amount)}</b></div><div><span>Plan status</span><b>${hierarchyEscape(subscription.status)}</b></div></div><form id="upgradePlanForm" class="payment-form"><h3 class="card-title">Upgrade capacity</h3><p>Only increases are allowed. The extra amount is calculated by the backend using your contracted rates.</p><label>New tower capacity<input class="form-input" type="number" name="contractedTowers" min="${subscription.contractedTowers}" value="${subscription.contractedTowers}" required></label><label>New apartment capacity<input class="form-input" type="number" name="contractedApartments" min="${subscription.contractedApartments}" value="${subscription.contractedApartments}" required></label><div class="payment-actions"><button type="submit" class="btn btn-primary">Review upgrade price</button></div></form><p id="upgradeMessage" class="payment-message" role="status"></p></div></section>`;
+    document.getElementById("upgradePlanForm").onsubmit = async (event) => { event.preventDefault(); const form = event.currentTarget; const submit = form.querySelector('[type="submit"]'); submit.disabled = true; try { const values = Object.fromEntries(new FormData(form)); const upgraded = (await adminApiRequest("/subscriptions/me/upgrade", { method: "POST", body: { contractedTowers: Number(values.contractedTowers), contractedApartments: Number(values.contractedApartments) } })).data; page.innerHTML = `<section class="payment-workspace"><p class="payment-kicker">Plan upgrade</p><h1>Review extra payment</h1><p>Your new capacity will be available after the mock payment is confirmed.</p><div class="payment-details"><div><span>New towers</span><b>${upgraded.pendingContractedTowers}</b></div><div><span>New apartments</span><b>${upgraded.pendingContractedApartments}</b></div><div><span>Extra amount due</span><b>${formatSubscriptionAmount(upgraded.pendingUpgradeAmount)}</b></div><div><span>New plan amount</span><b>${formatSubscriptionAmount(upgraded.pendingContractedTowers * upgraded.towerRate + upgraded.pendingContractedApartments * upgraded.apartmentRate)}</b></div></div><form id="upgradePaymentForm" class="payment-form"><label>Payment method<select class="form-select" required><option>Card</option><option>UPI</option><option>Net banking</option></select></label><div class="payment-actions"><button type="button" id="cancelUpgrade" class="btn btn-outline">Back</button><button type="submit" class="btn btn-primary">Pay ${formatSubscriptionAmount(upgraded.pendingUpgradeAmount)}</button></div></form><p id="upgradeMessage" class="payment-message" role="status"></p></section>`; document.getElementById("cancelUpgrade").onclick = showSubscriptionManagement; document.getElementById("upgradePaymentForm").onsubmit = async (paymentEvent) => { paymentEvent.preventDefault(); const pay = paymentEvent.currentTarget.querySelector('[type="submit"]'); pay.disabled = true; pay.textContent = "Confirming payment…"; try { await adminApiRequest("/subscriptions/me/upgrade/mock-payment", { method: "POST" }); page.innerHTML = `<section class="payment-workspace payment-success"><p class="payment-kicker">Upgrade complete</p><div class="payment-success-icon">✓</div><h1>New capacity is active</h1><p>Your community can now create additional towers and apartments within the upgraded limits.</p><button id="viewUpdatedPlan" class="btn btn-primary">View updated plan</button></section>`; document.getElementById("viewUpdatedPlan").onclick = showSubscriptionManagement; } catch (error) { pay.disabled = false; pay.textContent = "Pay upgrade"; document.getElementById("upgradeMessage").textContent = error.message || "Unable to confirm upgrade payment."; } }; } catch (error) { submit.disabled = false; document.getElementById("upgradeMessage").textContent = error.message || "Unable to calculate upgrade price."; } };
+  } catch (error) { page.innerHTML = `<section class="card"><div class="card-content"><p class="payment-message">${hierarchyEscape(error.message || "Unable to load subscription details.")}</p></div></section>`; }
+}
+
+function renderPaymentWorkspace(subscription) {
+  document.querySelector(".sidebar")?.classList.add("subscription-locked");
+  const page = document.getElementById("pageContent");
+  const summary = `<div class="payment-details"><div><span>Community</span><b>${hierarchyEscape(subscription.communityName || "Your community")}</b></div><div><span>Contracted towers</span><b>${subscription.contractedTowers}</b></div><div><span>Contracted apartments</span><b>${subscription.contractedApartments}</b></div><div><span>Subscription amount</span><b>${formatSubscriptionAmount(subscription.amount)}</b></div></div>`;
+  const showCheckout = () => {
+    page.innerHTML = `<section class="payment-workspace"><p class="payment-kicker">Secure checkout</p><h1>Payment details</h1><p>Review your order and enter customer details to continue.</p>${summary}<form id="mockPaymentForm" class="payment-form"><label>Customer name<input class="form-input" name="customerName" required></label><label>Email address<input class="form-input" name="email" type="email" required></label><label>Phone number<input class="form-input" name="phone" inputmode="tel" required></label><label>Payment method<select class="form-select" name="method" required><option value="CARD">Card</option><option value="UPI">UPI</option><option value="NET_BANKING">Net banking</option></select></label><div class="payment-actions"><button id="backToPricing" type="button" class="btn btn-outline">Back</button><button type="submit" class="btn btn-primary">Pay ${formatSubscriptionAmount(subscription.amount)}</button></div></form><p id="paymentMessage" class="payment-message" role="status"></p></section>`;
+    document.getElementById("backToPricing").onclick = () => renderPaymentWorkspace(subscription);
+    document.getElementById("mockPaymentForm").onsubmit = async (event) => { event.preventDefault(); const button = event.currentTarget.querySelector('[type="submit"]'); button.disabled = true; button.textContent = "Confirming payment…"; try { const response = await adminApiRequest("/subscriptions/me/mock-payment", { method: "POST" }); if (response.data?.status !== "ACTIVE") throw new Error("Payment confirmation is still pending."); page.innerHTML = `<section class="payment-workspace payment-success"><p class="payment-kicker">Payment successful</p><div class="payment-success-icon">✓</div><h1>You're all set</h1><p>Your payment of <b>${formatSubscriptionAmount(subscription.amount)}</b> was confirmed. Community setup is now available.</p><button id="openCommunityWorkspace" class="btn btn-primary">Open community workspace</button></section>`; document.querySelector(".sidebar")?.classList.remove("subscription-locked"); document.getElementById("openCommunityWorkspace").onclick = loadActiveAdminWorkspace; } catch (error) { button.disabled = false; button.textContent = `Pay ${formatSubscriptionAmount(subscription.amount)}`; document.getElementById("paymentMessage").textContent = error.message || "Unable to confirm payment."; } };
+  };
+  page.innerHTML = `<section class="payment-workspace"><p class="payment-kicker">Subscription activation required</p><h1>Review your subscription</h1><p>Complete the secure mock checkout to unlock community setup.</p>${summary}<p class="payment-status">Payment pending</p><div class="payment-actions"><button id="continueToPayment" class="btn btn-primary">Continue to payment</button></div></section>`;
+  document.getElementById("continueToPayment").onclick = showCheckout;
+}
+
+async function loadActiveAdminWorkspace() {
+  renderAdminAnalyticsLoading();
+  try {
+    await loadHierarchyData(); await loadManagedUsers(); await loadManagedWorkers(); await loadManagedComplaints();
+    renderComplaintManagement(); applyCurrentUserToAdminUI(); navigateTo(getSavedAdminPage());
+  } catch (error) { showAdminToast(error.message || "Unable to load Admin management data.", "error"); }
+}
+
 async function initializeAdminPortal() {
   if (!window.UrbanityApi?.getAccessToken()) {
     window.UrbanityApi?.logout();
@@ -2434,19 +2473,9 @@ async function initializeAdminPortal() {
     authenticatedAdmin = true;
     authenticatedAdminUser = backendUser;
     applyCurrentUserToAdminUI();
-    renderAdminAnalyticsLoading();
-
-    try {
-      await loadHierarchyData();
-      await loadManagedUsers();
-      await loadManagedWorkers();
-      await loadManagedComplaints();
-      renderComplaintManagement();
-      applyCurrentUserToAdminUI();
-    } catch (error) {
-      showAdminToast(error.message || "Unable to load Admin management data.", "error");
-    }
-    navigateTo(getSavedAdminPage());
+    const subscription = (await adminApiRequest("/subscriptions/me")).data;
+    if (subscription.status !== "ACTIVE") return renderPaymentWorkspace(subscription);
+    await loadActiveAdminWorkspace();
   } catch (error) {
     // UrbanityApi handles invalid/expired-token session cleanup and redirect.
     if (error?.status !== 401) {

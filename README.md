@@ -95,6 +95,38 @@ This project aims to build a **multi-community apartment operations platform** t
 
 ---
 
+## Run locally
+
+Open two PowerShell terminals from the project directory.
+
+Start the backend:
+
+```powershell
+cd back-end
+npm.cmd install
+npm.cmd run start:dev
+```
+
+The API runs at `http://localhost:3000`.
+
+Start the frontend in the second terminal:
+
+```powershell
+cd front-end
+npx.cmd serve -l 3001
+```
+
+Open the sign-in page at `http://localhost:3001/Authentication/auth.html`.
+
+Development Super Admin credentials:
+
+```text
+Email: superadmin@urbanity.local
+Password: superadmin-dev
+```
+
+---
+
 ## Future Enhancements
 
 - Persistent database storage and migrations

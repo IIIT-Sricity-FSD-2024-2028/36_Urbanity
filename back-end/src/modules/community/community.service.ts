@@ -1,10 +1,12 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { hashSync } from 'bcryptjs';
 import { CrudRepository } from '../../common/crud/crud.repository';
 import { CrudService } from '../../common/crud/crud.service';
 import { RoleName } from '../../common/enums/roles.enum';
 import { User } from '../../data/schemas';
 import { serviceToken } from '../../data/urbanity.resources';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
+import { SubscriptionService } from '../subscriptions/subscription.service';
 import { Apartment, AssociateApartmentDto, AssociateTowerDto, Community, CreateApartmentDto, CreateCommunityDto, CreateFloorDto, CreateTowerDto, Floor, Tower, UpdateApartmentDto, UpdateCommunityDto, UpdateFloorDto, UpdateTowerDto } from './hierarchy.dto';
 
 const timestamp = () => new Date().toISOString();
@@ -39,11 +41,26 @@ export class CommunityService {
   private readonly floorCrud = new CrudService(this.floorRepo, 'Floor');
   private readonly apartmentCrud = new CrudService(this.apartmentRepo, 'Apartment');
 
-  constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>) {}
+  constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>, private readonly subscriptions: SubscriptionService) {}
   listCommunities() { return this.communityCrud.findAll(); } getCommunity(id: string) { return this.communityCrud.findById(id); }
   listCommunitiesForActor(actor: AuthenticatedUser) { return actor.role === RoleName.SuperAdmin ? this.listCommunities() : [this.requireScopedCommunity(actor)]; }
   getCommunityForActor(actor: AuthenticatedUser, id: string) { const community = this.getCommunity(id); this.assertCommunityAccess(actor, community.id); return community; }
-  createCommunity(dto: CreateCommunityDto) { const now = timestamp(); return this.communityCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
+  createCommunity(dto: CreateCommunityDto) {
+    if (this.users.findAll().some((user) => user.email.toLowerCase() === dto.adminEmail.trim().toLowerCase())) throw new BadRequestException('A user with this email already exists');
+    const now = timestamp(); let community: Community | undefined; let admin: User | undefined; let subscriptionId: string | undefined;
+    try {
+      const { adminName, adminEmail, adminPassword, contractedTowers, contractedApartments, ...communityData } = dto;
+      community = this.communityCrud.create({ ...communityData, createdAt: now, updatedAt: now });
+      admin = this.users.create({ name: adminName, email: adminEmail.trim().toLowerCase(), passwordHash: hashSync(adminPassword, 10), role: RoleName.CommunityAdmin, communityId: community.id, createdAt: now });
+      const subscription = this.subscriptions.createPending(community.id, community.name, contractedTowers, contractedApartments); subscriptionId = subscription.id;
+      return { community, admin: this.safeUser(admin), subscription };
+    } catch (error) {
+      if (subscriptionId) this.subscriptions.delete(subscriptionId);
+      if (admin) this.users.delete(admin.id);
+      if (community) this.communityCrud.delete(community.id);
+      throw error;
+    }
+  }
   createCommunityForActor(actor: AuthenticatedUser, dto: CreateCommunityDto) { this.requireSuperAdmin(actor); return this.createCommunity(dto); }
   updateCommunity(id: string, dto: UpdateCommunityDto) { return this.communityCrud.update(id, { ...dto, updatedAt: timestamp() }); }
   updateCommunityForActor(actor: AuthenticatedUser, id: string, dto: UpdateCommunityDto) { this.requireSuperAdmin(actor); return this.updateCommunity(id, dto); }
@@ -52,32 +69,32 @@ export class CommunityService {
   listTowers() { return this.towerCrud.findAll(); } getTower(id: string) { return this.towerCrud.findById(id); }
   listTowersForActor(actor: AuthenticatedUser) { return this.listTowers().filter((tower) => this.canAccessCommunity(actor, tower.communityId)); }
   getTowerForActor(actor: AuthenticatedUser, id: string) { const tower = this.getTower(id); this.assertCommunityAccess(actor, tower.communityId); return tower; }
-  createTower(dto: CreateTowerDto) { this.getCommunity(dto.communityId); this.unique(this.towerCrud.findAll(), dto.communityId, dto.code, 'communityId', 'code', 'Tower code'); const now = timestamp(); return this.towerCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
+  createTower(dto: CreateTowerDto) { this.getCommunity(dto.communityId); this.subscriptions.assertCommunityActive(dto.communityId); this.subscriptions.assertCapacityForTowers(dto.communityId, this.towerCrud.findAll().filter((tower) => tower.communityId === dto.communityId).length + 1); this.unique(this.towerCrud.findAll(), dto.communityId, dto.code, 'communityId', 'code', 'Tower code'); const now = timestamp(); return this.towerCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
   createTowerForActor(actor: AuthenticatedUser, dto: CreateTowerDto) { this.assertCommunityAccess(actor, dto.communityId); return this.createTower(dto); }
-  updateTower(id: string, dto: UpdateTowerDto) { const current = this.getTower(id); const next = { ...current, ...dto }; this.getCommunity(next.communityId); this.unique(this.towerCrud.findAll().filter((item) => item.id !== id), next.communityId, next.code, 'communityId', 'code', 'Tower code'); return this.towerCrud.update(id, { ...dto, updatedAt: timestamp() }); }
+  updateTower(id: string, dto: UpdateTowerDto) { const current = this.getTower(id); const next = { ...current, ...dto }; this.getCommunity(next.communityId); this.subscriptions.assertCommunityActive(current.communityId); this.subscriptions.assertCommunityActive(next.communityId); if (next.communityId !== current.communityId) { this.subscriptions.assertCapacityForTowers(next.communityId, this.towerCrud.findAll().filter((tower) => tower.communityId === next.communityId).length + 1); this.subscriptions.assertCapacityForApartments(next.communityId, this.apartmentsInCommunity(next.communityId) + this.apartmentsForTower(id)); } this.unique(this.towerCrud.findAll().filter((item) => item.id !== id), next.communityId, next.code, 'communityId', 'code', 'Tower code'); return this.towerCrud.update(id, { ...dto, updatedAt: timestamp() }); }
   updateTowerForActor(actor: AuthenticatedUser, id: string, dto: UpdateTowerDto) { this.assertCommunityAccess(actor, this.getTower(id).communityId); if (dto.communityId) this.assertCommunityAccess(actor, dto.communityId); return this.updateTower(id, dto); }
-  deleteTower(id: string) { this.ensureNoChildren(this.floorCrud.findAll().some((floor) => floor.towerId === id), 'Tower has floors and cannot be deleted'); return this.towerCrud.delete(id); }
+  deleteTower(id: string) { this.subscriptions.assertCommunityActive(this.getTower(id).communityId); this.ensureNoChildren(this.floorCrud.findAll().some((floor) => floor.towerId === id), 'Tower has floors and cannot be deleted'); return this.towerCrud.delete(id); }
   deleteTowerForActor(actor: AuthenticatedUser, id: string) { this.assertCommunityAccess(actor, this.getTower(id).communityId); return this.deleteTower(id); }
   listFloors() { return this.floorCrud.findAll(); } getFloor(id: string) { return this.floorCrud.findById(id); }
   listFloorsForActor(actor: AuthenticatedUser) { return this.listFloors().filter((floor) => this.canAccessCommunity(actor, this.getTower(floor.towerId).communityId)); }
   getFloorForActor(actor: AuthenticatedUser, id: string) { const floor = this.getFloor(id); this.assertCommunityAccess(actor, this.getTower(floor.towerId).communityId); return floor; }
-  createFloor(dto: CreateFloorDto) { this.getTower(dto.towerId); this.unique(this.floorCrud.findAll(), dto.towerId, dto.floorNumber, 'towerId', 'floorNumber', 'Floor number'); const now = timestamp(); return this.floorCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
+  createFloor(dto: CreateFloorDto) { const tower = this.getTower(dto.towerId); this.subscriptions.assertCommunityActive(tower.communityId); this.unique(this.floorCrud.findAll(), dto.towerId, dto.floorNumber, 'towerId', 'floorNumber', 'Floor number'); const now = timestamp(); return this.floorCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
   createFloorForActor(actor: AuthenticatedUser, dto: CreateFloorDto) { this.assertCommunityAccess(actor, this.getTower(dto.towerId).communityId); return this.createFloor(dto); }
-  updateFloor(id: string, dto: UpdateFloorDto) { const current = this.getFloor(id); const next = { ...current, ...dto }; this.getTower(next.towerId); this.unique(this.floorCrud.findAll().filter((item) => item.id !== id), next.towerId, next.floorNumber, 'towerId', 'floorNumber', 'Floor number'); return this.floorCrud.update(id, { ...dto, updatedAt: timestamp() }); }
+  updateFloor(id: string, dto: UpdateFloorDto) { const current = this.getFloor(id); const next = { ...current, ...dto }; const currentCommunityId = this.getTower(current.towerId).communityId; const nextCommunityId = this.getTower(next.towerId).communityId; this.subscriptions.assertCommunityActive(currentCommunityId); this.subscriptions.assertCommunityActive(nextCommunityId); if (nextCommunityId !== currentCommunityId) this.subscriptions.assertCapacityForApartments(nextCommunityId, this.apartmentsInCommunity(nextCommunityId) + this.apartmentsForFloor(id)); this.unique(this.floorCrud.findAll().filter((item) => item.id !== id), next.towerId, next.floorNumber, 'towerId', 'floorNumber', 'Floor number'); return this.floorCrud.update(id, { ...dto, updatedAt: timestamp() }); }
   updateFloorForActor(actor: AuthenticatedUser, id: string, dto: UpdateFloorDto) { this.assertCommunityAccess(actor, this.getTower(this.getFloor(id).towerId).communityId); if (dto.towerId) this.assertCommunityAccess(actor, this.getTower(dto.towerId).communityId); return this.updateFloor(id, dto); }
-  deleteFloor(id: string) { this.ensureNoChildren(this.apartmentCrud.findAll().some((apartment) => apartment.floorId === id), 'Floor has apartments and cannot be deleted'); return this.floorCrud.delete(id); }
+  deleteFloor(id: string) { this.subscriptions.assertCommunityActive(this.communityIdForFloor(id)); this.ensureNoChildren(this.apartmentCrud.findAll().some((apartment) => apartment.floorId === id), 'Floor has apartments and cannot be deleted'); return this.floorCrud.delete(id); }
   deleteFloorForActor(actor: AuthenticatedUser, id: string) { this.assertCommunityAccess(actor, this.getTower(this.getFloor(id).towerId).communityId); return this.deleteFloor(id); }
   listApartments() { return this.apartmentCrud.findAll(); } getApartment(id: string) { return this.apartmentCrud.findById(id); }
   listApartmentsForActor(actor: AuthenticatedUser) { return this.listApartments().filter((apartment) => this.canAccessCommunity(actor, this.getTower(this.getFloor(apartment.floorId).towerId).communityId)); }
   getApartmentForActor(actor: AuthenticatedUser, id: string) { const apartment = this.getApartment(id); this.assertCommunityAccess(actor, this.getTower(this.getFloor(apartment.floorId).towerId).communityId); return apartment; }
-  createApartment(dto: CreateApartmentDto) { this.getFloor(dto.floorId); this.unique(this.apartmentCrud.findAll(), dto.floorId, dto.apartmentNumber, 'floorId', 'apartmentNumber', 'Apartment number'); const now = timestamp(); return this.apartmentCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
+  createApartment(dto: CreateApartmentDto) { const communityId = this.communityIdForFloor(dto.floorId); this.subscriptions.assertCommunityActive(communityId); this.subscriptions.assertCapacityForApartments(communityId, this.apartmentsInCommunity(communityId) + 1); this.unique(this.apartmentCrud.findAll(), dto.floorId, dto.apartmentNumber, 'floorId', 'apartmentNumber', 'Apartment number'); const now = timestamp(); return this.apartmentCrud.create({ ...dto, createdAt: now, updatedAt: now }); }
   createApartmentForActor(actor: AuthenticatedUser, dto: CreateApartmentDto) { this.assertCommunityAccess(actor, this.getTower(this.getFloor(dto.floorId).towerId).communityId); return this.createApartment(dto); }
-  updateApartment(id: string, dto: UpdateApartmentDto) { const current = this.getApartment(id); const next = { ...current, ...dto }; this.getFloor(next.floorId); this.unique(this.apartmentCrud.findAll().filter((item) => item.id !== id), next.floorId, next.apartmentNumber, 'floorId', 'apartmentNumber', 'Apartment number'); return this.apartmentCrud.update(id, { ...dto, updatedAt: timestamp() }); }
+  updateApartment(id: string, dto: UpdateApartmentDto) { const current = this.getApartment(id); const next = { ...current, ...dto }; const currentCommunityId = this.communityIdForFloor(current.floorId); const nextCommunityId = this.communityIdForFloor(next.floorId); this.subscriptions.assertCommunityActive(currentCommunityId); this.subscriptions.assertCommunityActive(nextCommunityId); if (nextCommunityId !== currentCommunityId) this.subscriptions.assertCapacityForApartments(nextCommunityId, this.apartmentsInCommunity(nextCommunityId) + 1); this.unique(this.apartmentCrud.findAll().filter((item) => item.id !== id), next.floorId, next.apartmentNumber, 'floorId', 'apartmentNumber', 'Apartment number'); return this.apartmentCrud.update(id, { ...dto, updatedAt: timestamp() }); }
   updateApartmentForActor(actor: AuthenticatedUser, id: string, dto: UpdateApartmentDto) { this.assertCommunityAccess(actor, this.getTower(this.getFloor(this.getApartment(id).floorId).towerId).communityId); if (dto.floorId) this.assertCommunityAccess(actor, this.getTower(this.getFloor(dto.floorId).towerId).communityId); return this.updateApartment(id, dto); }
-  deleteApartment(id: string) { this.ensureNoChildren(this.users.findAll().some((user) => user.apartmentId === id), 'Apartment has associated residents and cannot be deleted'); return this.apartmentCrud.delete(id); }
+  deleteApartment(id: string) { this.subscriptions.assertCommunityActive(this.communityIdForFloor(this.getApartment(id).floorId)); this.ensureNoChildren(this.users.findAll().some((user) => user.apartmentId === id), 'Apartment has associated residents and cannot be deleted'); return this.apartmentCrud.delete(id); }
   deleteApartmentForActor(actor: AuthenticatedUser, id: string) { this.assertCommunityAccess(actor, this.getTower(this.getFloor(this.getApartment(id).floorId).towerId).communityId); return this.deleteApartment(id); }
-  associateResident(actor: AuthenticatedUser, userId: string, dto: AssociateApartmentDto) { this.requireCommunityAdmin(actor); const user = this.users.findById(userId); if (user.role !== RoleName.Resident) throw new BadRequestException('Only RESIDENT users can be associated with apartments'); const apartment = this.getApartment(dto.apartmentId); this.assertCommunityAccess(actor, this.getTower(this.getFloor(apartment.floorId).towerId).communityId); this.assertTargetUserAccess(actor, user); return this.users.update(userId, { apartmentId: dto.apartmentId }); }
-  associateRepresentative(actor: AuthenticatedUser, userId: string, dto: AssociateTowerDto) { this.requireCommunityAdmin(actor); const user = this.users.findById(userId); if (user.role !== RoleName.TowerRepresentative) throw new BadRequestException('Only TOWER_REPRESENTATIVE users can be associated with towers'); const tower = this.getTower(dto.towerId); this.assertCommunityAccess(actor, tower.communityId); this.assertTargetUserAccess(actor, user); return this.users.update(userId, { towerId: dto.towerId }); }
+  associateResident(actor: AuthenticatedUser, userId: string, dto: AssociateApartmentDto) { this.requireCommunityAdmin(actor); const user = this.users.findById(userId); if (user.role !== RoleName.Resident) throw new BadRequestException('Only RESIDENT users can be associated with apartments'); const apartment = this.getApartment(dto.apartmentId); const communityId = this.getTower(this.getFloor(apartment.floorId).towerId).communityId; this.assertCommunityAccess(actor, communityId); this.subscriptions.assertCommunityActive(communityId); this.assertTargetUserAccess(actor, user); return this.users.update(userId, { apartmentId: dto.apartmentId }); }
+  associateRepresentative(actor: AuthenticatedUser, userId: string, dto: AssociateTowerDto) { this.requireCommunityAdmin(actor); const user = this.users.findById(userId); if (user.role !== RoleName.TowerRepresentative) throw new BadRequestException('Only TOWER_REPRESENTATIVE users can be associated with towers'); const tower = this.getTower(dto.towerId); this.assertCommunityAccess(actor, tower.communityId); this.subscriptions.assertCommunityActive(tower.communityId); this.assertTargetUserAccess(actor, user); return this.users.update(userId, { towerId: dto.towerId }); }
   resolveOwnHierarchy(actor: AuthenticatedUser) {
     if (actor.role === RoleName.Resident) return this.resolveResidentHierarchyForActor(actor, actor.id);
     if (actor.role === RoleName.TowerRepresentative) {
@@ -114,6 +131,10 @@ export class CommunityService {
   private assertCommunityAccess(actor: AuthenticatedUser, communityId: string) { if (!this.canAccessCommunity(actor, communityId)) throw new ForbiddenException('You do not have access to this community'); }
   private assertTargetUserAccess(actor: AuthenticatedUser, user: User) { if (actor.role === RoleName.SuperAdmin || !user.apartmentId && !user.towerId && user.communityId === this.users.findById(actor.id).communityId) return; if (user.towerId && this.getTower(user.towerId).communityId === this.users.findById(actor.id).communityId) return; if (user.apartmentId && this.getTower(this.getFloor(this.getApartment(user.apartmentId).floorId).towerId).communityId === this.users.findById(actor.id).communityId) return; throw new ForbiddenException('Target user belongs to another community'); }
   private safeUser(user: User) { const { passwordHash: _passwordHash, ...safeUser } = user; return safeUser; }
+  private communityIdForFloor(floorId: string) { return this.getTower(this.getFloor(floorId).towerId).communityId; }
+  private apartmentsInCommunity(communityId: string) { return this.apartmentCrud.findAll().filter((apartment) => this.communityIdForFloor(apartment.floorId) === communityId).length; }
+  private apartmentsForFloor(floorId: string) { return this.apartmentCrud.findAll().filter((apartment) => apartment.floorId === floorId).length; }
+  private apartmentsForTower(towerId: string) { return this.floorCrud.findAll().filter((floor) => floor.towerId === towerId).reduce((total, floor) => total + this.apartmentsForFloor(floor.id), 0); }
   private unique<T extends Record<string, any>>(items: T[], parent: unknown, value: unknown, parentKey: keyof T, valueKey: keyof T, label: string) { if (items.some((item) => item[parentKey] === parent && item[valueKey] === value)) throw new BadRequestException(`${label} must be unique within its parent`); }
   private ensureNoChildren(hasChildren: boolean, message: string) { if (hasChildren) throw new BadRequestException(message); }
 }
