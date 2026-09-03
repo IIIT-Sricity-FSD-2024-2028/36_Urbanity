@@ -1,7 +1,7 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BACKEND_ROLE_PORTALS = {
-  SUPER_ADMIN: "../Super Admin/index.html",
-  COMMUNITY_ADMIN: "../Community Admin/index.html",
+  SUPER_ADMIN: "../Super Admin/",
+  COMMUNITY_ADMIN: "../Community Admin/",
   TOWER_REPRESENTATIVE: "../Tower Representative/index.html",
   RESIDENT: "../Resident/index.html",
   MAINTENANCE_WORKER: "../Maintenance Worker/index.html",

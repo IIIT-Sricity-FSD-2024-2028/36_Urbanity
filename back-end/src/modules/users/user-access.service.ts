@@ -6,16 +6,20 @@ import { CreateUserDto, UpdateUserDto, User } from '../../data/schemas';
 import { serviceToken } from '../../data/urbanity.resources';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { CommunityService } from '../community/community.service';
+import { SubscriptionService } from '../subscriptions/subscription.service';
 
 @Injectable()
 export class UserAccessService {
-  constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>, private readonly community: CommunityService) {}
+  constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>, private readonly community: CommunityService, private readonly subscriptions: SubscriptionService) {}
   list(actor: AuthenticatedUser) { return this.users.findAll().filter((user) => actor.role === RoleName.SuperAdmin || this.communityIdFor(user) === this.actorCommunity(actor)).map((user) => this.safe(user)); }
   get(actor: AuthenticatedUser, id: string) { const user = this.users.findById(id); this.assertAccess(actor, user); return this.safe(user); }
   create(actor: AuthenticatedUser, dto: CreateUserDto) {
     this.assertCreateRole(actor, dto.role);
     const scoped = this.applyActorScope(actor, { ...dto });
     this.validate(scoped);
+    if (scoped.communityId) this.subscriptions.assertCommunityActive(scoped.communityId);
+    if (scoped.towerId) this.subscriptions.assertCommunityActive(this.community.getTower(scoped.towerId).communityId);
+    if (scoped.apartmentId) this.subscriptions.assertCommunityActive(this.community.getTower(this.community.getFloor(this.community.getApartment(scoped.apartmentId).floorId).towerId).communityId);
     return this.safe(this.users.create({ ...scoped, passwordHash: hashSync(scoped.password, 10), createdAt: new Date().toISOString() }));
   }
   update(actor: AuthenticatedUser, id: string, dto: UpdateUserDto) {
@@ -23,10 +27,11 @@ export class UserAccessService {
     if (actor.role === RoleName.CommunityAdmin && actor.id === id && ('role' in dto || 'communityId' in dto)) throw new ForbiddenException('Community Admins cannot change their own role or community');
     if (actor.role === RoleName.CommunityAdmin && 'role' in dto) throw new ForbiddenException('Community Admins cannot change user roles');
     const next = this.applyActorScope(actor, { ...current, ...dto }); this.validate(next);
+    const communityId = this.communityIdFor(next); if (communityId) this.subscriptions.assertCommunityActive(communityId);
     if (actor.role === RoleName.CommunityAdmin && this.communityIdFor(next) !== this.actorCommunity(actor)) throw new ForbiddenException('Users cannot be moved across communities');
     const { password, ...data } = dto; return this.safe(this.users.update(id, { ...data, ...(password ? { passwordHash: hashSync(password, 10) } : {}) }));
   }
-  delete(actor: AuthenticatedUser, id: string) { const user = this.users.findById(id); this.assertAccess(actor, user); if (actor.id === id) throw new ForbiddenException('Users cannot delete themselves'); return this.safe(this.users.delete(id)); }
+  delete(actor: AuthenticatedUser, id: string) { const user = this.users.findById(id); this.assertAccess(actor, user); const communityId = this.communityIdFor(user); if (communityId) this.subscriptions.assertCommunityActive(communityId); if (actor.id === id) throw new ForbiddenException('Users cannot delete themselves'); return this.safe(this.users.delete(id)); }
   private actorCommunity(actor: AuthenticatedUser) { const user = this.users.findById(actor.id); if (!user.communityId) throw new ForbiddenException('Community Admin is missing a community association'); return user.communityId; }
   private communityIdFor(user: User) { if (user.communityId) return user.communityId; if (user.towerId) return this.community.getTower(user.towerId).communityId; if (user.apartmentId) return this.community.getTower(this.community.getFloor(this.community.getApartment(user.apartmentId).floorId).towerId).communityId; return undefined; }
   private assertAccess(actor: AuthenticatedUser, user: User) { if (actor.role !== RoleName.SuperAdmin && this.communityIdFor(user) !== this.actorCommunity(actor)) throw new ForbiddenException('User belongs to another community'); }

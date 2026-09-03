@@ -841,6 +841,86 @@
         ]
       }
     },
+    "/subscriptions": {
+      "get": {
+        "operationId": "SubscriptionController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/subscriptions/me": {
+      "get": {
+        "operationId": "SubscriptionController_getMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/subscriptions/me/mock-payment": {
+      "post": {
+        "operationId": "SubscriptionController_pay",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/subscriptions/me/upgrade": {
+      "post": {
+        "operationId": "SubscriptionController_requestUpgrade",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUpgradeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
+    "/subscriptions/me/upgrade/mock-payment": {
+      "post": {
+        "operationId": "SubscriptionController_payUpgrade",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscription"
+        ]
+      }
+    },
     "/roles": {
       "get": {
         "operationId": "RoleController_findAll",
@@ -3013,11 +3093,31 @@
           },
           "description": {
             "type": "string"
+          },
+          "adminName": {
+            "type": "string"
+          },
+          "adminEmail": {
+            "type": "string"
+          },
+          "adminPassword": {
+            "type": "string"
+          },
+          "contractedTowers": {
+            "type": "number"
+          },
+          "contractedApartments": {
+            "type": "number"
           }
         },
         "required": [
           "name",
-          "address"
+          "address",
+          "adminName",
+          "adminEmail",
+          "adminPassword",
+          "contractedTowers",
+          "contractedApartments"
         ]
       },
       "UpdateCommunityDto": {
@@ -3159,6 +3259,21 @@
         },
         "required": [
           "towerId"
+        ]
+      },
+      "RequestUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "contractedTowers": {
+            "type": "number"
+          },
+          "contractedApartments": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "contractedTowers",
+          "contractedApartments"
         ]
       },
       "Role": {

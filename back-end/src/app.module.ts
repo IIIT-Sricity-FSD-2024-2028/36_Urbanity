@@ -15,6 +15,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
+import { SubscriptionModule } from './modules/subscriptions/subscription.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -34,6 +35,7 @@ import { AttachmentsController } from './modules/attachments/attachments.control
     CitiesModule,
     AreasModule,
     CommunityModule,
+    SubscriptionModule,
     ComplaintsModule,
     AttachmentsModule,
     DashboardModule,

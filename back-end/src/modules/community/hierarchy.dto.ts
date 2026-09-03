@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator';
 
 class TimestampedEntity {
   @ApiProperty() id!: string;
@@ -12,12 +12,19 @@ export class Community extends TimestampedEntity {
   @ApiProperty() address!: string;
   @ApiPropertyOptional() description?: string;
 }
-export class CreateCommunityDto {
+export class CommunityDetailsDto {
   @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(120) name!: string;
   @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(250) address!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) description?: string;
 }
-export class UpdateCommunityDto extends PartialType(CreateCommunityDto) {}
+export class CreateCommunityDto extends CommunityDetailsDto {
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(120) adminName!: string;
+  @ApiProperty() @IsEmail() @MaxLength(160) adminEmail!: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MinLength(8) @MaxLength(128) adminPassword!: string;
+  @ApiProperty() @IsInt() @Min(1) contractedTowers!: number;
+  @ApiProperty() @IsInt() @Min(1) contractedApartments!: number;
+}
+export class UpdateCommunityDto extends PartialType(CommunityDetailsDto) {}
 
 export class Tower extends TimestampedEntity {
   @ApiProperty() communityId!: string;

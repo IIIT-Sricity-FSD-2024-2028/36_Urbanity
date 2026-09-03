@@ -6,6 +6,7 @@ import { User } from '../../data/schemas';
 import { serviceToken } from '../../data/urbanity.resources';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { CommunityService } from '../community/community.service';
+import { SubscriptionService } from '../subscriptions/subscription.service';
 import { CreateWorkerProfileDto, WorkerProfile, WorkerStatus, UpdateWorkerProfileDto } from './workforce.dto';
 
 const seededAt = '2026-01-01T00:00:00.000Z';
@@ -24,6 +25,7 @@ export class WorkforceService {
   constructor(
     @Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>,
     private readonly community: CommunityService,
+    private readonly subscriptions: SubscriptionService,
   ) {}
   findAll() { return this.crud.findAll(); }
   findById(id: string) { return this.crud.findById(id); }
@@ -76,6 +78,7 @@ export class WorkforceService {
   }
   createForActor(actor: AuthenticatedUser, dto: CreateWorkerProfileDto) {
     this.assertCanManageWorkerUser(actor, dto.userId);
+    const user = this.users.findById(dto.userId); if (user.communityId) this.subscriptions.assertCommunityActive(user.communityId);
     return this.create(dto);
   }
   update(id: string, dto: UpdateWorkerProfileDto) {
@@ -85,7 +88,7 @@ export class WorkforceService {
     return this.crud.update(id, { specialization: dto.specialization ?? current.specialization, status: dto.status ?? current.status, updatedAt: new Date().toISOString() });
   }
   updateForActor(actor: AuthenticatedUser, id: string, dto: UpdateWorkerProfileDto) {
-    this.assertCanAccessProfile(actor, this.findById(id));
+    const profile = this.findById(id); this.assertCanAccessProfile(actor, profile); this.subscriptions.assertCommunityActive(profile.communityId);
     return this.update(id, dto);
   }
   updateSystemStatus(id: string, status: WorkerStatus) { return this.crud.update(id, { status, updatedAt: new Date().toISOString() }); }
@@ -98,7 +101,7 @@ export class WorkforceService {
   }
   deactivate(id: string) { return this.crud.update(id, { status: WorkerStatus.Inactive, updatedAt: new Date().toISOString() }); }
   deactivateForActor(actor: AuthenticatedUser, id: string) {
-    this.assertCanAccessProfile(actor, this.findById(id));
+    const profile = this.findById(id); this.assertCanAccessProfile(actor, profile); this.subscriptions.assertCommunityActive(profile.communityId);
     return this.deactivate(id);
   }
   private assertCanManageWorkerUser(actor: AuthenticatedUser, userId: string) {
