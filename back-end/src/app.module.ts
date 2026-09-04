@@ -18,6 +18,9 @@ import { WorkforceModule } from './modules/workforce/workforce.module';
 import { SubscriptionModule } from './modules/subscriptions/subscription.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { ApiCacheControlMiddleware } from './common/middleware/api-cache-control.middleware';
+import { HttpMethodPolicyMiddleware } from './common/middleware/http-method-policy.middleware';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ComplaintRouteContextMiddleware } from './common/middleware/complaint-route-context.middleware';
 import { ComplaintsController } from './modules/complaints/complaints.controller';
@@ -52,7 +55,14 @@ import { AttachmentsController } from './modules/attachments/attachments.control
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggingMiddleware).forRoutes('*');
+    consumer
+      .apply(
+        RequestIdMiddleware,
+        RequestLoggingMiddleware,
+        ApiCacheControlMiddleware,
+        HttpMethodPolicyMiddleware,
+      )
+      .forRoutes('*');
     consumer
       .apply(ComplaintRouteContextMiddleware)
       .forRoutes(ComplaintsController, AttachmentsController);

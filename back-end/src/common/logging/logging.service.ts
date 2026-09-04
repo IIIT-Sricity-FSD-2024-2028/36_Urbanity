@@ -8,6 +8,7 @@ export interface RequestLogEntry {
   path: string;
   statusCode: number;
   durationMs: number;
+  requestId?: string;
   userId?: string;
 }
 
@@ -34,8 +35,9 @@ export class LoggingService {
 
   logRequest(entry: RequestLogEntry): void {
     const level = entry.statusCode >= 400 ? 'WARN' : 'INFO';
+    const requestId = entry.requestId ? ` requestId=${entry.requestId}` : '';
     const userId = entry.userId ? ` userId=${entry.userId}` : '';
-    const line = `${new Date().toISOString()} ${level} ${entry.method} ${entry.path} ${entry.statusCode} ${entry.durationMs}ms${userId}\n`;
+    const line = `${new Date().toISOString()} ${level} ${entry.method} ${entry.path} ${entry.statusCode} ${entry.durationMs}ms${requestId}${userId}\n`;
 
     this.append(this.applicationLogFile, line);
   }

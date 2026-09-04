@@ -17,6 +17,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
         path: request.path,
         statusCode: response.statusCode,
         durationMs: Math.round(performance.now() - startedAt),
+        requestId: response.locals.requestId,
         userId: authenticatedRequest.user?.id,
       });
     });

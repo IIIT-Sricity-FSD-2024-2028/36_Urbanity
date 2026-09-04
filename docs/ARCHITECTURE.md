@@ -51,7 +51,7 @@ The backend exposes dashboard summary and report overview endpoints to Super Adm
 
 ### HTTP pipeline terminology
 
-- **Application-level middleware:** `RequestLoggingMiddleware` is applied to all routes.
+- **Application-level middleware:** `RequestIdMiddleware`, `RequestLoggingMiddleware`, `ApiCacheControlMiddleware`, and `HttpMethodPolicyMiddleware` are applied to all routes. They add server-generated request correlation, safe request metadata logging, no-store API response headers, and a narrow block on unused `CONNECT`/`TRACE` methods.
 - **Router/controller-level middleware:** `ComplaintRouteContextMiddleware` runs for complaint and attachment controllers and validates complaint-route IDs.
 - **Authentication:** `JwtAuthGuard` is a Nest guard, not Express middleware.
 - **Authorization/RBAC:** `RolesGuard` is a Nest guard; services add resource/scope checks.

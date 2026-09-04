@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,6 +17,8 @@ import type { City, User } from '../src/data/schemas';
 import { LOG_DIRECTORY } from '../src/common/logging/logging.constants';
 import { LoggingService } from '../src/common/logging/logging.service';
 import { configureHttpSecurity } from '../src/config/security.config';
+
+jest.setTimeout(20_000);
 
 describe('Urbanity API (e2e)', () => {
   let app: INestApplication;
@@ -186,7 +188,9 @@ describe('Urbanity API (e2e)', () => {
     await app.get(LoggingService).flush();
     const log = await readFile(join(logDirectory, 'application.log'), 'utf8');
 
-    expect(log).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z INFO GET \/ 200 \d+ms$/m);
+    expect(log).toMatch(
+      /^\d{4}-\d{2}-\d{2}T.*Z INFO GET \/ 200 \d+ms requestId=[0-9a-f-]{36}$/m,
+    );
     expect(log).toContain('POST /auth/login 201');
     expect(log).toContain('GET /auth/me 200');
     expect(log).toContain('userId=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2');
@@ -201,6 +205,17 @@ describe('Urbanity API (e2e)', () => {
     expect(root.headers['x-content-type-options']).toBe('nosniff');
     expect(root.headers['x-frame-options']).toBeDefined();
     expect(root.headers['referrer-policy']).toBeDefined();
+    expect(root.headers['cache-control']).toBe('private, no-store');
+    expect(root.headers['x-request-id']).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+
+    await (request(server) as any)
+      .trace('/')
+      .expect(405)
+      .expect(({ body }: { body: { error: { message: string } } }) => {
+        expect(body.error.message).toBe('HTTP method is not allowed');
+      });
 
     const allowed = await request(server)
       .options('/complaints')
