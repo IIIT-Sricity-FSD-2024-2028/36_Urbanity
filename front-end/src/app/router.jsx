@@ -8,6 +8,8 @@ import { ROUTES } from "../constants/routes.js";
 import { PortalLayout } from "../layouts/PortalLayout.jsx";
 import { PublicLayout } from "../layouts/PublicLayout.jsx";
 import { LoginPage } from "../features/authentication/pages/LoginPage.jsx";
+import { CommunityAdminRoutes } from "../features/community-admin/routes.jsx";
+import { LandingPage } from "../features/landing/pages/LandingPage.jsx";
 import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
@@ -42,11 +44,6 @@ function PortalPlaceholder({ title }) {
 
 const actorRoutes = [
   {
-    path: `${ROUTES.COMMUNITY_ADMIN}/*`,
-    role: ROLES.COMMUNITY_ADMIN,
-    title: "Community Admin",
-  },
-  {
     path: `${ROUTES.TOWER_REPRESENTATIVE}/*`,
     role: ROLES.TOWER_REPRESENTATIVE,
     title: "Tower Representative",
@@ -69,12 +66,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: ROUTES.HOME,
-        element: (
-          <PublicPlaceholder
-            title="Urbanity"
-            message="The React application foundation is ready."
-          />
-        ),
+        element: <LandingPage />,
       },
       {
         path: ROUTES.LOGIN,
@@ -106,6 +98,10 @@ export const router = createBrowserRouter([
       {
         path: `${ROUTES.SUPER_ADMIN}/*`,
         element: <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}><PortalLayout><SuperAdminRoutes /></PortalLayout></RoleRoute>,
+      },
+      {
+        path: `${ROUTES.COMMUNITY_ADMIN}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.COMMUNITY_ADMIN]}><PortalLayout><CommunityAdminRoutes /></PortalLayout></RoleRoute>,
       },
       ...actorRoutes.map(({ path, role, title }) => ({
         path,

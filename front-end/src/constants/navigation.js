@@ -22,6 +22,16 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
   [ROLES.COMMUNITY_ADMIN]: portalNavigation(
     "Community Admin Portal",
     ROUTES.COMMUNITY_ADMIN,
+    [
+      { label: "Dashboard", to: ROUTES.COMMUNITY_ADMIN },
+      { label: "Complaints", to: ROUTES.COMMUNITY_ADMIN_COMPLAINTS },
+      { label: "Hierarchy", to: ROUTES.COMMUNITY_ADMIN_HIERARCHY },
+      { label: "Community Users", to: ROUTES.COMMUNITY_ADMIN_USERS },
+      { label: "Workforce", to: ROUTES.COMMUNITY_ADMIN_WORKFORCE },
+      { label: "Plan & Billing", to: ROUTES.COMMUNITY_ADMIN_SUBSCRIPTION },
+      { label: "Reports", to: ROUTES.COMMUNITY_ADMIN_REPORTS },
+      { label: "Profile", to: ROUTES.COMMUNITY_ADMIN_PROFILE },
+    ],
   ),
   [ROLES.TOWER_REPRESENTATIVE]: portalNavigation(
     "Tower Representative Portal",
