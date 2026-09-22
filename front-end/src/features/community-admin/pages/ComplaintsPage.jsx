@@ -1,0 +1,44 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../../auth/useAuth.js";
+import { Button, Card, ConfirmDialog, ErrorState, Input, LoadingState, Modal, Select, Textarea, useToast } from "../../../components/ui/index.js";
+import { DataTable, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { useCommunityResource } from "../hooks/useCommunityResource.js";
+import { communityAdminService } from "../services/communityAdminService.js";
+import { formatDate, formatEnum } from "../utils.js";
+
+function ComplaintDetails({ complaintId, currentUserId, onClose, onChanged }) {
+  const { showToast } = useToast();
+  const [state, setState] = useState({ loading: true, item: null, attachments: [], error: null });
+  const [editing, setEditing] = useState(false); const [form, setForm] = useState({ title: "", description: "" });
+  const [eligible, setEligible] = useState([]); const [workerId, setWorkerId] = useState(""); const [rating, setRating] = useState("5"); const [saving, setSaving] = useState(false);
+  const load = useCallback(async () => { setState((current) => ({ ...current, loading: true, error: null })); try { const item = await communityAdminService.getComplaint(complaintId); const attachments = await communityAdminService.listComplaintAttachments(complaintId); setState({ loading: false, item, attachments, error: null }); setForm({ title: item.title, description: item.description }); if (item.status === "UNDER_REVIEW" && item.responsibleUserId === currentUserId) { const workers = await communityAdminService.listEligibleWorkers(complaintId); setEligible(workers); setWorkerId(workers[0]?.id || ""); } } catch (error) { setState({ loading: false, item: null, attachments: [], error }); } }, [complaintId, currentUserId]);
+  useEffect(() => { load(); }, [load]);
+  const mutate = async (action, message) => { setSaving(true); try { await action(); showToast({ type: "success", message }); await load(); await onChanged(); return true; } catch (error) { showToast({ type: "error", message: error.message }); return false; } finally { setSaving(false); } };
+  const item = state.item; const isAuthority = item?.responsibleUserId === currentUserId;
+  return <Modal isOpen onClose={onClose} title="Complaint details" size="lg" footer={<Button variant="secondary" onClick={onClose}>Close</Button>}>
+    {state.loading && <LoadingState message="Loading complaint details..." />}{state.error && <ErrorState message={state.error.message} onRetry={load} />}
+    {item && <div className="ca-detail-stack">
+      {editing ? <form className="ca-form" onSubmit={async (event) => { event.preventDefault(); const saved = await mutate(() => communityAdminService.updateComplaint(item.id, { title: form.title.trim(), description: form.description.trim() }), "Complaint updated."); if (saved) setEditing(false); }}><Input label="Title" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required /><Textarea label="Description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} required rows="4" /><div className="ca-actions"><Button type="button" variant="secondary" onClick={() => setEditing(false)}>Cancel</Button><Button type="submit" loading={saving}>Save</Button></div></form> : <div><div className="ca-title-row"><div><h3>{item.title}</h3><p>{item.description}</p></div><Button variant="secondary" onClick={() => setEditing(true)}>Edit</Button></div></div>}
+      <dl className="ca-details"><div><dt>Status</dt><dd><StatusBadge status={item.status} /></dd></div><div><dt>Type</dt><dd>{formatEnum(item.type)}</dd></div><div><dt>Work type</dt><dd>{formatEnum(item.requiredWorkType)}</dd></div><div><dt>Responsible authority</dt><dd>{item.responsibleUserName}</dd></div><div><dt>Location</dt><dd>{item.location ? `${item.location.communityName} · ${item.location.towerName} · ${item.location.floorLabel} · ${item.location.apartmentNumber}` : "Unavailable"}</dd></div><div><dt>Created</dt><dd>{formatDate(item.createdAt)}</dd></div></dl>
+      {isAuthority && <Card title="Available actions">
+        <div className="ca-actions">
+          {item.status === "SUBMITTED" && <Button loading={saving} onClick={() => mutate(() => communityAdminService.transitionComplaint(item.id, "UNDER_REVIEW"), "Complaint moved under review.")}>Begin review</Button>}
+          {item.status === "UNDER_REVIEW" && <><Select aria-label="Eligible worker" value={workerId} onChange={(event) => setWorkerId(event.target.value)}><option value="">Select eligible worker</option>{eligible.map((worker) => <option key={worker.id} value={worker.id}>{formatEnum(worker.specialization)} · {worker.id.slice(0, 8)}</option>)}</Select><Button disabled={!workerId} loading={saving} onClick={() => mutate(() => communityAdminService.assignWorker(item.id, workerId), "Worker assigned.")}>Assign worker</Button></>}
+          {item.status === "PENDING_VERIFICATION" && <><Select aria-label="Authority rating" value={rating} onChange={(event) => setRating(event.target.value)}>{[5,4,3,2,1].map((value) => <option key={value} value={value}>{value} / 5</option>)}</Select><Button loading={saving} onClick={() => mutate(() => communityAdminService.verifyResolution(item.id, Number(rating)), "Resolution verified.")}>Verify resolution</Button></>}
+          {item.status === "REVIEWED" && <Button loading={saving} onClick={() => mutate(() => communityAdminService.transitionComplaint(item.id, "CLOSED"), "Complaint closed.")}>Close complaint</Button>}
+          {!['SUBMITTED','UNDER_REVIEW','PENDING_VERIFICATION','REVIEWED'].includes(item.status) && <p className="ca-muted">No authority action is available at this lifecycle stage.</p>}
+        </div>
+      </Card>}
+      {item.resolutionProof && <Card title="Resolution proof"><p><strong>Problem found:</strong> {item.resolutionProof.problemFound}</p><p><strong>Resolution:</strong> {item.resolutionProof.resolutionSummary}</p></Card>}
+      <section><h3>Status history</h3><ol className="ca-timeline">{item.statusHistory.map((entry, index) => <li key={`${entry.status}-${index}`}><StatusBadge status={entry.status} /> <span>{formatDate(entry.changedAt)} · {formatEnum(entry.changedByRole)}</span></li>)}</ol></section>
+      <section><h3>Attachments</h3>{state.attachments.length ? <ul className="ca-file-list">{state.attachments.map((attachment) => <li key={attachment.id}>{attachment.originalName} · {attachment.mimeType} · {attachment.size} bytes</li>)}</ul> : <p className="ca-muted">No attachments.</p>}</section>
+    </div>}
+  </Modal>;
+}
+
+export function ComplaintsPage() {
+  const { user } = useAuth(); const { showToast } = useToast(); const loader = useCallback(() => communityAdminService.listComplaints(), []); const { data, loading, error, reload } = useCommunityResource(loader); const [selected, setSelected] = useState(null); const [removing, setRemoving] = useState(null); const [deleting, setDeleting] = useState(false);
+  const columns = useMemo(() => [{ key: "title", header: "Complaint" }, { key: "type", header: "Type", render: formatEnum }, { key: "location", header: "Location", render: (value) => value ? `${value.towerName} · ${value.apartmentNumber}` : "Unavailable" }, { key: "status", header: "Status", render: (value) => <StatusBadge status={value} /> }, { key: "responsibleUserName", header: "Authority" }, { key: "createdAt", header: "Created", render: formatDate }, { key: "actions", header: "Actions", render: (_, row) => <div className="ca-actions"><Button variant="secondary" onClick={() => setSelected(row.id)}>View</Button><Button variant="danger" onClick={() => setRemoving(row)}>Delete</Button></div> }], []);
+  const remove = async () => { setDeleting(true); try { await communityAdminService.deleteComplaint(removing.id); showToast({ type: "success", message: "Complaint deleted." }); setRemoving(null); await reload(); } catch (requestError) { showToast({ type: "error", message: requestError.message }); } finally { setDeleting(false); } };
+  return <><PageHeader eyebrow="Complaint operations" title="Complaints" description="Review community complaints and perform only backend-authorized lifecycle actions." />{loading && <LoadingState message="Loading complaints..." />}{error && <ErrorState message={error.message} onRetry={reload} />}{data && <Card flush><DataTable rows={data} columns={columns} emptyTitle="No complaints" emptyMessage="No complaints have been submitted in this community." /></Card>}{selected && <ComplaintDetails complaintId={selected} currentUserId={user.id} onClose={() => setSelected(null)} onChanged={reload} />}<ConfirmDialog isOpen={Boolean(removing)} onClose={() => setRemoving(null)} onConfirm={remove} loading={deleting} title="Delete complaint" message={`Delete “${removing?.title || "this complaint"}”?`} confirmLabel="Delete" /></>;
+}

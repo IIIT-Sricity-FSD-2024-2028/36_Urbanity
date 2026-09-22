@@ -1,0 +1,26 @@
+.ca-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+.ca-grid { display: grid; gap: var(--space-5); }
+.ca-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ca-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ca-stack, .ca-detail-stack { display: grid; gap: var(--space-6); }
+.ca-breakdown { display: grid; gap: var(--space-3); }
+.ca-breakdown > div { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border-subtle); }
+.ca-form { display: grid; gap: var(--space-4); }
+.ca-form--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ca-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ca-actions .form-field { min-width: 14rem; margin: 0; }
+.ca-muted { color: var(--color-text-secondary); }
+.ca-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+.ca-details dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.ca-details dd { margin: .25rem 0 0; font-weight: 650; overflow-wrap: anywhere; }
+.ca-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+.ca-title-row h3, .ca-detail-stack h3 { margin: 0 0 var(--space-2); }
+.ca-title-row p, .ca-detail-stack p { margin-top: 0; }
+.ca-timeline { display: grid; gap: var(--space-3); margin: 0; padding-left: 1.4rem; }
+.ca-timeline span:last-child { margin-left: var(--space-2); color: var(--color-text-secondary); }
+.ca-file-list { display: grid; gap: var(--space-2); padding-left: 1.25rem; }
+.ca-notice { margin: 0; color: var(--color-text-secondary); }
+.ca-card-action, .ca-upgrade { margin-top: var(--space-5); }
+.ca-upgrade { padding-top: var(--space-4); border-top: 1px solid var(--color-border-subtle); }
+@media (max-width: 900px) { .ca-grid--3 { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .ca-grid--2, .ca-form--grid, .ca-details { grid-template-columns: 1fr; } .ca-title-row { flex-direction: column; } }
