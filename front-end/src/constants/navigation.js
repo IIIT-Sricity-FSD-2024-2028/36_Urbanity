@@ -41,6 +41,12 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
   [ROLES.MAINTENANCE_WORKER]: portalNavigation(
     "Maintenance Worker Portal",
     ROUTES.MAINTENANCE_WORKER,
+    [
+      { label: "Dashboard", to: ROUTES.MAINTENANCE_WORKER },
+      { label: "Assigned Tasks", to: ROUTES.MAINTENANCE_WORKER_TASKS },
+      { label: "Completed Work", to: ROUTES.MAINTENANCE_WORKER_COMPLETED },
+      { label: "Profile", to: ROUTES.MAINTENANCE_WORKER_PROFILE },
+    ],
   ),
 });
 
