@@ -12,5 +12,8 @@ export const ROUTES = Object.freeze({
   COMMUNITY_ADMIN: "/community-admin",
   TOWER_REPRESENTATIVE: "/tower-representative",
   RESIDENT: "/resident",
+  RESIDENT_COMPLAINTS: "/resident/complaints",
+  RESIDENT_NEW_COMPLAINT: "/resident/complaints/new",
+  RESIDENT_PROFILE: "/resident/profile",
   MAINTENANCE_WORKER: "/maintenance-worker",
 });

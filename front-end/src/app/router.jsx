@@ -9,6 +9,7 @@ import { PortalLayout } from "../layouts/PortalLayout.jsx";
 import { PublicLayout } from "../layouts/PublicLayout.jsx";
 import { LoginPage } from "../features/authentication/pages/LoginPage.jsx";
 import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
+import { ResidentRoutes } from "../features/resident/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -50,11 +51,6 @@ const actorRoutes = [
     path: `${ROUTES.TOWER_REPRESENTATIVE}/*`,
     role: ROLES.TOWER_REPRESENTATIVE,
     title: "Tower Representative",
-  },
-  {
-    path: `${ROUTES.RESIDENT}/*`,
-    role: ROLES.RESIDENT,
-    title: "Resident",
   },
   {
     path: `${ROUTES.MAINTENANCE_WORKER}/*`,
@@ -111,6 +107,10 @@ export const router = createBrowserRouter([
         path,
         element: <RoleRoute allowedRoles={[role]}><PortalLayout><PortalPlaceholder title={`${title} Portal`} /></PortalLayout></RoleRoute>,
       })),
+      {
+        path: `${ROUTES.RESIDENT}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.RESIDENT]}><PortalLayout><ResidentRoutes /></PortalLayout></RoleRoute>,
+      },
     ],
   },
 ]);
