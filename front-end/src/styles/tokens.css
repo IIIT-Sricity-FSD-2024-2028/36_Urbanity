@@ -1,0 +1,78 @@
+:root {
+  color-scheme: light;
+
+  --color-brand-950: #0a1929;
+  --color-brand-900: #0b1d35;
+  --color-brand-800: #19395f;
+  --color-brand-700: #205b93;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #dbeafe;
+  --color-accent: #3b9eff;
+
+  --color-background: #f5f7fb;
+  --color-background-subtle: #f9fafb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-hover: #f4f8fc;
+
+  --color-text: #172033;
+  --color-text-strong: #111827;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #718096;
+  --color-text-inverse: #ffffff;
+  --color-border: #dfe6ef;
+  --color-border-subtle: #e5e7eb;
+
+  --color-success: #166534;
+  --color-success-surface: #dcfce7;
+  --color-warning: #92400e;
+  --color-warning-surface: #fef3c7;
+  --color-danger: #b42318;
+  --color-danger-hover: #912018;
+  --color-danger-surface: #fee2e2;
+  --color-info: #1e40af;
+  --color-info-surface: #dbeafe;
+
+  --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-md: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.1875rem;
+  --font-size-2xl: 1.625rem;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 2px 9px rgba(16, 42, 74, 0.05);
+  --shadow-md: 0 7px 20px rgba(35, 70, 105, 0.08);
+  --shadow-lg: 0 16px 36px rgba(28, 60, 91, 0.18);
+  --focus-ring: 0 0 0 3px rgba(59, 158, 255, 0.25);
+
+  --sidebar-width: 245px;
+  --topbar-height: 74px;
+  --content-max-width: 1600px;
+  --transition-fast: 160ms ease;
+  --z-sidebar: 40;
+  --z-overlay: 50;
+  --z-dropdown: 60;
+  --z-modal: 100;
+  --z-toast: 110;
+}
