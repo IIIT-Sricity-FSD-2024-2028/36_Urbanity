@@ -1,0 +1,16 @@
+export const ROUTES = Object.freeze({
+  HOME: "/",
+  LOGIN: "/login",
+  UNAUTHORIZED: "/unauthorized",
+  SUPER_ADMIN: "/super-admin",
+  SUPER_ADMIN_COMMUNITIES: "/super-admin/communities",
+  SUPER_ADMIN_USERS: "/super-admin/users",
+  SUPER_ADMIN_WORKFORCE: "/super-admin/workforce",
+  SUPER_ADMIN_COMPLAINTS: "/super-admin/complaints",
+  SUPER_ADMIN_REPORTS: "/super-admin/reports",
+  SUPER_ADMIN_PROFILE: "/super-admin/profile",
+  COMMUNITY_ADMIN: "/community-admin",
+  TOWER_REPRESENTATIVE: "/tower-representative",
+  RESIDENT: "/resident",
+  MAINTENANCE_WORKER: "/maintenance-worker",
+});

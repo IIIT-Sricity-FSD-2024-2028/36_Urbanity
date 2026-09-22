@@ -1,0 +1,25 @@
+.sa-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+.sa-grid { display: grid; gap: var(--space-5); }
+.sa-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sa-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sa-breakdown { display: grid; gap: var(--space-3); }
+.sa-breakdown > div, .sa-attachments > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border-subtle); }
+.sa-form { display: grid; gap: var(--space-4); }
+.sa-form--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sa-form__wide { grid-column: 1 / -1; }
+.sa-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sa-muted { color: var(--color-text-secondary); }
+.sa-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+.sa-details div { min-width: 0; }
+.sa-details dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.sa-details dd { margin: .25rem 0 0; overflow-wrap: anywhere; font-weight: 650; }
+.sa-detail-stack { display: grid; gap: var(--space-6); }
+.sa-detail-stack h3 { margin: 0 0 var(--space-3); }
+.sa-detail-stack p { margin: 0; }
+.sa-timeline { display: grid; gap: var(--space-3); margin: 0; padding-left: 1.4rem; }
+.sa-timeline li span:last-child { margin-left: var(--space-2); color: var(--color-text-secondary); }
+.sa-attachments { display: grid; gap: var(--space-3); }
+.sa-attachment-preview { display: block; max-width: 100%; max-height: 28rem; margin-top: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); object-fit: contain; }
+.sa-download { display: inline-block; margin-top: var(--space-4); color: var(--color-primary); font-weight: 700; }
+@media (max-width: 900px) { .sa-grid--3 { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .sa-grid--2, .sa-form--grid, .sa-details { grid-template-columns: 1fr; } .sa-form__wide { grid-column: auto; } .sa-attachments > div { align-items: flex-start; flex-direction: column; } }
