@@ -20,4 +20,7 @@ export const ROUTES = Object.freeze({
   TOWER_REPRESENTATIVE: "/tower-representative",
   RESIDENT: "/resident",
   MAINTENANCE_WORKER: "/maintenance-worker",
+  MAINTENANCE_WORKER_TASKS: "/maintenance-worker/tasks",
+  MAINTENANCE_WORKER_COMPLETED: "/maintenance-worker/completed",
+  MAINTENANCE_WORKER_PROFILE: "/maintenance-worker/profile",
 });

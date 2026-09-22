@@ -11,6 +11,7 @@ import { LoginPage } from "../features/authentication/pages/LoginPage.jsx";
 import { CommunityAdminRoutes } from "../features/community-admin/routes.jsx";
 import { LandingPage } from "../features/landing/pages/LandingPage.jsx";
 import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
+import { MaintenanceWorkerRoutes } from "../features/maintenance-worker/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -52,11 +53,6 @@ const actorRoutes = [
     path: `${ROUTES.RESIDENT}/*`,
     role: ROLES.RESIDENT,
     title: "Resident",
-  },
-  {
-    path: `${ROUTES.MAINTENANCE_WORKER}/*`,
-    role: ROLES.MAINTENANCE_WORKER,
-    title: "Maintenance Worker",
   },
 ];
 
@@ -107,6 +103,10 @@ export const router = createBrowserRouter([
         path,
         element: <RoleRoute allowedRoles={[role]}><PortalLayout><PortalPlaceholder title={`${title} Portal`} /></PortalLayout></RoleRoute>,
       })),
+      {
+        path: `${ROUTES.MAINTENANCE_WORKER}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.MAINTENANCE_WORKER]}><PortalLayout><MaintenanceWorkerRoutes /></PortalLayout></RoleRoute>,
+      },
     ],
   },
 ]);
