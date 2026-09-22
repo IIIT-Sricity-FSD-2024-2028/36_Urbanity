@@ -1,18 +1,24 @@
 import { ROLES } from "./roles.js";
 import { ROUTES } from "./routes.js";
 
-function portalNavigation(label, home) {
+function portalNavigation(label, home, items = [{ label: "Overview", to: home }]) {
   return Object.freeze({
     label,
     home,
-    items: Object.freeze([
-      Object.freeze({ label: "Overview", to: home }),
-    ]),
+    items: Object.freeze(items.map((item) => Object.freeze(item))),
   });
 }
 
 export const NAVIGATION_BY_ROLE = Object.freeze({
-  [ROLES.SUPER_ADMIN]: portalNavigation("Super Admin Portal", ROUTES.SUPER_ADMIN),
+  [ROLES.SUPER_ADMIN]: portalNavigation("Super Admin Portal", ROUTES.SUPER_ADMIN, [
+    { label: "Dashboard", to: ROUTES.SUPER_ADMIN },
+    { label: "Communities", to: ROUTES.SUPER_ADMIN_COMMUNITIES },
+    { label: "Platform Users", to: ROUTES.SUPER_ADMIN_USERS },
+    { label: "Workforce", to: ROUTES.SUPER_ADMIN_WORKFORCE },
+    { label: "Complaints", to: ROUTES.SUPER_ADMIN_COMPLAINTS },
+    { label: "Reports", to: ROUTES.SUPER_ADMIN_REPORTS },
+    { label: "Profile", to: ROUTES.SUPER_ADMIN_PROFILE },
+  ]),
   [ROLES.COMMUNITY_ADMIN]: portalNavigation(
     "Community Admin Portal",
     ROUTES.COMMUNITY_ADMIN,

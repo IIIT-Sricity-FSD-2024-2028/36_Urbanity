@@ -7,6 +7,8 @@ import { ROLES } from "../constants/roles.js";
 import { ROUTES } from "../constants/routes.js";
 import { PortalLayout } from "../layouts/PortalLayout.jsx";
 import { PublicLayout } from "../layouts/PublicLayout.jsx";
+import { LoginPage } from "../features/authentication/pages/LoginPage.jsx";
+import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -39,11 +41,6 @@ function PortalPlaceholder({ title }) {
 }
 
 const actorRoutes = [
-  {
-    path: `${ROUTES.SUPER_ADMIN}/*`,
-    role: ROLES.SUPER_ADMIN,
-    title: "Super Admin",
-  },
   {
     path: `${ROUTES.COMMUNITY_ADMIN}/*`,
     role: ROLES.COMMUNITY_ADMIN,
@@ -81,12 +78,7 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.LOGIN,
-        element: (
-          <PublicPlaceholder
-            title="Sign in"
-            message="The React login page will be implemented in a later stage."
-          />
-        ),
+        element: <LoginPage />,
       },
       {
         path: ROUTES.UNAUTHORIZED,
@@ -110,15 +102,15 @@ export const router = createBrowserRouter([
   },
   {
     element: <ProtectedRoute />,
-    children: actorRoutes.map(({ path, role, title }) => ({
-      path,
-      element: (
-        <RoleRoute allowedRoles={[role]}>
-          <PortalLayout>
-            <PortalPlaceholder title={`${title} Portal`} />
-          </PortalLayout>
-        </RoleRoute>
-      ),
-    })),
+    children: [
+      {
+        path: `${ROUTES.SUPER_ADMIN}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}><PortalLayout><SuperAdminRoutes /></PortalLayout></RoleRoute>,
+      },
+      ...actorRoutes.map(({ path, role, title }) => ({
+        path,
+        element: <RoleRoute allowedRoles={[role]}><PortalLayout><PortalPlaceholder title={`${title} Portal`} /></PortalLayout></RoleRoute>,
+      })),
+    ],
   },
 ]);
