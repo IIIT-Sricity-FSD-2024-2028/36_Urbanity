@@ -12,6 +12,7 @@ import { CommunityAdminRoutes } from "../features/community-admin/routes.jsx";
 import { LandingPage } from "../features/landing/pages/LandingPage.jsx";
 import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
 import { MaintenanceWorkerRoutes } from "../features/maintenance-worker/routes.jsx";
+import { TowerRepresentativeRoutes } from "../features/tower-representative/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -44,11 +45,6 @@ function PortalPlaceholder({ title }) {
 }
 
 const actorRoutes = [
-  {
-    path: `${ROUTES.TOWER_REPRESENTATIVE}/*`,
-    role: ROLES.TOWER_REPRESENTATIVE,
-    title: "Tower Representative",
-  },
   {
     path: `${ROUTES.RESIDENT}/*`,
     role: ROLES.RESIDENT,
@@ -98,6 +94,10 @@ export const router = createBrowserRouter([
       {
         path: `${ROUTES.COMMUNITY_ADMIN}/*`,
         element: <RoleRoute allowedRoles={[ROLES.COMMUNITY_ADMIN]}><PortalLayout><CommunityAdminRoutes /></PortalLayout></RoleRoute>,
+      },
+      {
+        path: `${ROUTES.TOWER_REPRESENTATIVE}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.TOWER_REPRESENTATIVE]}><PortalLayout><TowerRepresentativeRoutes /></PortalLayout></RoleRoute>,
       },
       ...actorRoutes.map(({ path, role, title }) => ({
         path,

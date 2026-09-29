@@ -36,6 +36,14 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
   [ROLES.TOWER_REPRESENTATIVE]: portalNavigation(
     "Tower Representative Portal",
     ROUTES.TOWER_REPRESENTATIVE,
+    [
+      { label: "Dashboard", to: ROUTES.TOWER_REPRESENTATIVE },
+      { label: "Complaints", to: ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS },
+      { label: "Workforce", to: ROUTES.TOWER_REPRESENTATIVE_WORKFORCE },
+      { label: "Tower & Residents", to: ROUTES.TOWER_REPRESENTATIVE_RESIDENTS },
+      { label: "Reports", to: ROUTES.TOWER_REPRESENTATIVE_REPORTS },
+      { label: "Profile", to: ROUTES.TOWER_REPRESENTATIVE_PROFILE },
+    ],
   ),
   [ROLES.RESIDENT]: portalNavigation("Resident Portal", ROUTES.RESIDENT),
   [ROLES.MAINTENANCE_WORKER]: portalNavigation(
