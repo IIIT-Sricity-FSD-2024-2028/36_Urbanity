@@ -1,8 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "../auth/ProtectedRoute.jsx";
 import { RoleRoute } from "../auth/RoleRoute.jsx";
-import { Card, EmptyState } from "../components/ui/index.js";
-import { PageHeader } from "../components/data-display/index.js";
 import { ROLES } from "../constants/roles.js";
 import { ROUTES } from "../constants/routes.js";
 import { PortalLayout } from "../layouts/PortalLayout.jsx";
@@ -13,6 +11,7 @@ import { LandingPage } from "../features/landing/pages/LandingPage.jsx";
 import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
 import { MaintenanceWorkerRoutes } from "../features/maintenance-worker/routes.jsx";
 import { TowerRepresentativeRoutes } from "../features/tower-representative/routes.jsx";
+import { ResidentRoutes } from "../features/resident/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -25,32 +24,6 @@ function PublicPlaceholder({ title, message }) {
     </main>
   );
 }
-
-function PortalPlaceholder({ title }) {
-  return (
-    <>
-      <PageHeader
-        eyebrow="Portal workspace"
-        title={title}
-        description="This route is reserved for the upcoming actor-specific React migration."
-      />
-      <Card>
-        <EmptyState
-          title="Portal migration pending"
-          message="The shared Urbanity shell is ready; actor functionality will be added in a later stage."
-        />
-      </Card>
-    </>
-  );
-}
-
-const actorRoutes = [
-  {
-    path: `${ROUTES.RESIDENT}/*`,
-    role: ROLES.RESIDENT,
-    title: "Resident",
-  },
-];
 
 export const router = createBrowserRouter([
   {
@@ -99,13 +72,13 @@ export const router = createBrowserRouter([
         path: `${ROUTES.TOWER_REPRESENTATIVE}/*`,
         element: <RoleRoute allowedRoles={[ROLES.TOWER_REPRESENTATIVE]}><PortalLayout><TowerRepresentativeRoutes /></PortalLayout></RoleRoute>,
       },
-      ...actorRoutes.map(({ path, role, title }) => ({
-        path,
-        element: <RoleRoute allowedRoles={[role]}><PortalLayout><PortalPlaceholder title={`${title} Portal`} /></PortalLayout></RoleRoute>,
-      })),
       {
         path: `${ROUTES.MAINTENANCE_WORKER}/*`,
         element: <RoleRoute allowedRoles={[ROLES.MAINTENANCE_WORKER]}><PortalLayout><MaintenanceWorkerRoutes /></PortalLayout></RoleRoute>,
+      },
+      {
+        path: `${ROUTES.RESIDENT}/*`,
+        element: <RoleRoute allowedRoles={[ROLES.RESIDENT]}><PortalLayout><ResidentRoutes /></PortalLayout></RoleRoute>,
       },
     ],
   },
