@@ -44,18 +44,10 @@ export function formatBytes(size) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function formatRating(value) {
-  return `${Number(value || 0).toFixed(1)} / 5`;
-}
-
-export function shortId(id) {
-  return id ? String(id).slice(0, 8) : "—";
-}
-
 // Worker profiles carry no display name, and Tower Representatives cannot read
 // the users API, so workers are identified by their profile reference.
 export function workerReference(worker) {
-  return worker?.id ? `Worker #${shortId(worker.id)}` : "Worker profile";
+  return worker?.userName || "Maintenance worker";
 }
 
 export function apartmentLabel(complaint) {

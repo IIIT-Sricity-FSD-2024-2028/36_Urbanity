@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { MetricCard, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { MetricCard, PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
 import { superAdminService } from "../services/superAdminService.js";
 import { formatDate, formatEnum } from "../utils/formatters.js";
@@ -25,7 +25,7 @@ export function ReportsPage() {
         <MetricCard label="Communities" value={summary.hierarchy?.communities ?? 0} />
         <MetricCard label="Users" value={Object.values(summary.users || {}).reduce((a, b) => a + Number(b || 0), 0)} />
         <MetricCard label="Complaints" value={summary.complaints?.total ?? 0} />
-        <MetricCard label="Average worker rating" value={summary.workforce?.averageRating ?? 0} />
+        <MetricCard label="Average worker rating" value={<RatingStars value={summary.workforce?.averageRating} />} />
       </div>
       <div className="sa-grid sa-grid--2">
         <Card title="Complaint statuses"><ReportList values={summary.complaints?.byStatus} status /></Card>

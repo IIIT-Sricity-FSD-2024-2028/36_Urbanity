@@ -2,14 +2,14 @@ import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Button, Card, ConfirmDialog, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
-import { PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { AssignWorkerModal } from "../components/AssignWorkerModal.jsx";
 import { AttachmentList } from "../components/AttachmentList.jsx";
 import { VerifyResolutionModal } from "../components/VerifyResolutionModal.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
-import { formatDateTime, formatEnum, formatRating, shortId, workerReference } from "../utils/formatters.js";
+import { formatDateTime, formatEnum, workerReference } from "../utils/formatters.js";
 import { isResponsibleAuthority, lifecycleGuidance, nextAuthorityAction } from "../utils/workflow.js";
 
 const REVIEW_STATUSES = new Set(["REVIEWED", "CLOSED"]);
@@ -101,7 +101,7 @@ export function ComplaintDetailsPage() {
   return (
     <>
       <PageHeader
-        eyebrow={`Complaint #${shortId(complaint.id)}`}
+        eyebrow="Tower complaint"
         title={complaint.title}
         description={`${formatEnum(complaint.type)} complaint · ${complaint.location?.towerName || "Tower"} · ${complaint.location?.apartmentNumber || "Apartment unavailable"}`}
         actions={backLink}
@@ -150,7 +150,7 @@ export function ComplaintDetailsPage() {
               <div className="tr-verification">
                 {complaint.resolutionVerification ? (
                   <p>
-                    Verified by <strong>{complaint.resolutionVerification.verifiedByUserName}</strong> on {formatDateTime(complaint.resolutionVerification.verifiedAt)} · Work-quality rating {formatRating(complaint.resolutionVerification.authorityRating)}
+                    Verified by <strong>{complaint.resolutionVerification.verifiedByUserName}</strong> on {formatDateTime(complaint.resolutionVerification.verifiedAt)} · Work-quality rating <RatingStars value={complaint.resolutionVerification.authorityRating} />
                   </p>
                 ) : (
                   <p className="tr-muted">Awaiting verification by the responsible authority.</p>
@@ -170,10 +170,10 @@ export function ComplaintDetailsPage() {
               {review ? (
                 <>
                   <dl className="tr-details">
-                    <div><dt>Overall</dt><dd>{formatRating(review.rating)}</dd></div>
-                    <div><dt>Speed</dt><dd>{formatRating(review.speedRating)}</dd></div>
-                    <div><dt>Quality</dt><dd>{formatRating(review.qualityRating)}</dd></div>
-                    <div><dt>Communication</dt><dd>{formatRating(review.communicationRating)}</dd></div>
+                    <div><dt>Overall</dt><dd><RatingStars value={review.rating} /></dd></div>
+                    <div><dt>Speed</dt><dd><RatingStars value={review.speedRating} /></dd></div>
+                    <div><dt>Quality</dt><dd><RatingStars value={review.qualityRating} /></dd></div>
+                    <div><dt>Communication</dt><dd><RatingStars value={review.communicationRating} /></dd></div>
                   </dl>
                   {review.feedback && <blockquote className="tr-quote">{review.feedback}</blockquote>}
                   <p className="tr-muted">Submitted {formatDateTime(review.createdAt)}</p>
@@ -203,7 +203,7 @@ export function ComplaintDetailsPage() {
                 <div><dt>Worker profile</dt><dd>{workerReference(worker || { id: complaint.assignedWorkerId })}</dd></div>
                 {worker && <div><dt>Specialization</dt><dd>{formatEnum(worker.specialization)}</dd></div>}
                 {worker && <div><dt>Availability</dt><dd><StatusBadge status={worker.status} /></dd></div>}
-                {worker && <div><dt>Rating</dt><dd>{formatRating(worker.rating)} · {worker.completedWorkCount || 0} completed</dd></div>}
+                {worker && <div><dt>Rating</dt><dd><RatingStars value={worker.rating} /> · {worker.completedWorkCount || 0} completed</dd></div>}
               </dl>
             ) : (
               <p className="tr-muted">No worker has been assigned yet.</p>

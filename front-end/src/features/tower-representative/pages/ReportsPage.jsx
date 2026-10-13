@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Button, Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { DataTable, MetricCard, PageHeader } from "../../../components/data-display/index.js";
+import { DataTable, MetricCard, PageHeader, RatingStars } from "../../../components/data-display/index.js";
 import { Breakdown } from "../components/Breakdown.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
@@ -11,7 +11,6 @@ import {
   countBy,
   formatDateTime,
   formatEnum,
-  formatRating,
   workerReference,
 } from "../utils/formatters.js";
 
@@ -79,12 +78,12 @@ export function ReportsPage() {
   }, [data]);
 
   const workerColumns = [
-    { key: "id", header: "Worker profile", render: (_, row) => <strong>{workerReference(row)}</strong> },
+    { key: "userName", header: "Worker", render: (_, row) => <strong>{workerReference(row)}</strong> },
     { key: "specialization", header: "Specialization", render: formatEnum },
     { key: "towerComplaints", header: "Tower complaints assigned" },
     { key: "activeTasks", header: "Active in your tower" },
     { key: "completedWorkCount", header: "Completed (community)", render: (value) => value || 0 },
-    { key: "rating", header: "Rating", render: formatRating },
+    { key: "rating", header: "Rating", render: (value) => <RatingStars value={value} /> },
   ];
 
   return (

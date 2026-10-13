@@ -70,7 +70,9 @@ export class ComplaintsService {
     const complaint = this.findById(id);
     this.assertCanActAsAuthority(actor, complaint);
     const complaintCommunityId = this.assertComplaintCommunity(complaint).communityId;
-    return this.workforce.findAll().filter((worker) => worker.communityId === complaintCommunityId && worker.status === WorkerStatus.Available && worker.specialization === complaint.requiredWorkType && !this.hasActiveAssignment(worker.id));
+    return this.workforce.findAll()
+      .filter((worker) => worker.communityId === complaintCommunityId && worker.status === WorkerStatus.Available && worker.specialization === complaint.requiredWorkType && !this.hasActiveAssignment(worker.id))
+      .map((worker) => this.workforce.toViewModel(worker));
   }
   assignWorker(id: string, dto: AssignWorkerDto, actor: AuthenticatedUser) {
     const complaint = this.findById(id);
@@ -256,6 +258,7 @@ export class ComplaintsService {
     const apartment = this.community.getApartment(complaint.apartmentId);
     return {
       ...complaint,
+      ...(complaint.assignedWorkerId ? { assignedWorkerName: this.workforce.getWorkerName(complaint.assignedWorkerId) } : {}),
       location: {
         communityName: community.name,
         towerName: tower.name,

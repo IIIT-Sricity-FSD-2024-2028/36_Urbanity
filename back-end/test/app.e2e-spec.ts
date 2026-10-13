@@ -645,6 +645,8 @@ describe('Urbanity API (e2e)', () => {
     const globalSuper = await request(server).post('/users').set('Authorization', superToken).send({ name: 'Global Admin', email: 'global.admin@urbanity.local', password: 'development-only-password', role: RoleName.SuperAdmin }).expect(201);
     expect(globalSuper.body.data).toMatchObject({ role: RoleName.SuperAdmin });
     expect(globalSuper.body.data).not.toHaveProperty('communityId');
+    await request(server).post('/users').set('Authorization', superToken).send({ name: 'Duplicate Global Admin', email: 'GLOBAL.ADMIN@urbanity.local', password: 'development-only-password', role: RoleName.SuperAdmin }).expect(400).expect(({ body }) => expect(body.error.message).toContain('email already exists'));
+    await request(server).post('/users').set('Authorization', superToken).send({ name: 'Short Password', email: 'short.password@urbanity.local', password: 'short', role: RoleName.SuperAdmin }).expect(400);
     await request(server).patch(`/users/${residentB}`).set('Authorization', superToken).send({ name: 'Updated Resident B' }).expect(200).expect(({ body }) => expect(body.data.name).toBe('Updated Resident B'));
     await request(server).delete(`/users/${adminA2.body.data.id}`).set('Authorization', superToken).expect(200);
 

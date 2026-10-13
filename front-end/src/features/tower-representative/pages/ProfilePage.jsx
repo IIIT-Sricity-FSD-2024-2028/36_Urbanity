@@ -1,46 +1,51 @@
 import { useCallback } from "react";
-import { Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { ErrorState, LoadingState } from "../../../components/ui/index.js";
+import { PageHeader, ProfileHero } from "../../../components/data-display/index.js";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
 import { formatDate } from "../utils/formatters.js";
 
-// Profile editing (PATCH /users/:id) is restricted to Super Admin and Community
-// Admin, so this page is read-only.
 export function ProfilePage() {
   const loader = useCallback(() => towerRepresentativeService.getOwnHierarchy(), []);
   const { data, error, initialLoading, reload } = useTowerResource(loader);
   const profile = data?.user;
 
-  return (
-    <>
-      <PageHeader eyebrow="Account" title="My profile" description="Your authenticated account and tower association." />
-      {initialLoading && <LoadingState message="Loading profile..." />}
-      {error && <ErrorState message={error.message} onRetry={reload} />}
-      {data && (
-        <div className="tr-grid tr-grid--2">
-          <Card title="Account details">
-            <dl className="tr-details">
-              <div><dt>Name</dt><dd>{profile?.name || "Not available"}</dd></div>
-              <div><dt>Email</dt><dd>{profile?.email || "Not available"}</dd></div>
-              <div><dt>Phone</dt><dd>{profile?.phone || "Not provided"}</dd></div>
-              <div><dt>Role</dt><dd><StatusBadge status={profile?.role} label="Tower Representative" /></dd></div>
-              <div><dt>Member since</dt><dd>{formatDate(profile?.createdAt)}</dd></div>
+  return <>
+    <PageHeader eyebrow="Tower administration" title="Profile" description="Review your Urbanity tower identity and account access." />
+    {initialLoading && <LoadingState message="Loading profile..." />}
+    {error && <ErrorState message={error.message} onRetry={reload} />}
+    {data && <div className="portal-profile">
+      <ProfileHero name={profile?.name} email={profile?.email} role="Tower Representative" />
+      <div className="portal-profile__grid">
+        <div className="portal-profile__main">
+          <section className="portal-profile__card portal-profile__details">
+            <header className="portal-profile__section-heading">
+              <div><p className="portal-profile__eyebrow">Account details</p><h3>Your tower identity</h3></div>
+              <div className="portal-profile__heading-actions"><span>Read only</span></div>
+            </header>
+            <dl className="portal-profile__detail-list">
+              <div><dt>Full name</dt><dd>{profile?.name || "Not available"}</dd></div>
+              <div><dt>Email address</dt><dd>{profile?.email || "Not available"}</dd></div>
+              <div><dt>Phone number</dt><dd>{profile?.phone || "Not provided"}</dd></div>
+              <div><dt>Access level</dt><dd>Tower Representative</dd></div>
+              <div className="portal-profile__detail-wide"><dt>Member since</dt><dd>{formatDate(profile?.createdAt)}</dd></div>
             </dl>
-          </Card>
-          <Card title="Tower association">
-            <dl className="tr-details">
+          </section>
+        </div>
+        <aside className="portal-profile__side">
+          <section className="portal-profile__card portal-profile__context">
+            <p className="portal-profile__eyebrow">Account scope</p>
+            <h3>Tower association</h3>
+            <p>Your account and tower association are managed by your Community Admin.</p>
+            <dl className="portal-profile__detail-list">
               <div><dt>Assigned tower</dt><dd>{data.tower?.name || "Not available"}</dd></div>
               <div><dt>Tower code</dt><dd>{data.tower?.code || "Not available"}</dd></div>
               <div><dt>Community</dt><dd>{data.community?.name || "Not available"}</dd></div>
               <div><dt>Community address</dt><dd>{data.community?.address || "Not available"}</dd></div>
             </dl>
-          </Card>
-          <p className="tr-muted tr-note tr-grid__wide">
-            Account details and tower association are managed by your Community Admin. Contact them to request changes.
-          </p>
-        </div>
-      )}
-    </>
-  );
+          </section>
+        </aside>
+      </div>
+    </div>}
+  </>;
 }

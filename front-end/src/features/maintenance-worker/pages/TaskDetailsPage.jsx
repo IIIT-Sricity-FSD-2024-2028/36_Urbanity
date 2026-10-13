@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button, Card, EmptyState, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { useWorkerResource } from "../hooks/useWorkerResource.js";
 import { useWorkerMutation } from "../hooks/useWorkerMutation.js";
@@ -25,20 +25,18 @@ function TaskDetails({ id }) {
   const disabled = loading || Boolean(error) || mutation.pending;
   return <>
     <PageHeader eyebrow="Assigned work" title={task?.title || "Task details"}
-      actions={<Button variant="secondary" onClick={reload} disabled={mutation.pending} loading={loading}>Refresh</Button>} />
-    <p><Link to={ROUTES.MAINTENANCE_WORKER_TASKS}>Back to assigned tasks</Link></p>
+      actions={<><Link className="ui-button ui-button--secondary" to={ROUTES.MAINTENANCE_WORKER_TASKS}>Back to assigned tasks</Link><Button variant="secondary" onClick={reload} disabled={mutation.pending} loading={loading}>Refresh</Button></>} />
     {loading && <LoadingState message="Loading task details..." />}
     {error && <ErrorState message={error.message} onRetry={reload} />}
     {task && <div className="mw-stack">
       <Card title="Complaint details" actions={<StatusBadge status={task.status} />}>
         <p className="mw-description">{task.description || "No description provided."}</p>
         <dl className="mw-details">
-          <div><dt>Complaint ID</dt><dd>{task.id}</dd></div>
           <div><dt>Type</dt><dd>{formatLabel(task.type)}</dd></div>
           <div><dt>Work type</dt><dd>{formatLabel(task.requiredWorkType)}</dd></div>
           <div><dt>Location</dt><dd>{locationLabel(task)}</dd></div>
           <div><dt>Responsible authority</dt><dd>{task.responsibleUserName || "Not available"}</dd></div>
-          <div><dt>Assigned worker ID</dt><dd>{task.assignedWorkerId || "Not available"}</dd></div>
+          <div><dt>Assigned worker</dt><dd>{task.assignedWorkerName || "You"}</dd></div>
           <div><dt>Submitted</dt><dd>{formatDate(task.createdAt)}</dd></div>
           <div><dt>Last updated</dt><dd>{formatDate(task.updatedAt)}</dd></div>
         </dl>
@@ -56,8 +54,8 @@ function TaskDetails({ id }) {
         <div><dt>Problem found</dt><dd className="mw-description">{task.resolutionProof.problemFound}</dd></div>
         <div><dt>Resolution summary</dt><dd className="mw-description">{task.resolutionProof.resolutionSummary}</dd></div>
         <div><dt>Proof submitted</dt><dd>{formatDate(task.resolutionProof.submittedAt)}</dd></div>
-        <div><dt>Submitted by worker</dt><dd>{task.resolutionProof.submittedByWorkerId}</dd></div>
-        <div><dt>Verification</dt><dd>{task.resolutionVerification ? `${task.resolutionVerification.verifiedByUserName} · ${task.resolutionVerification.authorityRating} / 5` : "Awaiting authority verification"}</dd></div>
+        <div><dt>Submitted by</dt><dd>You</dd></div>
+        <div><dt>Verification</dt><dd>{task.resolutionVerification ? <span>{task.resolutionVerification.verifiedByUserName} · <RatingStars value={task.resolutionVerification.authorityRating} /></span> : "Awaiting authority verification"}</dd></div>
         {task.resolutionVerification && <div><dt>Verified</dt><dd>{formatDate(task.resolutionVerification.verifiedAt)}</dd></div>}
       </dl>
         <h3 className="mw-actions">Submitted proof images</h3>

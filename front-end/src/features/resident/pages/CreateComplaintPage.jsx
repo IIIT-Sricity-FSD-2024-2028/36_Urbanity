@@ -53,7 +53,7 @@ export function CreateComplaintPage() {
   }
 
   return <div className="resident-stack">
-    <PageHeader title="Create complaint" description="Describe the issue so your maintenance team can help." />
+    <PageHeader eyebrow="Resident workspace" title="Create complaint" description="Describe the issue so your maintenance team can help." />
     {hierarchy.loading ? <LoadingState message="Loading your apartment..." /> : hierarchy.error ? <ErrorState message={hierarchy.error.message} onRetry={hierarchy.reload} /> : <ResidentLocation hierarchy={hierarchy.data} />}
     <Card title="Complaint details"><form className="resident-stack" onSubmit={submit} noValidate>
       {errors.form && <ErrorState title="Unable to create complaint" message={errors.form} />}

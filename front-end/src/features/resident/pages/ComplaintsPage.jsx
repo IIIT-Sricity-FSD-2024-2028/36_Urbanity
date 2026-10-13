@@ -14,12 +14,12 @@ export function ComplaintsPage() {
   const [status, setStatus] = useState("");
   const query = search.trim().toLowerCase();
   const items = data?.filter((item) => (!status || item.status === status) &&
-    [item.id, item.title, item.description, locationText(item.location)].join(" ").toLowerCase().includes(query));
+    [item.title, item.description, locationText(item.location)].join(" ").toLowerCase().includes(query));
   return <div className="resident-stack">
-    <PageHeader title="My complaints" description="Maintenance requests associated with your account."
+    <PageHeader eyebrow="Resident workspace" title="My complaints" description="Maintenance requests associated with your account."
       actions={<><Button variant="secondary" onClick={reload} disabled={loading}>Refresh</Button><Link className="ui-button ui-button--primary" to={ROUTES.RESIDENT_NEW_COMPLAINT}>Create complaint</Link></>} />
     <Card><div className="resident-grid">
-      <Input label="Search complaints" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Title, ID, description, or location" />
+      <Input label="Search complaints" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Title, description, or location" />
       <Select label="Status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{COMPLAINT_STATUSES.map((value) => <option key={value} value={value}>{label(value)}</option>)}</Select>
     </div></Card>
     {loading && <LoadingState message="Loading your complaints..." />}

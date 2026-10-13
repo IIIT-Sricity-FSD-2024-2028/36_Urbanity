@@ -28,7 +28,7 @@ export function PortalLayout({ children }) {
       )}
       <div className="portal-shell__main">
         <Topbar
-          title={navigation.label}
+          title={navigation.topbarLabel}
           onMenuToggle={() => setSidebarOpen((current) => !current)}
         />
         <main className="portal-content">{children ?? <Outlet />}</main>

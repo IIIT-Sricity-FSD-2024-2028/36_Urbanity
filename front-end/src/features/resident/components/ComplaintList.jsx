@@ -5,13 +5,13 @@ import { dateTime, locationText } from "../utils.js";
 
 const columns = [
   { key: "title", header: "Complaint", render: (title, item) => <div className="resident-complaint-cell">
-    <Link to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`}>{title}</Link>
-    <small>{item.id}</small><p>{item.description}</p>
+    <strong>{title}</strong><p>{item.description}</p>
   </div> },
   { key: "status", header: "Status", render: (status) => <StatusBadge status={status} /> },
   { key: "location", header: "Location", render: locationText },
   { key: "createdAt", header: "Submitted", render: dateTime },
   { key: "updatedAt", header: "Updated", render: dateTime },
+  { key: "actions", header: <span className="sr-only">Actions</span>, render: (_, item) => <Link className="ui-button ui-button--secondary" to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`}>View details</Link> },
 ];
 
 export function ComplaintList({ complaints, filtered = false }) {

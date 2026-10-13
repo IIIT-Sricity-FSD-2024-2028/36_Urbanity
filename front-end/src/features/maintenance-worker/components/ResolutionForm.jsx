@@ -52,7 +52,7 @@ export function ResolutionForm({ taskId, attachments, disabled, reload }) {
       <p>Upload proof images, select the images to include, and describe your work. Your community authority will verify the resolution.</p>
       <Textarea label="Problem found" value={problemFound} onChange={(event) => setProblemFound(event.target.value)} maxLength={2000} required disabled={busy} />
       <Textarea label="Resolution summary" value={resolutionSummary} onChange={(event) => setResolutionSummary(event.target.value)} maxLength={2000} required disabled={busy} />
-      <Input ref={fileInput} label="Proof image" type="file" accept={IMAGE_TYPES.join(",")} onChange={selectFile} disabled={busy}
+      <Input ref={fileInput} label={<>Proof image <span className="ui-field__required">*</span></>} type="file" accept={IMAGE_TYPES.join(",")} onChange={selectFile} disabled={busy}
         hint="JPEG, PNG, or WebP. Maximum 5 MB per image. Upload additional images one at a time." />
       {file && <p className="mw-secondary">Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)</p>}
       <Button variant="secondary" onClick={upload} disabled={busy || !file || Boolean(validateProofFile(file))}>Upload image</Button>
@@ -60,7 +60,7 @@ export function ResolutionForm({ taskId, attachments, disabled, reload }) {
         <legend>Uploaded proof to include</legend>
         {proof.map((attachment) => <label key={attachment.id}>
           <input type="checkbox" checked={proofIds.includes(attachment.id)} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...new Set([...current, attachment.id])] : current.filter((id) => id !== attachment.id))} />
-          {attachment.originalName || attachment.id}
+          {attachment.originalName || "Uploaded proof image"}
         </label>)}
       </fieldset>}
       {validation && <p role="alert">{validation}</p>}

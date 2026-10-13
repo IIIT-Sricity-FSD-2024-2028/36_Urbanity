@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
-import { Button, Input, LoadingState } from "../../../components/ui/index.js";
+import { Button, LoadingState } from "../../../components/ui/index.js";
 import { NAVIGATION_BY_ROLE } from "../../../constants/navigation.js";
 import { ROUTES } from "../../../constants/routes.js";
 import "../authentication.css";
@@ -69,49 +69,82 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-page__story" aria-label="Urbanity introduction">
-        <p className="login-page__brand">Urbanity</p>
-        <div>
-          <p className="login-page__eyebrow">Apartment operations, connected</p>
-          <h1>One workspace for every community.</h1>
-          <p>Manage people, maintenance, and resident concerns with clear ownership at every level.</p>
+      <section className="login-hero" aria-label="Urbanity">
+        <div className="login-hero__image" aria-hidden="true" />
+        <div className="login-hero__content">
+          <div className="login-hero__logo">
+            <svg className="login-hero__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h1>Urbanity</h1>
+          </div>
+          <p>Community operations, made transparent.</p>
         </div>
       </section>
-      <section className="login-page__panel">
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
-          <div>
-            <p className="login-form__eyebrow">Welcome back</p>
-            <h2>Sign in to Urbanity</h2>
-            <p>Use your registered account to open your assigned portal.</p>
-          </div>
-          {errors.form && <div className="login-form__error" role="alert">{errors.form}</div>}
-          <Input
-            label="Email address"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            error={errors.email}
-            required
-          />
-          <div className="login-form__password">
-            <Input
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              error={errors.password}
-              required
-            />
-            <button type="button" onClick={() => setShowPassword((value) => !value)}>
-              {showPassword ? "Hide password" : "Show password"}
-            </button>
-          </div>
-          <Button type="submit" fullWidth loading={submitting} loadingLabel="Signing in...">
-            Sign in
-          </Button>
-        </form>
+      <section className="login-panel">
+        <div className="login-panel__content">
+          <header className="login-form__header">
+            <h2>Sign in</h2>
+            <p>Use your Urbanity account to continue.</p>
+          </header>
+          {errors.form && <div className="login-form__message" role="alert" aria-live="polite">{errors.form}</div>}
+          <form className="login-form" onSubmit={handleSubmit} noValidate>
+            <div className="login-form__group">
+              <label htmlFor="signinEmail">Email address</label>
+              <input
+                id="signinEmail"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                aria-invalid={errors.email ? "true" : undefined}
+                aria-describedby={errors.email ? "signinEmail-error" : undefined}
+                required
+              />
+              {errors.email && <p className="login-form__field-error" id="signinEmail-error">{errors.email}</p>}
+            </div>
+            <div className="login-form__group">
+              <label htmlFor="signinPassword">Password</label>
+              <div className="login-form__password-field">
+                <input
+                  id="signinPassword"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  aria-invalid={errors.password ? "true" : undefined}
+                  aria-describedby={errors.password ? "signinPassword-error" : undefined}
+                  required
+                />
+                <button
+                  className="login-form__password-toggle"
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? (
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18M10.584 10.587A2 2 0 0 0 13.414 13.4M9.88 4.24A9.77 9.77 0 0 1 12 4c4.478 0 8.268 2.943 9.542 7a9.77 9.77 0 0 1-4.132 5.072M6.61 6.61A9.77 9.77 0 0 0 2.458 12C3.732 16.057 7.523 19 12 19c.847 0 1.67-.105 2.458-.301" />
+                    </svg>
+                  ) : (
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {errors.password && <p className="login-form__field-error" id="signinPassword-error">{errors.password}</p>}
+            </div>
+            <Button className="login-form__submit" type="submit" fullWidth loading={submitting} loadingLabel="Signing in...">
+              Sign in
+            </Button>
+          </form>
+          <p className="login-form__footer">Accounts are created by Urbanity administrators.</p>
+        </div>
       </section>
     </main>
   );
