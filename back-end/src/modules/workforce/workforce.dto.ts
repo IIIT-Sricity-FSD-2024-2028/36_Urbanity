@@ -18,6 +18,7 @@ export class WorkerProfile {
   @ApiProperty() createdAt!: string;
   @ApiProperty() updatedAt!: string;
 }
+export type WorkerProfileView = WorkerProfile & { userName: string };
 export class CreateWorkerProfileDto {
   @ApiProperty() @IsUUID('4') userId!: string;
   @ApiProperty({ enum: WorkType }) @IsEnum(WorkType) specialization!: WorkType;

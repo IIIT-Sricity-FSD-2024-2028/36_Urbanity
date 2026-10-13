@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
 import { Button, EmptyState, ErrorState, LoadingState, Modal, useToast } from "../../../components/ui/index.js";
-import { StatusBadge } from "../../../components/data-display/index.js";
+import { RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
-import { formatEnum, formatRating, workerReference } from "../utils/formatters.js";
+import { formatEnum, workerReference } from "../utils/formatters.js";
 
 export function AssignWorkerModal({ complaint, onClose, onAssigned }) {
   const { showToast } = useToast();
@@ -79,7 +79,7 @@ export function AssignWorkerModal({ complaint, onClose, onAssigned }) {
                 <span className="tr-cell-stack">
                   <strong>{workerReference(worker)}</strong>
                   <span className="tr-muted">
-                    {formatEnum(worker.specialization)} · Rating {formatRating(worker.rating)} · {worker.completedWorkCount || 0} completed
+                    {formatEnum(worker.specialization)} · <RatingStars value={worker.rating} /> · {worker.completedWorkCount || 0} completed
                   </span>
                 </span>
                 <StatusBadge status={worker.status} />

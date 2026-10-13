@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { MetricCard, PageHeader } from "../../../components/data-display/index.js";
+import { MetricCard, MetricIcon, PageHeader } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { Breakdown } from "../components/Breakdown.jsx";
 import { ComplaintTable } from "../components/ComplaintTable.jsx";
@@ -54,13 +54,13 @@ export function DashboardPage() {
       {error && <ErrorState message={error.message} onRetry={reload} />}
       {data && summary && (
         <>
-          <div className="tr-metrics">
-            <MetricCard icon="!" label="Open complaints" value={summary.open} hint={`${data.complaints.length} total in your tower`} />
-            <MetricCard icon="N" label="New" value={summary.byStatus.SUBMITTED || 0} hint="Submitted, awaiting review" />
-            <MetricCard icon="R" label="Under review" value={summary.byStatus.UNDER_REVIEW || 0} hint="Ready for assignment" />
-            <MetricCard icon="W" label="Work in progress" value={(summary.byStatus.ASSIGNED || 0) + (summary.byStatus.IN_PROGRESS || 0)} hint={`${summary.byStatus.ASSIGNED || 0} assigned · ${summary.byStatus.IN_PROGRESS || 0} in progress`} />
-            <MetricCard icon="V" label="Awaiting verification" value={summary.byStatus.PENDING_VERIFICATION || 0} hint="Worker proof submitted" />
-            <MetricCard icon="✓" label="Resolved" value={summary.resolved} hint="Resolved, reviewed, or closed" />
+          <div className="tr-metrics portal-metrics">
+            <MetricCard icon={<MetricIcon name="complaints" />} label="Open complaints" value={summary.open} hint={`${data.complaints.length} total in your tower`} />
+            <MetricCard icon={<MetricIcon name="submitted" />} label="New" value={summary.byStatus.SUBMITTED || 0} hint="Submitted, awaiting review" />
+            <MetricCard icon={<MetricIcon name="review" />} label="Under review" value={summary.byStatus.UNDER_REVIEW || 0} hint="Ready for assignment" />
+            <MetricCard icon={<MetricIcon name="progress" />} label="Work in progress" value={(summary.byStatus.ASSIGNED || 0) + (summary.byStatus.IN_PROGRESS || 0)} hint={`${summary.byStatus.ASSIGNED || 0} assigned · ${summary.byStatus.IN_PROGRESS || 0} in progress`} />
+            <MetricCard icon={<MetricIcon name="verification" />} label="Awaiting verification" value={summary.byStatus.PENDING_VERIFICATION || 0} hint="Worker proof submitted" />
+            <MetricCard icon={<MetricIcon name="resolved" />} label="Resolved" value={summary.resolved} hint="Resolved, reviewed, or closed" />
           </div>
 
           <div className="tr-grid tr-grid--2">

@@ -6,7 +6,6 @@ import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { ReportsPage } from "./pages/ReportsPage.jsx";
 import { UsersPage } from "./pages/UsersPage.jsx";
-import { WorkforcePage } from "./pages/WorkforcePage.jsx";
 import "./super-admin.css";
 
 export function SuperAdminRoutes() {
@@ -14,7 +13,6 @@ export function SuperAdminRoutes() {
     <Route index element={<DashboardPage />} />
     <Route path="communities" element={<CommunitiesPage />} />
     <Route path="users" element={<UsersPage />} />
-    <Route path="workforce" element={<WorkforcePage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="reports" element={<ReportsPage />} />
     <Route path="profile" element={<ProfilePage />} />

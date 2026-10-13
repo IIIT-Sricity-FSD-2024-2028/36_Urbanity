@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button, Card, ErrorState, Input, LoadingState, Select } from "../../../components/ui/index.js";
-import { DataTable, MetricCard, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { DataTable, MetricCard, PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
-import { WORKER_STATUSES, activeWorkload, countBy, formatEnum, formatRating, workerReference } from "../utils/formatters.js";
+import { WORKER_STATUSES, activeWorkload, countBy, formatEnum, workerReference } from "../utils/formatters.js";
 
 export function WorkforcePage() {
   const loader = useCallback(async () => {
@@ -30,15 +30,15 @@ export function WorkforcePage() {
     return data.workers
       .filter((worker) => !specialization || worker.specialization === specialization)
       .filter((worker) => !status || worker.status === status)
-      .filter((worker) => !query || [workerReference(worker), worker.id, formatEnum(worker.specialization)].join(" ").toLowerCase().includes(query))
+      .filter((worker) => !query || [workerReference(worker), formatEnum(worker.specialization)].join(" ").toLowerCase().includes(query))
       .map((worker) => ({ ...worker, towerWorkload: activeWorkload(data.complaints, worker.id) }));
   }, [data, search, specialization, status]);
 
   const columns = [
-    { key: "id", header: "Worker profile", render: (_, row) => <strong>{workerReference(row)}</strong> },
+    { key: "userName", header: "Worker", render: (_, row) => <strong>{workerReference(row)}</strong> },
     { key: "specialization", header: "Specialization", render: formatEnum },
     { key: "status", header: "Availability", render: (value) => <StatusBadge status={value} /> },
-    { key: "rating", header: "Rating", render: formatRating },
+    { key: "rating", header: "Rating", render: (value) => <RatingStars value={value} /> },
     { key: "completedWorkCount", header: "Completed work", render: (value) => value || 0 },
     { key: "towerWorkload", header: "Active tasks in your tower" },
   ];
@@ -63,7 +63,7 @@ export function WorkforcePage() {
           </div>
           <Card className="tr-filters">
             <div className="tr-filter-row">
-              <Input label="Search" type="search" placeholder="Worker reference or specialization" value={search} onChange={(event) => setSearch(event.target.value)} />
+              <Input label="Search" type="search" placeholder="Worker name or specialization" value={search} onChange={(event) => setSearch(event.target.value)} />
               <Select label="Specialization" value={specialization} onChange={(event) => setSpecialization(event.target.value)}>
                 <option value="">All specializations</option>
                 {specializations.map((item) => <option key={item} value={item}>{formatEnum(item)}</option>)}
@@ -83,9 +83,6 @@ export function WorkforcePage() {
               emptyMessage={data.workers.length ? "Adjust the filters to see more worker profiles." : "Your community has no maintenance worker profiles yet."}
             />
           </Card>
-          <p className="tr-muted tr-note">
-            Worker names are not shown because worker profiles do not include them and the users API is not available to Tower Representatives.
-          </p>
         </>
       )}
     </>

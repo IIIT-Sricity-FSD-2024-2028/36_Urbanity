@@ -7,7 +7,7 @@ import { serviceToken } from '../../data/urbanity.resources';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { CommunityService } from '../community/community.service';
 import { SubscriptionService } from '../subscriptions/subscription.service';
-import { CreateWorkerProfileDto, WorkerProfile, WorkerStatus, UpdateWorkerProfileDto } from './workforce.dto';
+import { CreateWorkerProfileDto, WorkerProfile, WorkerProfileView, WorkerStatus, UpdateWorkerProfileDto } from './workforce.dto';
 
 const seededAt = '2026-01-01T00:00:00.000Z';
 const profiles: WorkerProfile[] = [
@@ -53,21 +53,25 @@ export class WorkforceService {
     return profile;
   }
   findOwn(actor: AuthenticatedUser) {
-    return this.getWorkerProfileForUser(actor.id);
+    return this.toViewModel(this.getWorkerProfileForUser(actor.id));
   }
   findByIdForActor(actor: AuthenticatedUser, id: string) {
     const profile = this.findById(id);
     this.assertCanAccessProfile(actor, profile);
-    return profile;
+    return this.toViewModel(profile);
   }
   findAllForActor(actor: AuthenticatedUser) {
-    if (actor.role === RoleName.SuperAdmin) return this.findAll();
+    if (actor.role === RoleName.SuperAdmin) return this.findAll().map((profile) => this.toViewModel(profile));
     if (![RoleName.CommunityAdmin, RoleName.TowerRepresentative].includes(actor.role)) {
       throw new ForbiddenException('You do not have access to worker profiles');
     }
     const communityId = this.actorCommunityId(actor);
-    return this.findAll().filter((profile) => profile.communityId === communityId);
+    return this.findAll().filter((profile) => profile.communityId === communityId).map((profile) => this.toViewModel(profile));
   }
+  toViewModel(profile: WorkerProfile): WorkerProfileView {
+    return { ...profile, userName: this.users.findById(profile.userId).name };
+  }
+  getWorkerName(profileId: string) { return this.users.findById(this.findById(profileId).userId).name; }
   create(dto: CreateWorkerProfileDto) {
     const user = this.users.findById(dto.userId);
     if (user.role !== RoleName.MaintenanceWorker) throw new BadRequestException('Worker profiles require a MAINTENANCE_WORKER user');

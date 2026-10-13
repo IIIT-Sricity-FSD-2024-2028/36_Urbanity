@@ -14,8 +14,10 @@ export class UserAccessService {
   list(actor: AuthenticatedUser) { return this.users.findAll().filter((user) => actor.role === RoleName.SuperAdmin || this.communityIdFor(user) === this.actorCommunity(actor)).map((user) => this.safe(user)); }
   get(actor: AuthenticatedUser, id: string) { const user = this.users.findById(id); this.assertAccess(actor, user); return this.safe(user); }
   create(actor: AuthenticatedUser, dto: CreateUserDto) {
-    this.assertCreateRole(actor, dto.role);
-    const scoped = this.applyActorScope(actor, { ...dto });
+    const requested = { ...dto, email: dto.email.trim().toLowerCase() };
+    this.assertUniqueEmail(requested.email);
+    this.assertCreateRole(actor, requested.role);
+    const scoped = this.applyActorScope(actor, requested);
     this.validate(scoped);
     if (scoped.communityId) this.subscriptions.assertCommunityActive(scoped.communityId);
     if (scoped.towerId) this.subscriptions.assertCommunityActive(this.community.getTower(scoped.towerId).communityId);
@@ -26,16 +28,19 @@ export class UserAccessService {
     const current = this.users.findById(id); this.assertAccess(actor, current);
     if (actor.role === RoleName.CommunityAdmin && actor.id === id && ('role' in dto || 'communityId' in dto)) throw new ForbiddenException('Community Admins cannot change their own role or community');
     if (actor.role === RoleName.CommunityAdmin && 'role' in dto) throw new ForbiddenException('Community Admins cannot change user roles');
-    const next = this.applyActorScope(actor, { ...current, ...dto }); this.validate(next);
+    const requested = { ...dto, ...(dto.email ? { email: dto.email.trim().toLowerCase() } : {}) };
+    if (requested.email) this.assertUniqueEmail(requested.email, id);
+    const next = this.applyActorScope(actor, { ...current, ...requested }); this.validate(next);
     const communityId = this.communityIdFor(next); if (communityId) this.subscriptions.assertCommunityActive(communityId);
     if (actor.role === RoleName.CommunityAdmin && this.communityIdFor(next) !== this.actorCommunity(actor)) throw new ForbiddenException('Users cannot be moved across communities');
-    const { password, ...data } = dto; return this.safe(this.users.update(id, { ...data, ...(password ? { passwordHash: hashSync(password, 10) } : {}) }));
+    const { password, ...data } = requested; return this.safe(this.users.update(id, { ...data, ...(password ? { passwordHash: hashSync(password, 10) } : {}) }));
   }
   delete(actor: AuthenticatedUser, id: string) { const user = this.users.findById(id); this.assertAccess(actor, user); const communityId = this.communityIdFor(user); if (communityId) this.subscriptions.assertCommunityActive(communityId); if (actor.id === id) throw new ForbiddenException('Users cannot delete themselves'); return this.safe(this.users.delete(id)); }
   private actorCommunity(actor: AuthenticatedUser) { const user = this.users.findById(actor.id); if (!user.communityId) throw new ForbiddenException('Community Admin is missing a community association'); return user.communityId; }
   private communityIdFor(user: User) { if (user.communityId) return user.communityId; if (user.towerId) return this.community.getTower(user.towerId).communityId; if (user.apartmentId) return this.community.getTower(this.community.getFloor(this.community.getApartment(user.apartmentId).floorId).towerId).communityId; return undefined; }
   private assertAccess(actor: AuthenticatedUser, user: User) { if (actor.role !== RoleName.SuperAdmin && this.communityIdFor(user) !== this.actorCommunity(actor)) throw new ForbiddenException('User belongs to another community'); }
   private assertCreateRole(actor: AuthenticatedUser, role: RoleName) { if (actor.role === RoleName.SuperAdmin) return; if (actor.role !== RoleName.CommunityAdmin || ![RoleName.Resident, RoleName.TowerRepresentative, RoleName.MaintenanceWorker].includes(role)) throw new ForbiddenException('Community Admins may create only community residents, representatives, and maintenance workers'); }
+  private assertUniqueEmail(email: string, excludedUserId?: string) { if (this.users.findAll().some((user) => user.id !== excludedUserId && user.email.toLowerCase() === email.toLowerCase())) throw new BadRequestException('A user with this email already exists'); }
   private applyActorScope(actor: AuthenticatedUser, user: any) { if (actor.role !== RoleName.CommunityAdmin) return user; const communityId = this.actorCommunity(actor); if (user.communityId && user.communityId !== communityId) throw new ForbiddenException('Client communityId does not match the authenticated Community Admin'); if (user.role === RoleName.MaintenanceWorker) user.communityId = communityId; if (user.towerId && this.community.getTower(user.towerId).communityId !== communityId) throw new ForbiddenException('Tower belongs to another community'); if (user.apartmentId && this.community.getTower(this.community.getFloor(this.community.getApartment(user.apartmentId).floorId).towerId).communityId !== communityId) throw new ForbiddenException('Apartment belongs to another community'); return user; }
   private validate(user: any) {
     const has = (field: string) => Boolean(user[field]);

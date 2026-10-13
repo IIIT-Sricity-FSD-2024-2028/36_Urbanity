@@ -1,8 +1,6 @@
 import { useCallback, useState } from "react";
-import { Button, Modal, useToast } from "../../../components/ui/index.js";
+import { Button, Modal, StarRatingInput, useToast } from "../../../components/ui/index.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
-
-const RATINGS = [1, 2, 3, 4, 5];
 
 export function VerifyResolutionModal({ complaint, onClose, onVerified }) {
   const { showToast } = useToast();
@@ -50,26 +48,7 @@ export function VerifyResolutionModal({ complaint, onClose, onVerified }) {
         <p className="tr-muted tr-modal-intro">
           Confirm that the submitted proof resolves “{complaint.title}”. Verification moves the complaint to Resolved and records your rating of the work.
         </p>
-        <fieldset className="tr-rating" disabled={submitting} aria-describedby={error ? "tr-rating-error" : undefined}>
-          <legend>Work-quality rating <span className="ui-field__required">*</span></legend>
-          <div className="tr-rating__options">
-            {RATINGS.map((value) => (
-              <label key={value} className={`tr-rating__option${rating >= value ? " tr-rating__option--selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="authorityRating"
-                  value={value}
-                  checked={rating === value}
-                  onChange={() => { setRating(value); setError(""); }}
-                />
-                <span aria-hidden="true">★</span>
-                <span className="sr-only">{value} out of 5</span>
-              </label>
-            ))}
-          </div>
-          <p className="tr-muted">{rating ? `${rating} out of 5 selected` : "No rating selected"}</p>
-          {error && <p className="ui-field__error" id="tr-rating-error">{error}</p>}
-        </fieldset>
+        <StarRatingInput label="Work-quality rating" name="authorityRating" value={rating} onChange={(value) => { setRating(value); setError(""); }} disabled={submitting} error={error} required />
       </form>
     </Modal>
   );

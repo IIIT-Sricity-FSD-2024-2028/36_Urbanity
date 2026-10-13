@@ -17,6 +17,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export const ACTOR_ROLES = Object.values(RoleName);
@@ -260,6 +261,7 @@ export class CreateUserDto {
   @ApiProperty({ example: 'a-strong-development-password', minLength: 8, maxLength: 128 })
   @IsString()
   @IsNotEmpty()
+  @MinLength(8)
   @MaxLength(128)
   password!: string;
 

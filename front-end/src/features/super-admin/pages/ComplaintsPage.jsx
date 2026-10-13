@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, ErrorState, LoadingState, Modal, useToast } from "../../../components/ui/index.js";
-import { DataTable, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
+import { DataTable, PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
 import { superAdminService } from "../services/superAdminService.js";
 import { entityName, formatDate, formatEnum } from "../utils/formatters.js";
@@ -29,7 +29,7 @@ function ComplaintDetails({ complaintId, communities, onClose }) {
       <section><h3>Status history</h3>{item.statusHistory?.length ? <ol className="sa-timeline">{item.statusHistory.map((entry, index) => <li key={`${entry.status}-${index}`}><StatusBadge status={entry.status} /> <span>{formatDate(entry.changedAt)}</span></li>)}</ol> : <p className="sa-muted">No history available.</p>}</section>
       <section><h3>Attachments</h3>{state.attachments.length ? <div className="sa-attachments">{state.attachments.map((attachment) => <div key={attachment.id}><span>{attachment.originalName} · {attachment.mimeType} · {attachment.size} bytes</span><Button variant="secondary" loading={previewing === attachment.id} onClick={() => showAttachment(attachment)}>Preview</Button></div>)}</div> : <p className="sa-muted">No attachments.</p>}
         {preview && (preview.attachment.mimeType?.startsWith("image/") ? <img className="sa-attachment-preview" src={preview.url} alt={preview.attachment.originalName} /> : <a className="sa-download" href={preview.url} download={preview.attachment.originalName}>Download {preview.attachment.originalName}</a>)}</section>
-      <section><h3>Resident review</h3>{state.review ? <p>{state.review.rating} / 5{state.review.feedback ? ` · ${state.review.feedback}` : ""} <span className="sa-muted">({formatDate(state.review.createdAt)})</span></p> : <p className="sa-muted">Awaiting resident review.</p>}</section>
+      <section><h3>Resident review</h3>{state.review ? <p><RatingStars value={state.review.rating} />{state.review.feedback ? ` · ${state.review.feedback}` : ""} <span className="sa-muted">({formatDate(state.review.createdAt)})</span></p> : <p className="sa-muted">Awaiting resident review.</p>}</section>
     </div>}
   </Modal>;
 }

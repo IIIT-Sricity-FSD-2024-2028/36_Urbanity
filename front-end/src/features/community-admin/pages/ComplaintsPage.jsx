@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/useAuth.js";
-import { Button, Card, ConfirmDialog, ErrorState, Input, LoadingState, Modal, Select, Textarea, useToast } from "../../../components/ui/index.js";
+import { Button, Card, ConfirmDialog, ErrorState, Input, LoadingState, Modal, Select, StarRatingInput, Textarea, useToast } from "../../../components/ui/index.js";
 import { DataTable, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
 import { useCommunityResource } from "../hooks/useCommunityResource.js";
 import { communityAdminService } from "../services/communityAdminService.js";
@@ -10,7 +10,7 @@ function ComplaintDetails({ complaintId, currentUserId, onClose, onChanged }) {
   const { showToast } = useToast();
   const [state, setState] = useState({ loading: true, item: null, attachments: [], error: null });
   const [editing, setEditing] = useState(false); const [form, setForm] = useState({ title: "", description: "" });
-  const [eligible, setEligible] = useState([]); const [workerId, setWorkerId] = useState(""); const [rating, setRating] = useState("5"); const [saving, setSaving] = useState(false);
+  const [eligible, setEligible] = useState([]); const [workerId, setWorkerId] = useState(""); const [rating, setRating] = useState(5); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { setState((current) => ({ ...current, loading: true, error: null })); try { const item = await communityAdminService.getComplaint(complaintId); const attachments = await communityAdminService.listComplaintAttachments(complaintId); setState({ loading: false, item, attachments, error: null }); setForm({ title: item.title, description: item.description }); if (item.status === "UNDER_REVIEW" && item.responsibleUserId === currentUserId) { const workers = await communityAdminService.listEligibleWorkers(complaintId); setEligible(workers); setWorkerId(workers[0]?.id || ""); } } catch (error) { setState({ loading: false, item: null, attachments: [], error }); } }, [complaintId, currentUserId]);
   useEffect(() => { load(); }, [load]);
   const mutate = async (action, message) => { setSaving(true); try { await action(); showToast({ type: "success", message }); await load(); await onChanged(); return true; } catch (error) { showToast({ type: "error", message: error.message }); return false; } finally { setSaving(false); } };
@@ -23,8 +23,8 @@ function ComplaintDetails({ complaintId, currentUserId, onClose, onChanged }) {
       {isAuthority && <Card title="Available actions">
         <div className="ca-actions">
           {item.status === "SUBMITTED" && <Button loading={saving} onClick={() => mutate(() => communityAdminService.transitionComplaint(item.id, "UNDER_REVIEW"), "Complaint moved under review.")}>Begin review</Button>}
-          {item.status === "UNDER_REVIEW" && <><Select aria-label="Eligible worker" value={workerId} onChange={(event) => setWorkerId(event.target.value)}><option value="">Select eligible worker</option>{eligible.map((worker) => <option key={worker.id} value={worker.id}>{formatEnum(worker.specialization)} · {worker.id.slice(0, 8)}</option>)}</Select><Button disabled={!workerId} loading={saving} onClick={() => mutate(() => communityAdminService.assignWorker(item.id, workerId), "Worker assigned.")}>Assign worker</Button></>}
-          {item.status === "PENDING_VERIFICATION" && <><Select aria-label="Authority rating" value={rating} onChange={(event) => setRating(event.target.value)}>{[5,4,3,2,1].map((value) => <option key={value} value={value}>{value} / 5</option>)}</Select><Button loading={saving} onClick={() => mutate(() => communityAdminService.verifyResolution(item.id, Number(rating)), "Resolution verified.")}>Verify resolution</Button></>}
+          {item.status === "UNDER_REVIEW" && <><Select aria-label="Eligible worker" value={workerId} onChange={(event) => setWorkerId(event.target.value)}><option value="">Select eligible worker</option>{eligible.map((worker) => <option key={worker.id} value={worker.id}>{worker.userName} · {formatEnum(worker.specialization)}</option>)}</Select><Button disabled={!workerId} loading={saving} onClick={() => mutate(() => communityAdminService.assignWorker(item.id, workerId), "Worker assigned.")}>Assign worker</Button></>}
+          {item.status === "PENDING_VERIFICATION" && <><StarRatingInput label="Work-quality rating" name="communityAuthorityRating" value={rating} onChange={setRating} disabled={saving} required /><Button loading={saving} onClick={() => mutate(() => communityAdminService.verifyResolution(item.id, rating), "Resolution verified.")}>Verify resolution</Button></>}
           {item.status === "REVIEWED" && <Button loading={saving} onClick={() => mutate(() => communityAdminService.transitionComplaint(item.id, "CLOSED"), "Complaint closed.")}>Close complaint</Button>}
           {!['SUBMITTED','UNDER_REVIEW','PENDING_VERIFICATION','REVIEWED'].includes(item.status) && <p className="ca-muted">No authority action is available at this lifecycle stage.</p>}
         </div>

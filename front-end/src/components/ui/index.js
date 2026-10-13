@@ -8,6 +8,7 @@ export { Input } from "./Input.jsx";
 export { LoadingState, Spinner } from "./LoadingState.jsx";
 export { Modal } from "./Modal.jsx";
 export { Select } from "./Select.jsx";
+export { StarRatingInput } from "./StarRatingInput.jsx";
 export { Textarea } from "./Textarea.jsx";
 export { ToastProvider } from "./ToastProvider.jsx";
 export { useToast } from "./useToast.js";

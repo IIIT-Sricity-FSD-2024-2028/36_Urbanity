@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button, Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
-import { MetricCard, PageHeader } from "../../../components/data-display/index.js";
+import { MetricCard, MetricIcon, PageHeader } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { residentService } from "../services/residentService.js";
 import { useResidentResource } from "../hooks/useResidentResource.js";
@@ -19,13 +19,13 @@ export function DashboardPage() {
     {complaints.loading && <LoadingState message="Loading your complaints..." />}
     {complaints.error && <ErrorState message={complaints.error.message} onRetry={complaints.reload} />}
     {items && <>
-      <div className="resident-metrics">
-        <MetricCard label="My complaints" value={items.length} />
-        <MetricCard label="Submitted" value={count("SUBMITTED")} />
-        <MetricCard label="Under review / assigned" value={count("UNDER_REVIEW", "ASSIGNED")} />
-        <MetricCard label="In progress" value={count("IN_PROGRESS")} />
-        <MetricCard label="Awaiting verification" value={count("PENDING_VERIFICATION")} />
-        <MetricCard label="Resolved" value={count("RESOLVED", "REVIEWED", "CLOSED")} hint="Includes reviewed and closed requests" />
+      <div className="resident-metrics portal-metrics">
+        <MetricCard icon={<MetricIcon name="complaints" />} label="My complaints" value={items.length} />
+        <MetricCard icon={<MetricIcon name="submitted" />} label="Submitted" value={count("SUBMITTED")} />
+        <MetricCard icon={<MetricIcon name="review" />} label="Under review / assigned" value={count("UNDER_REVIEW", "ASSIGNED")} />
+        <MetricCard icon={<MetricIcon name="progress" />} label="In progress" value={count("IN_PROGRESS")} />
+        <MetricCard icon={<MetricIcon name="verification" />} label="Awaiting verification" value={count("PENDING_VERIFICATION")} />
+        <MetricCard icon={<MetricIcon name="resolved" />} label="Resolved" value={count("RESOLVED", "REVIEWED", "CLOSED")} hint="Includes reviewed and closed requests" />
       </div>
       {ready.length > 0 && <Card title="Ready for your review"><ul className="resident-stack">{ready.map((item) => <li key={item.id}><Link to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`}>{item.title}</Link> — Resolution verified; share your feedback.</li>)}</ul></Card>}
     </>}

@@ -36,7 +36,7 @@ export function ComplaintsPage() {
       if (type && complaint.type !== type) return false;
       if (fromDate && String(complaint.createdAt || "").slice(0, 10) < fromDate) return false;
       if (!query) return true;
-      const haystack = [complaint.id, complaint.title, complaint.description, complaint.location?.apartmentNumber, complaint.location?.floorLabel]
+      const haystack = [complaint.title, complaint.description, complaint.location?.apartmentNumber, complaint.location?.floorLabel]
         .filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(query);
     }));
@@ -55,7 +55,7 @@ export function ComplaintsPage() {
       />
       <Card className="tr-filters">
         <div className="tr-filter-row">
-          <Input label="Search" type="search" placeholder="Title, ID, apartment, or floor" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Input label="Search" type="search" placeholder="Title, apartment, or floor" value={search} onChange={(event) => setSearch(event.target.value)} />
           <Select label="Status" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">All statuses</option>
             <option value={ACTION_REQUIRED}>Needs my action</option>
