@@ -5,7 +5,7 @@ export function Spinner({ label = "Loading" }) {
 export function LoadingState({ message = "Loading..." }) {
   return (
     <div className="ui-loading-state" role="status">
-      <Spinner label={message} />
+      <div className="ui-loading-skeleton" aria-hidden="true"><span /><span /><span /></div>
       <p>{message}</p>
     </div>
   );

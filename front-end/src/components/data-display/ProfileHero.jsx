@@ -26,7 +26,7 @@ export function ProfileHero({ name, email, role, eyebrow = "Authenticated accoun
         {name && email && <p>{email}</p>}
         <span className="portal-profile__role">{role}</span>
       </div>
-      <span className="portal-profile__verified"><VerifiedIcon /> Verified session</span>
+      <span className="portal-profile__verified"><VerifiedIcon /> Signed in</span>
     </section>
   );
 }

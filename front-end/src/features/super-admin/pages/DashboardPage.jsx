@@ -1,5 +1,7 @@
 import { useCallback } from "react";
-import { Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
+import { Link } from "react-router-dom";
+import { Button, Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
+import { ROUTES } from "../../../constants/routes.js";
 import { MetricCard, MetricIcon, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
 import { superAdminService } from "../services/superAdminService.js";
@@ -21,7 +23,8 @@ export function DashboardPage() {
   const { data, loading, error, reload } = useAsyncResource(loader);
 
   return <>
-    <PageHeader eyebrow="Platform overview" title="Super Admin dashboard" description="Live hierarchy, people, complaint, and workforce totals from Urbanity." />
+    <PageHeader title="Platform overview" description="A clear view of your communities, people, and maintenance activity."
+      actions={<><Button variant="secondary" onClick={reload} disabled={loading}>Refresh</Button><Link className="ui-button ui-button--primary" to={ROUTES.SUPER_ADMIN_COMMUNITIES}>Manage communities</Link></>} />
     {loading && <LoadingState message="Loading platform summary..." />}
     {error && <ErrorState message={error.message} onRetry={reload} />}
     {data && <>
@@ -32,6 +35,11 @@ export function DashboardPage() {
         <MetricCard icon={<MetricIcon name="complaints" />} label="Complaints" value={data.complaints?.total ?? 0} />
         <MetricCard icon={<MetricIcon name="workers" />} label="Workers" value={data.workforce?.total ?? 0} hint={`${data.workforce?.completedWorkCount ?? 0} completed`} />
       </div>
+      <nav className="portal-action-grid" aria-label="Platform administration">
+        <Link to={ROUTES.SUPER_ADMIN_COMMUNITIES}><MetricIcon name="communities" /><div><strong>Community operations</strong><span>Onboard communities and review contracted capacity.</span></div><span aria-hidden="true">›</span></Link>
+        <Link to={ROUTES.SUPER_ADMIN_USERS}><MetricIcon name="users" /><div><strong>People and access</strong><span>Manage accounts and their role associations.</span></div><span aria-hidden="true">›</span></Link>
+        <Link to={ROUTES.SUPER_ADMIN_REPORTS}><MetricIcon name="complaints" /><div><strong>Platform reports</strong><span>Review complaint and workforce summaries.</span></div><span aria-hidden="true">›</span></Link>
+      </nav>
       <div className="sa-grid sa-grid--3">
         <Breakdown title="Users by role" values={data.users} />
         <Breakdown title="Complaints by status" values={data.complaints?.byStatus} status />

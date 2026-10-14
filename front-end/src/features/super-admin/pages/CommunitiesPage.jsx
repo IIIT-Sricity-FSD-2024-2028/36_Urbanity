@@ -57,6 +57,6 @@ export function CommunitiesPage() {
     {data && <Card flush><DataTable rows={rows} columns={columns} caption="Communities" emptyTitle="No communities" emptyMessage="Create the first community to begin." /></Card>}
     {creating && <CommunityModal open onClose={() => setCreating(false)} onSaved={reload} />}
     {editing && <CommunityModal key={editing.id} community={editing} open onClose={() => setEditing(null)} onSaved={reload} />}
-    <ConfirmDialog isOpen={Boolean(removing)} onClose={() => setRemoving(null)} onConfirm={remove} loading={deleting} title="Delete community" message="This succeeds only when the backend confirms that no child towers prevent deletion." confirmLabel="Delete" />
+    <ConfirmDialog isOpen={Boolean(removing)} onClose={() => setRemoving(null)} onConfirm={remove} loading={deleting} title="Delete community" message="Remove this community? Communities with towers cannot be deleted." confirmLabel="Delete" />
   </>;
 }

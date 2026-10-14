@@ -53,21 +53,26 @@ export function CreateComplaintPage() {
   }
 
   return <div className="resident-stack">
-    <PageHeader eyebrow="Resident workspace" title="Create complaint" description="Describe the issue so your maintenance team can help." />
-    {hierarchy.loading ? <LoadingState message="Loading your apartment..." /> : hierarchy.error ? <ErrorState message={hierarchy.error.message} onRetry={hierarchy.reload} /> : <ResidentLocation hierarchy={hierarchy.data} />}
-    <Card title="Complaint details"><form className="resident-stack" onSubmit={submit} noValidate>
+    <PageHeader title="Report an issue" description="A few details help the right person get started." />
+    <div className="resident-form-layout">
+    <Card title="What needs attention?"><form className="resident-stack" onSubmit={submit} noValidate>
       {errors.form && <ErrorState title="Unable to create complaint" message={errors.form} />}
       <div className="resident-grid">
-        <Select label="Complaint type" required {...field("type")}><option value="">Select type</option>{COMPLAINT_TYPES.map((value) => <option key={value} value={value}>{label(value)}</option>)}</Select>
-        <Select label="Required work type" required {...field("requiredWorkType")}><option value="">Select work type</option>{WORK_TYPES.map((value) => <option key={value} value={value}>{label(value)}</option>)}</Select>
+        <Select label="Where is the issue?" required {...field("type")}><option value="">Choose an area</option>{COMPLAINT_TYPES.map((value) => <option key={value} value={value}>{label(value)}</option>)}</Select>
+        <Select label="What kind of work is needed?" required {...field("requiredWorkType")}><option value="">Choose a work type</option>{WORK_TYPES.map((value) => <option key={value} value={value}>{label(value)}</option>)}</Select>
       </div>
-      <Input label="Title" maxLength={200} required {...field("title")} />
-      <Textarea label="Description" rows={6} maxLength={2000} required {...field("description")} hint="Include the location, symptoms, and when the issue started." />
-      <AttachmentPicker files={files} onChange={setFiles} error={fileError} onError={setFileError} disabled={submitting} />
+      <Input label="Give the issue a short title" placeholder="For example, water leaking below the kitchen sink" maxLength={200} required {...field("title")} />
+      <Textarea label="Tell us what's happening" rows={6} maxLength={2000} required {...field("description")} hint="Include the exact spot, what you noticed, and when it started." />
+      <div className="resident-upload-area"><AttachmentPicker files={files} onChange={setFiles} error={fileError} onError={setFileError} disabled={submitting} /></div>
       <div className="resident-actions">
         {!submitting && <Link className="ui-button ui-button--secondary" to={ROUTES.RESIDENT_COMPLAINTS}>Cancel</Link>}
-        <Button type="submit" loading={submitting} loadingLabel="Submitting complaint..." disabled={!hierarchy.data || hierarchy.loading || Boolean(hierarchy.error)}>Submit complaint</Button>
+        <Button type="submit" loading={submitting} loadingLabel="Sending report..." disabled={!hierarchy.data || hierarchy.loading || Boolean(hierarchy.error)}>Send report</Button>
       </div>
     </form></Card>
+    <aside className="resident-stack">
+      {hierarchy.loading ? <LoadingState message="Loading your apartment..." /> : hierarchy.error ? <ErrorState message={hierarchy.error.message} onRetry={hierarchy.reload} /> : <ResidentLocation hierarchy={hierarchy.data} />}
+      <section className="resident-how-it-works"><h2>A useful report includes</h2><ul><li>The exact place that needs attention.</li><li>What is damaged or not working.</li><li>A clear photo, if you have one.</li></ul><p className="resident-note">Apartment and tower issues go to your Tower Representative. Community issues go to your Community Admin.</p></section>
+    </aside>
+    </div>
   </div>;
 }

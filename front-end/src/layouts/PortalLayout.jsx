@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
 import { Sidebar } from "../components/layout/Sidebar.jsx";
@@ -9,6 +9,7 @@ export function PortalLayout({ children }) {
   const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const navigation = getNavigationForRole(user?.role);
 
   useEffect(() => {
@@ -17,7 +18,8 @@ export function PortalLayout({ children }) {
 
   return (
     <div className="portal-shell">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <a className="skip-link" href="#portal-main-content">Skip to content</a>
+      <Sidebar open={sidebarOpen} onClose={closeSidebar} />
       {sidebarOpen && (
         <button
           className="portal-sidebar-overlay"
@@ -30,8 +32,9 @@ export function PortalLayout({ children }) {
         <Topbar
           title={navigation.topbarLabel}
           onMenuToggle={() => setSidebarOpen((current) => !current)}
+          menuOpen={sidebarOpen}
         />
-        <main className="portal-content">{children ?? <Outlet />}</main>
+        <main className="portal-content" id="portal-main-content" tabIndex={-1}>{children ?? <Outlet />}</main>
       </div>
     </div>
   );

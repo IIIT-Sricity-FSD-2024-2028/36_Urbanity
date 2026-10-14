@@ -8,12 +8,12 @@ import { ProfilePage } from "./pages/ProfilePage.jsx";
 import "./resident.css";
 
 export function ResidentRoutes() {
-  return <Routes>
+  return <div className="resident-workspace"><Routes>
     <Route index element={<DashboardPage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="complaints/new" element={<CreateComplaintPage />} />
     <Route path="complaints/:id" element={<ComplaintDetailsPage />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="*" element={<EmptyState title="Page not found" message="Choose a Resident page from the navigation." />} />
-  </Routes>;
+  </Routes></div>;
 }

@@ -1,19 +1,17 @@
 import { Link } from "react-router-dom";
-import { DataTable, StatusBadge } from "../../../components/data-display/index.js";
+import { EmptyState } from "../../../components/ui/index.js";
+import { StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { formatDate, formatLabel, locationLabel } from "../utils/workflow.js";
 
 export function TaskTable({ tasks, completed = false }) {
-  const columns = [
-    { key: "title", header: "Task", render: (_, task) => <>
-      <Link to={`${ROUTES.MAINTENANCE_WORKER_TASKS}/${encodeURIComponent(task.id)}`}>{task.title || "Untitled complaint"}</Link>
+  if (!tasks.length) return <EmptyState title="No tasks found" message="No assigned tasks match this view." />;
+  return <ul className="mw-task-list" aria-label={completed ? "Completed maintenance work" : "Assigned maintenance tasks"}>
+    {tasks.map((task) => <li key={task.id}>
+      <div className="mw-task-list__heading"><Link to={`${ROUTES.MAINTENANCE_WORKER_TASKS}/${encodeURIComponent(task.id)}`}>{task.title || "Untitled complaint"}</Link><StatusBadge status={task.status} /></div>
+      <p className="mw-task-list__location">{locationLabel(task)}</p>
       <p className="mw-summary">{task.description}</p>
-    </> },
-    { key: "location", header: "Location", render: (_, task) => locationLabel(task) },
-    { key: "requiredWorkType", header: "Work type", render: formatLabel },
-    { key: "status", header: "Status", render: (status) => <StatusBadge status={status} /> },
-    { key: "createdAt", header: completed ? "Proof submitted" : "Submitted", render: (_, task) => formatDate(completed ? task.resolutionProof?.submittedAt : task.createdAt) },
-  ];
-  return <DataTable columns={columns} rows={tasks} rowKey="id" caption={completed ? "Completed maintenance work" : "Assigned maintenance tasks"}
-    emptyTitle="No tasks found" emptyMessage="No assigned tasks match this view." />;
+      <div className="mw-task-list__footer"><div><span>{formatLabel(task.requiredWorkType)}</span><span>{completed ? "Proof submitted" : "Submitted"} {formatDate(completed ? task.resolutionProof?.submittedAt : task.createdAt)}</span></div><Link className="ui-button ui-button--secondary" to={`${ROUTES.MAINTENANCE_WORKER_TASKS}/${encodeURIComponent(task.id)}`} aria-label={`Open task: ${task.title || "Untitled complaint"}`}>Open task</Link></div>
+    </li>)}
+  </ul>;
 }

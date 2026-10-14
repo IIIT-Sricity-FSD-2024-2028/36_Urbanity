@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth.js";
 import { getNavigationForRole } from "../../constants/navigation.js";
 
@@ -28,17 +29,50 @@ function NavigationIcon({ name }) {
 export function Sidebar({ open = false, onClose }) {
   const { user, logout } = useAuth();
   const navigation = getNavigationForRole(user?.role);
+  const { pathname } = useLocation();
+  const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const mobile = window.matchMedia("(max-width: 900px)");
+    if (!mobile.matches) { onClose?.(); return undefined; }
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () => [...sidebarRef.current.querySelectorAll('a[href], button:not(:disabled)')];
+    focusable()[0]?.focus();
+    const handleKey = (event) => {
+      if (event.key === "Escape") { event.preventDefault(); onClose?.(); }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      const first = items[0]; const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    const handleResize = (event) => { if (!event.matches) onClose?.(); };
+    document.addEventListener("keydown", handleKey);
+    mobile.addEventListener("change", handleResize);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      mobile.removeEventListener("change", handleResize);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [open, onClose]);
 
   return (
     <aside
+      ref={sidebarRef}
       className={`portal-sidebar${open ? " portal-sidebar--open" : ""}`}
       id="portal-navigation"
       aria-label="Primary navigation"
+      role={open ? "dialog" : undefined}
+      aria-modal={open ? true : undefined}
     >
       <div className="portal-sidebar__header">
         <NavLink className="portal-sidebar__brand" to={navigation.home} onClick={onClose}>
-          URBANITY
-          <span>{navigation.label.toUpperCase()}</span>
+          Urbanity
+          <span>{navigation.label}</span>
         </NavLink>
         <button className="portal-sidebar__close" type="button" onClick={onClose} aria-label="Close navigation">
           &times;
@@ -50,7 +84,7 @@ export function Sidebar({ open = false, onClose }) {
           <NavLink
             key={item.to}
             to={item.to}
-            end
+            end={item.to === navigation.home || item.icon === "create" || (item.icon === "complaints" && navigation.items.some((candidate) => candidate.icon === "create" && candidate.to === pathname))}
             onClick={onClose}
             className={({ isActive }) =>
               `portal-sidebar__link${isActive ? " portal-sidebar__link--active" : ""}`

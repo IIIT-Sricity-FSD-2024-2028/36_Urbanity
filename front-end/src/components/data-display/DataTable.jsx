@@ -28,7 +28,7 @@ export function DataTable({
   if (!rows.length) return <EmptyState title={emptyTitle} message={emptyMessage} />;
 
   return (
-    <div className="data-table__scroll">
+    <div className="data-table__scroll" role="region" aria-label={caption || "Data table"} tabIndex={0}>
       <table className="data-table">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>

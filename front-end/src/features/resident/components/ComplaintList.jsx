@@ -1,21 +1,28 @@
 import { Link } from "react-router-dom";
-import { DataTable, StatusBadge } from "../../../components/data-display/index.js";
+import { EmptyState } from "../../../components/ui/index.js";
+import { MetricIcon, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
-import { dateTime, locationText } from "../utils.js";
-
-const columns = [
-  { key: "title", header: "Complaint", render: (title, item) => <div className="resident-complaint-cell">
-    <strong>{title}</strong><p>{item.description}</p>
-  </div> },
-  { key: "status", header: "Status", render: (status) => <StatusBadge status={status} /> },
-  { key: "location", header: "Location", render: locationText },
-  { key: "createdAt", header: "Submitted", render: dateTime },
-  { key: "updatedAt", header: "Updated", render: dateTime },
-  { key: "actions", header: <span className="sr-only">Actions</span>, render: (_, item) => <Link className="ui-button ui-button--secondary" to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`}>View details</Link> },
-];
+import { dateTime, label, locationText, STATUS_LABELS } from "../utils.js";
 
 export function ComplaintList({ complaints, filtered = false }) {
-  return <DataTable columns={columns} rows={complaints} caption="Your maintenance complaints"
-    emptyTitle={filtered ? "No matching complaints" : "No complaints yet"}
-    emptyMessage={filtered ? "Try a different search or status filter." : "Your maintenance requests will appear here after you submit a complaint."} />;
+  if (!complaints.length) return <div className="resident-empty">
+    <EmptyState title={filtered ? "No matching complaints" : "Everything starts with a report"}
+      message={filtered ? "Try a different search or status filter." : "Report a maintenance issue and follow its progress here."} />
+    {!filtered && <Link className="ui-button ui-button--primary" to={ROUTES.RESIDENT_NEW_COMPLAINT}>Report an issue</Link>}
+  </div>;
+  return <ul className="resident-complaint-list" aria-label="Your maintenance complaints">
+    {complaints.map((item) => <li key={item.id} className="resident-complaint-row">
+      <span className="resident-issue-icon"><MetricIcon name="complaints" /></span>
+      <div className="resident-complaint-copy">
+        <div className="resident-row-heading">
+          <Link className="resident-title-link" to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`}>{item.title}</Link>
+          <StatusBadge status={item.status} label={STATUS_LABELS[item.status]} />
+        </div>
+        <p>{item.description}</p>
+        <div className="resident-row-meta"><span>{label(item.requiredWorkType)}</span><span>{locationText(item.location)}</span></div>
+        <span className="resident-row-date">Submitted {dateTime(item.createdAt)} · Updated {dateTime(item.updatedAt)}</span>
+      </div>
+      <Link className="ui-button ui-button--ghost resident-detail-link" to={`${ROUTES.RESIDENT_COMPLAINTS}/${item.id}`} aria-label={`View details for ${item.title}`}>View details <span aria-hidden="true">›</span></Link>
+    </li>)}
+  </ul>;
 }

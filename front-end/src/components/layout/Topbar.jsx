@@ -8,7 +8,7 @@ function MenuIcon() {
   );
 }
 
-export function Topbar({ title = "Urbanity Portal", onMenuToggle, notificationSlot }) {
+export function Topbar({ title = "Urbanity Portal", onMenuToggle, menuOpen = false, notificationSlot }) {
   return (
     <header className="portal-topbar">
       <div className="portal-topbar__start">
@@ -18,6 +18,7 @@ export function Topbar({ title = "Urbanity Portal", onMenuToggle, notificationSl
           onClick={onMenuToggle}
           aria-label="Open navigation"
           aria-controls="portal-navigation"
+          aria-expanded={menuOpen}
         >
           <MenuIcon />
         </button>

@@ -52,7 +52,7 @@ export function AssignWorkerModal({ complaint, onClose, onAssigned }) {
       }
     >
       <p className="tr-muted tr-modal-intro">
-        Eligible workers are provided by the backend: available community workers whose specialization matches
+        Choose an available community worker whose specialization matches
         <strong> {formatEnum(complaint.requiredWorkType)}</strong> and who have no active assignment.
       </p>
       {initialLoading && <LoadingState message="Loading eligible workers..." />}

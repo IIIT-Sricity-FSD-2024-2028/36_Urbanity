@@ -41,7 +41,23 @@ h3,
 h4 {
   color: var(--color-text-strong);
   line-height: var(--line-height-tight);
+  text-wrap: balance;
 }
+
+p { text-wrap: pretty; }
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: var(--z-skip-link);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  color: white;
+  background: var(--color-brand-900);
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: translateY(0); }
 
 a {
   color: inherit;

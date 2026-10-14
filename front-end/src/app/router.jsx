@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Link } from "react-router-dom";
 import { ProtectedRoute } from "../auth/ProtectedRoute.jsx";
 import { RoleRoute } from "../auth/RoleRoute.jsx";
 import { ROLES } from "../constants/roles.js";
@@ -15,11 +15,12 @@ import { ResidentRoutes } from "../features/resident/routes.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
-    <main className="public-placeholder">
+    <main className="public-placeholder" id="public-main-content" tabIndex={-1}>
       <section className="ui-card public-placeholder__card">
         <p className="public-placeholder__brand">Urbanity</p>
         <h1>{title}</h1>
         <p>{message}</p>
+        <div className="public-placeholder__actions"><Link className="ui-button ui-button--primary" to={ROUTES.HOME}>Go to Urbanity</Link><Link className="ui-button ui-button--secondary" to={ROUTES.LOGIN}>Open your workspace</Link></div>
       </section>
     </main>
   );

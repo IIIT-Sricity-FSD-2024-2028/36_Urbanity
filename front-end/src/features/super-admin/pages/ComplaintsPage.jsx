@@ -44,7 +44,7 @@ export function ComplaintsPage() {
     { key: "createdAt", header: "Created", render: formatDate }, { key: "action", header: "", render: (_, row) => <Button variant="secondary" onClick={() => setSelected(row.id)}>View details</Button> },
   ], [data]);
   return <>
-    <PageHeader eyebrow="Oversight" title="Complaints" description="Global read-only visibility into complaints and their backend-authorized lifecycle." />
+    <PageHeader eyebrow="Oversight" title="Complaints" description="Follow complaint progress across all communities. This view is read only." />
     {loading && <LoadingState message="Loading complaints..." />}{error && <ErrorState message={error.message} onRetry={reload} />}
     {data && <Card flush><DataTable rows={data.complaints} columns={columns} caption="All complaints" emptyTitle="No complaints" emptyMessage="No complaints have been submitted." /></Card>}
     {selected && <ComplaintDetails complaintId={selected} communities={data.communities} onClose={() => setSelected(null)} />}

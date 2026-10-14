@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Button, LoadingState } from "../../../components/ui/index.js";
 import { NAVIGATION_BY_ROLE } from "../../../constants/navigation.js";
 import { ROUTES } from "../../../constants/routes.js";
+import { CommunityIllustration } from "../../../components/data-display/CommunityIllustration.jsx";
 import "../authentication.css";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,7 +23,7 @@ export function LoginPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  if (loading) return <LoadingState message="Restoring your session..." />;
+  if (loading) return <main id="public-main-content" tabIndex={-1}><LoadingState message="Restoring your session..." /></main>;
 
   if (authenticated) {
     return <Navigate to={homeForRole(user?.role) || ROUTES.UNAUTHORIZED} replace />;
@@ -68,9 +69,8 @@ export function LoginPage() {
   };
 
   return (
-    <main className="login-page">
+    <main className="login-page" id="public-main-content" tabIndex={-1}>
       <section className="login-hero" aria-label="Urbanity">
-        <div className="login-hero__image" aria-hidden="true" />
         <div className="login-hero__content">
           <div className="login-hero__logo">
             <svg className="login-hero__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -78,13 +78,16 @@ export function LoginPage() {
             </svg>
             <h1>Urbanity</h1>
           </div>
-          <p>Community operations, made transparent.</p>
+          <h2>A shared home.<br />A connected community.</h2>
+          <p>Report an issue, coordinate a repair, or follow the work. Your workspace brings it together.</p>
+          <CommunityIllustration className="login-illustration" />
         </div>
       </section>
       <section className="login-panel">
         <div className="login-panel__content">
+          <Link className="login-back-link" to={ROUTES.HOME}>Back to Urbanity</Link>
           <header className="login-form__header">
-            <h2>Sign in</h2>
+            <h2>Welcome back.</h2>
             <p>Use your Urbanity account to continue.</p>
           </header>
           {errors.form && <div className="login-form__message" role="alert" aria-live="polite">{errors.form}</div>}
