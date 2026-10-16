@@ -6,10 +6,12 @@ import { TaskDetailsPage } from "./pages/TaskDetailsPage.jsx";
 import { CompletedPage } from "./pages/CompletedPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import "./maintenance-worker.css";
+import { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";
 
 export function MaintenanceWorkerRoutes() {
   return <Routes>
     <Route index element={<DashboardPage />} />
+    <Route path="services" element={<PaidServicesPage />} />
     <Route path="tasks" element={<TasksPage />} />
     <Route path="tasks/:id" element={<TaskDetailsPage />} />
     <Route path="completed" element={<CompletedPage />} />
