@@ -49,7 +49,7 @@ export class JwtAuthGuard implements CanActivate {
         .findAll()
         .find((item) => item.id === payload.sub);
 
-      if (!user) throw new UnauthorizedException('Invalid authentication token');
+      if (!user || (user.accountState && user.accountState !== 'ACTIVE')) throw new UnauthorizedException('Invalid authentication token');
 
       request.user = { id: user.id, email: user.email, role: user.role };
       return true;

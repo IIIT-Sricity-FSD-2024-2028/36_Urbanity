@@ -33,71 +33,61 @@ function Icon({ name, className, color }) {
 }
 
 const heroCards = [
-  ["location", "Location Tracking", "#3B9EFF"],
-  ["bell", "Real-time Updates", "#4CAF50"],
-  ["chart", "Analytics Dashboard", "#FF9800"],
-  ["arrow", "Quick Resolution", "#9C27B0"],
+  ["building", "Community Management", "#3B9EFF"],
+  ["users", "Paid Services", "#4CAF50"],
+  ["clock", "Amenity Bookings", "#FF9800"],
+  ["shield", "Rental Management", "#9C27B0"],
 ];
 
 const features = [
-  ["check", "Easy Issue Reporting", "Residents can report apartment, tower, and community issues with supporting photos.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
-  ["users", "Resident Visibility", "Keep residents informed from complaint submission through maintenance resolution.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
-  ["bolt", "Fast Resolution", "Community administrators route work to the right maintenance workforce quickly.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
-  ["shield", "Accountability & Tracking", "Track every complaint from submission to resolution with complete transparency.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
-  ["trend", "Data-Driven Insights", "Analytics dashboard provides actionable insights for improved service delivery.", "#E91E63", "rgba(233, 30, 99, 0.08)"],
-  ["globe", "Community Structure", "Organize operations around communities, towers, floors, apartments, and the people who use them.", "#00BCD4", "rgba(0, 188, 212, 0.08)"],
+  ["globe", "Community Structure", "Organize towers, floors, apartments and people with access for each role.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
+  ["check", "Maintenance & Complaints", "Report concerns, assign community workers and verify completed work.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
+  ["clock", "Amenity Bookings", "Check availability, reserve facilities and manage community booking rules.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
+  ["users", "Paid Services", "Request services from existing community maintenance workers and track progress.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
+  ["building", "Rental Management", "Manage listings, leases, rent evidence and tenant onboarding in one place.", "#E91E63", "rgba(233, 30, 99, 0.08)"],
+  ["shield", "Clear Oversight", "Keep community administration separate from platform management with scoped access.", "#00BCD4", "rgba(0, 188, 212, 0.08)"],
 ];
 
 const stats = [
-  ["50K+", "Complaints Tracked", "+15%"],
-  ["42K+", "Complaints Resolved", "+22%"],
-  ["84%", "Resolution Rate", "+8%"],
-  ["2.5 days", "Avg. Resolution Time", "-12%"],
+  ["5", "Connected Roles", "Access for each responsibility"],
+  ["4", "Hierarchy Levels", "Community to apartment"],
+  ["1", "Community Workspace", "Daily operations together"],
+  ["Your", "Community in Control", "Scoped administration"],
 ];
 
 const steps = [
-  ["1", "chat", "Report", "Residents report apartment, tower, or community complaints with supporting images.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
-  ["2", "search", "Review", "The correct community authority reviews and routes each complaint.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
-  ["3", "user", "Assign", "Community authorities assign qualified maintenance workers.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
-  ["4", "check", "Resolve", "Workers resolve issues and residents can follow every status update.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
+  ["1", "chat", "Register", "Apply as your community's authorized representative and review the platform fee.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
+  ["2", "search", "Review", "Submit initial payment evidence for Super Admin verification and application review.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
+  ["3", "shield", "Complete Setup", "After approval, set your password and submit the remaining payment for verification.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
+  ["4", "check", "Get Activated", "The Super Admin activates eligible communities. Then configure your community in the portal.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
 ];
 
 const residentFeatures = [
   "Report apartment and shared-space concerns",
-  "Upload photos and detailed descriptions",
-  "Track complaint status in real-time",
-  "Receive notifications on progress",
-  "See updates for community complaints",
-  "Rate service quality and provide feedback",
+  "Upload photos and follow complaint progress",
+  "Request paid services from community workers",
+  "Check amenity availability and reserve facilities",
+  "Access supported rental and tenancy workflows",
+  "Review completed service work",
 ];
 
 const operationsFeatures = [
-  "Centralized dashboard for all complaints",
-  "Automated categorization and routing",
-  "Assign tasks to departments and teams",
-  "Set priorities and track resolution time",
-  "Generate reports and analytics",
-  "Monitor KPIs and performance metrics",
+  "Configure towers, floors and apartments",
+  "Manage residents, representatives and workers",
+  "Assign maintenance work and verify completion",
+  "Manage amenity rules, closures and bookings",
+  "Oversee community rentals and paid services",
+  "View community reports and operational summaries",
 ];
 
 const benefits = [
-  ["eye", "Transparent Administration", "Build trust through visible accountability and clear communication."],
-  ["trend", "Improved Service Delivery", "Faster response times and higher resolution rates for better resident satisfaction."],
-  ["group", "Resident Engagement", "Give residents a clear way to report concerns and follow their resolution."],
-  ["building", "Centralized Monitoring", "One platform for oversight of community complaints and maintenance work."],
-  ["location", "Location Intelligence", "Identify recurring shared-space concerns and allocate maintenance resources effectively."],
-  ["clock", "Efficiency & Accountability", "Track performance metrics and ensure timely resolution of community complaints."],
+  ["eye", "Visible Progress", "Follow complaints and service requests through their recorded statuses."],
+  ["shield", "Access by Role", "Give each person the tools appropriate to their community responsibility."],
+  ["group", "Connected Residents", "Bring concerns, services and shared facilities into one resident portal."],
+  ["building", "Community Organization", "Keep towers, floors, apartments and people connected to the right community."],
+  ["check", "Verified Onboarding", "Community registration requires review, payment verification and account setup."],
+  ["clock", "Shared-Space Planning", "Use facility availability and booking rules to coordinate community amenities."],
 ];
-
-function SocialIcon({ type }) {
-  const paths = {
-    facebook: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
-    twitter: "M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z",
-    linkedin: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z",
-    instagram: "M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 5.838A6.162 6.162 0 1012 18.162 6.162 6.162 0 0012 5.838zm0 10.162a4 4 0 110-8 4 4 0 010 8zm7.846-10.405a1.44 1.44 0 11-2.88 0 1.44 1.44 0 012.88 0z",
-  };
-  return <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d={paths[type]} /></svg>;
-}
 
 export function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -123,13 +113,13 @@ export function LandingPage() {
         <ul className="landing-nav__links">
           <li>{sectionLink("#features", "Features")}</li>
           <li>{sectionLink("#how-it-works", "How It Works")}</li>
-          <li>{sectionLink("#about", "Benefits")}</li>
-          <li>{sectionLink("#benefits", "About")}</li>
+          <li>{sectionLink("#about", "About")}</li>
+          <li>{sectionLink("#benefits", "Benefits")}</li>
           <li>{sectionLink("#contact", "Contact")}</li>
         </ul>
         <div className="landing-nav__buttons">
-          <Link className="landing-btn landing-btn--ghost" to={ROUTES.LOGIN}>Sign In</Link>
-          <Link className="landing-btn landing-btn--primary" to={ROUTES.LOGIN}>Get Started</Link>
+          <Link className="landing-btn landing-btn--ghost" to={ROUTES.LOGIN}>Login</Link>
+          <Link className="landing-btn landing-btn--primary" to={ROUTES.REGISTER}>Register Your Community</Link>
         </div>
         <button className="landing-nav__menu" type="button" aria-label="Toggle navigation" aria-expanded={mobileOpen} aria-controls="landing-mobile-navigation" onClick={() => setMobileOpen((current) => !current)}>
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={mobileOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
@@ -138,11 +128,11 @@ export function LandingPage() {
       <div id="landing-mobile-navigation" className={`landing-nav__mobile${mobileOpen ? " landing-nav__mobile--open" : ""}`}>
         {sectionLink("#features", "Features")}
         {sectionLink("#how-it-works", "How It Works")}
-        {sectionLink("#about", "Benefits")}
-        {sectionLink("#benefits", "About")}
+        {sectionLink("#about", "About")}
+        {sectionLink("#benefits", "Benefits")}
         {sectionLink("#contact", "Contact")}
-        <Link to={ROUTES.LOGIN} onClick={() => setMobileOpen(false)}>Sign In</Link>
-        <Link className="landing-btn landing-btn--primary" to={ROUTES.LOGIN} onClick={() => setMobileOpen(false)}>Get Started</Link>
+        <Link to={ROUTES.LOGIN} onClick={() => setMobileOpen(false)}>Login</Link>
+        <Link className="landing-btn landing-btn--primary" to={ROUTES.REGISTER} onClick={() => setMobileOpen(false)}>Register Your Community</Link>
       </div>
     </nav>
 
@@ -152,11 +142,11 @@ export function LandingPage() {
         <div className="landing-hero__grid">
           <div className="landing-hero__text">
             <h1><span>Urbanity</span></h1>
-            <p className="landing-hero__subtitle">Community operations made clear, connected, and accountable</p>
-            <p className="landing-hero__description">A shared workspace for communities, towers, apartments, residents, and maintenance teams to track every complaint through transparent resolution.</p>
+            <p className="landing-hero__subtitle">One place for the everyday life of your community.</p>
+            <p className="landing-hero__description">Bring residents, administrators and maintenance teams together. Manage your buildings, resolve issues and make shared spaces easier to enjoy.</p>
             <div className="landing-hero__buttons">
-              <Link className="landing-btn landing-btn--primary landing-btn--large" to={ROUTES.LOGIN}>Get Started <span aria-hidden="true">→</span></Link>
-              <a className="landing-btn landing-btn--outline landing-btn--large" href="#features" onClick={(event) => scrollToSection(event, "#features")}>Learn More</a>
+              <Link className="landing-btn landing-btn--primary landing-btn--large" to={ROUTES.REGISTER}>Register Your Community <span aria-hidden="true">→</span></Link>
+              <Link className="landing-btn landing-btn--outline landing-btn--large" to={ROUTES.LOGIN}>Login</Link>
             </div>
           </div>
           <div className="landing-hero__cards">
@@ -168,7 +158,7 @@ export function LandingPage() {
 
     <section id="features" className="landing-section landing-features">
       <div className="landing-container">
-        <header className="landing-section__header"><h2>Everything a community needs to resolve issues well</h2><p>Purpose-built tools for community administration, maintenance coordination, and resident visibility.</p></header>
+        <header className="landing-section__header"><h2>Tools for the people who keep a community running.</h2><p>Manage community operations, resident services and shared facilities in one place.</p></header>
         <div className="landing-features__grid">
           {features.map(([icon, title, description, color, background]) => <article className="landing-feature-card" key={title}><span className="landing-feature-card__icon" style={{ backgroundColor: background }}><Icon name={icon} color={color} /></span><h3>{title}</h3><p>{description}</p></article>)}
         </div>
@@ -178,7 +168,7 @@ export function LandingPage() {
     <section id="stats" className="landing-section landing-stats">
       <div className="landing-stats__decoration"><span /><span /></div>
       <div className="landing-container">
-        <header className="landing-section__header"><h2>Making a Real Impact</h2><p>A clearer way to manage issues across every community</p></header>
+        <header className="landing-section__header"><h2>One Connected Platform</h2><p>A shared structure for your people, buildings and daily operations</p></header>
         <div className="landing-stats__grid">
           {stats.map(([value, label, change]) => <article className="landing-stat-card" key={label}><strong>{value}</strong><p>{label}</p><span><Icon name="trend" />{change}</span></article>)}
         </div>
@@ -187,7 +177,7 @@ export function LandingPage() {
 
     <section id="how-it-works" className="landing-section landing-workflow">
       <div className="landing-container">
-        <header className="landing-section__header"><h2>How It Works</h2><p>A streamlined four-step process from issue reporting to resolution</p></header>
+        <header className="landing-section__header"><h2>How It Works</h2><p>From community registration to approved, verified and activated access</p></header>
         <div className="landing-workflow__container"><div className="landing-workflow__line" /><div className="landing-workflow__grid">
           {steps.map(([number, icon, title, description, color, background]) => <article className="landing-step-card" key={number}><div><span className="landing-step-card__number" style={{ backgroundColor: color }}>{number}</span><span className="landing-step-card__icon" style={{ backgroundColor: background }}><Icon name={icon} color={color} /></span><h3>{title}</h3><p>{description}</p></div></article>)}
         </div></div>
@@ -200,13 +190,13 @@ export function LandingPage() {
         <div className="landing-user-block">
           <div className="landing-user-block__grid">
             <div className="landing-user-block__image"><img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1080&q=80" alt="Residents collaborating in a community" /><span /></div>
-            <div className="landing-user-block__content landing-user-block__content--blue"><span className="landing-user-block__badge"><Icon name="phone" />For Residents</span><h3>Report, Track, and Engage</h3><ul>{residentFeatures.map((item) => <li key={item}><span className="landing-user-block__bullet"><i /></span>{item}</li>)}</ul><Link className="landing-btn landing-btn--large landing-btn--resident" to={ROUTES.LOGIN}>Start Reporting</Link></div>
+            <div className="landing-user-block__content landing-user-block__content--blue"><span className="landing-user-block__badge"><Icon name="phone" />For Residents</span><h3>Report, Reserve, and Stay Connected</h3><ul>{residentFeatures.map((item) => <li key={item}><span className="landing-user-block__bullet"><i /></span>{item}</li>)}</ul><Link className="landing-btn landing-btn--large landing-btn--resident" to={ROUTES.LOGIN}>Resident Login</Link></div>
           </div>
         </div>
         <div className="landing-user-block">
           <div className="landing-user-block__grid landing-user-block__grid--reverse">
             <div className="landing-user-block__image"><img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1080&q=80" alt="Community administration workspace" /><span /></div>
-            <div className="landing-user-block__content landing-user-block__content--orange"><span className="landing-user-block__badge"><Icon name="chart" />For Community Operations</span><h3>Manage, Assign, and Resolve</h3><ul>{operationsFeatures.map((item) => <li key={item}><span className="landing-user-block__bullet"><i /></span>{item}</li>)}</ul><Link className="landing-btn landing-btn--large landing-btn--operations" to={ROUTES.LOGIN}>Access Dashboard</Link></div>
+            <div className="landing-user-block__content landing-user-block__content--orange"><span className="landing-user-block__badge"><Icon name="chart" />For Community Operations</span><h3>Organize, Assign, and Manage</h3><ul>{operationsFeatures.map((item) => <li key={item}><span className="landing-user-block__bullet"><i /></span>{item}</li>)}</ul><Link className="landing-btn landing-btn--large landing-btn--operations" to={ROUTES.LOGIN}>Access Dashboard</Link></div>
           </div>
         </div>
       </div>
@@ -215,7 +205,7 @@ export function LandingPage() {
     <section id="benefits" className="landing-section landing-benefits">
       <div className="landing-benefits__pattern" />
       <div className="landing-container">
-        <header className="landing-section__header"><span className="landing-benefits__badge">Community Operations</span><h2>Supporting Better Community Operations</h2><p>Urbanity brings residents, community administrators, and maintenance teams together for accountable, responsive shared-space management.</p></header>
+        <header className="landing-section__header"><span className="landing-benefits__badge">Community Operations</span><h2>Supporting Better Community Operations</h2><p>Urbanity brings residents, community administrators and maintenance teams together for everyday services and shared-space management.</p></header>
         <div className="landing-benefits__grid">
           {benefits.map(([icon, title, description]) => <article className="landing-benefit-card" key={title}><span><Icon name={icon} /></span><h3>{title}</h3><p>{description}</p></article>)}
         </div>
@@ -223,15 +213,15 @@ export function LandingPage() {
     </section>
 
     <footer id="contact" className="landing-footer">
-      <div className="landing-footer__cta"><div className="landing-container"><h2>Ready to Simplify Community Operations?</h2><p>Sign in to track complaints, coordinate maintenance, and keep residents informed.</p><Link className="landing-btn landing-btn--white landing-btn--large" to={ROUTES.LOGIN}>Get Started <span aria-hidden="true">→</span></Link></div></div>
+      <div className="landing-footer__cta"><div className="landing-container"><h2>Ready to Simplify Community Operations?</h2><p>Register your community to begin review. Access starts after approval, verified payment and account setup.</p><Link className="landing-btn landing-btn--white landing-btn--large" to={ROUTES.REGISTER}>Register Your Community <span aria-hidden="true">→</span></Link></div></div>
       <div className="landing-footer__main"><div className="landing-container">
         <div className="landing-footer__grid">
-          <div className="landing-footer__about"><h3>Urbanity</h3><p>Empowering communities through transparent complaint tracking and dependable maintenance coordination.</p><div className="landing-footer__social">{["facebook", "twitter", "linkedin", "instagram"].map((type) => <a href="#" aria-label={type} key={type}><SocialIcon type={type} /></a>)}</div></div>
-          <div className="landing-footer__section"><h4>Quick Links</h4><ul><li>{sectionLink("#about", "About Us")}</li><li>{sectionLink("#features", "Features")}</li><li>{sectionLink("#how-it-works", "How It Works")}</li><li><a href="#">Blog</a></li></ul></div>
-          <div className="landing-footer__section"><h4>Resources</h4><ul>{["Documentation", "API Reference", "Support Center", "Community Forum", "Training", "FAQs"].map((item) => <li key={item}><a href="#">{item}</a></li>)}</ul></div>
-          <div className="landing-footer__section"><h4>Contact Us</h4><ul className="landing-footer__contact"><li><Icon name="mail" /><span>support@urbanity.com</span></li><li><Icon name="telephone" /><span>+91-9999999999</span></li><li><Icon name="location" /><span>IIIT SriCity, Gnan Marg Circle<br />Sri City, Chittoor District</span></li></ul></div>
+          <div className="landing-footer__about"><h3>Urbanity</h3><p>Community administration, maintenance, rentals, paid services and amenity bookings in one place.</p><div className="landing-footer__social"><Link to={ROUTES.HOME} aria-label="Urbanity home"><Icon name="building" /></Link><Link to={ROUTES.REGISTER} aria-label="Register your community"><Icon name="users" /></Link><Link to={ROUTES.LOGIN} aria-label="Portal login"><Icon name="shield" /></Link></div></div>
+          <div className="landing-footer__section"><h4>Quick Links</h4><ul><li>{sectionLink("#about", "About")}</li><li>{sectionLink("#features", "Features")}</li><li>{sectionLink("#how-it-works", "How It Works")}</li><li><Link to={ROUTES.REGISTER}>Register Your Community</Link></li></ul></div>
+          <div className="landing-footer__section"><h4>Get Started</h4><ul><li><Link to={ROUTES.REGISTER}>Community Registration</Link></li><li><Link to={ROUTES.LOGIN}>Portal Login</Link></li><li>{sectionLink("#how-it-works", "Onboarding Process")}</li><li>{sectionLink("#benefits", "Platform Benefits")}</li></ul></div>
+          <div className="landing-footer__section"><h4>Need Help?</h4><ul className="landing-footer__contact"><li><Icon name="users" /><span>Residents: contact your community administrator.</span></li><li><Icon name="mail" /><span>Applicants: retain your registration reference and contact the platform administrator.</span></li><li><Icon name="shield" /><span>No passwords or invitations are emailed automatically.</span></li></ul></div>
         </div>
-        <div className="landing-footer__bottom"><p>© 2026 Urbanity. All rights reserved.</p><div><a href="#">Privacy Policy</a><a href="#">Terms of Service</a><a href="#">Cookie Policy</a></div></div>
+        <div className="landing-footer__bottom"><p>© 2026 Urbanity. All rights reserved.</p><div><Link to={ROUTES.REGISTER}>Register Your Community</Link><Link to={ROUTES.LOGIN}>Login</Link><a href="#features" onClick={(event) => scrollToSection(event, "#features")}>Features</a></div></div>
       </div></div>
     </footer>
   </main>;

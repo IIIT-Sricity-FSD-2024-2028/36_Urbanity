@@ -17,9 +17,15 @@ export class SubscriptionService {
 
   constructor(@Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>) {}
 
-  createPending(communityId: string, communityName: string, contractedTowers: number, contractedApartments: number) {
+  createPending(communityId: string, communityName: string, contractedTowers: number, contractedApartments: number, registrationApplicationId?: string) {
     const now = new Date().toISOString();
-    return this.crud.create({ communityId, communityName, contractedTowers, contractedApartments, towerRate: TOWER_RATE, apartmentRate: APARTMENT_RATE, amount: contractedTowers * TOWER_RATE + contractedApartments * APARTMENT_RATE, status: SubscriptionStatus.PaymentPending, paymentStatus: PaymentStatus.Pending, createdAt: now, updatedAt: now });
+    return this.crud.create({ ...(registrationApplicationId ? { registrationApplicationId } : {}), communityId, communityName, contractedTowers, contractedApartments, towerRate: TOWER_RATE, apartmentRate: APARTMENT_RATE, amount: contractedTowers * TOWER_RATE + contractedApartments * APARTMENT_RATE, status: SubscriptionStatus.PaymentPending, paymentStatus: PaymentStatus.Pending, createdAt: now, updatedAt: now });
+  }
+
+  activateRegistration(communityId: string, applicationId: string, fullyPaid = true) {
+    const item = this.findByCommunityId(communityId);
+    if (!item || item.registrationApplicationId !== applicationId) throw new ForbiddenException('Registration subscription mismatch');
+    return this.crud.update(item.id, { status: SubscriptionStatus.Active, paymentStatus: fullyPaid ? PaymentStatus.Success : PaymentStatus.Pending, updatedAt: new Date().toISOString() });
   }
 
   delete(id: string) { return this.crud.delete(id); }
@@ -31,6 +37,7 @@ export class SubscriptionService {
   getForActor(actor: AuthenticatedUser) { return this.requireForActor(actor); }
   completeMockPayment(actor: AuthenticatedUser) {
     const subscription = this.requireForActor(actor);
+    if (subscription.registrationApplicationId) throw new ForbiddenException('Registration payments require Super Admin verification and activation');
     if (subscription.status === SubscriptionStatus.Active) return subscription;
     return this.crud.update(subscription.id, { status: SubscriptionStatus.Active, paymentStatus: PaymentStatus.Success, updatedAt: new Date().toISOString() });
   }

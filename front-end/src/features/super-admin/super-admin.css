@@ -36,3 +36,44 @@
 .sa-download { display: inline-block; margin-top: var(--space-4); color: var(--color-primary); font-weight: 700; }
 @media (max-width: 900px) { .sa-grid--3 { grid-template-columns: 1fr; } .sa-user-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 680px) { .sa-grid--2, .sa-form--grid, .sa-details, .sa-user-filter-grid { grid-template-columns: 1fr; } .sa-form__wide { grid-column: auto; } .sa-attachments > div { align-items: flex-start; flex-direction: column; } }
+
+.sa-registration-payment { border-bottom: 1px solid var(--color-border, #d8e2ef); padding: 12px 0; overflow-wrap: anywhere; }
+.sa-registration-authority { display: flex; gap: 12px; align-items: flex-start; line-height: 1.5; }
+.sa-registration-authority input { width: 18px; height: 18px; flex-shrink: 0; }
+.sa-registration-history { padding-left: 20px; overflow-wrap: anywhere; }
+.sa-registration-history li { margin-bottom: 16px; }
+
+.sa-registration-page > .ui-card { margin-top: var(--space-5); }
+
+.ui-modal--lg:has(.sa-registration-detail) { width: min(100%, 960px); max-width: 960px; display: flex; flex-direction: column; overflow: hidden; }
+.ui-modal:has(.sa-registration-detail) > .ui-modal__header { flex-shrink: 0; padding: 16px 24px; }
+.ui-modal:has(.sa-registration-detail) > .ui-modal__body { min-height: 0; overflow-y: auto; padding: 20px 24px; }
+.sa-registration-detail { display: grid; gap: 16px; color: var(--color-text); font-size: .875rem; line-height: 1.5; }
+.sa-registration-detail p { margin: 0; overflow-wrap: anywhere; }
+.sa-registration-detail__summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sa-registration-detail__summary > div { min-width: 0; }
+.sa-registration-detail__summary h3 { margin: 0 0 4px; font-size: 1.125rem; }
+.sa-registration-detail__summary p { font-size: .75rem; }
+.sa-registration-detail__fees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 16px; background: var(--color-primary-soft); border-radius: var(--radius-md); }
+.sa-registration-detail__fees dt { font-size: .75rem; color: var(--color-brand-800); }
+.sa-registration-detail__fees dd { margin: 4px 0 0; font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
+.sa-registration-detail__fees small { font-size: .75rem; font-weight: 400; }
+.sa-registration-detail__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sa-registration-detail .ui-card { min-width: 0; box-shadow: none; }
+.sa-registration-detail .ui-card__header { padding: 12px 16px; }
+.sa-registration-detail .ui-card__title { font-size: .9375rem; }
+.sa-registration-detail .ui-card__content { display: grid; gap: 10px; padding: 16px; }
+.sa-registration-detail__review textarea { min-height: 72px; }
+.sa-registration-detail__review .ui-field { gap: 6px; }
+.sa-registration-detail__history { min-width: 0; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.sa-registration-detail__history > summary { cursor: pointer; font-weight: 650; }
+.sa-registration-detail__history[open] > summary { margin-bottom: 14px; }
+.sa-registration-detail__history .sa-registration-history { margin-bottom: 0; }
+@media (max-width: 640px) {
+  .ui-modal:has(.sa-registration-detail) > .ui-modal__body { padding: 16px; }
+  .sa-registration-detail__grid { grid-template-columns: 1fr; }
+  .sa-registration-detail__fees { gap: 12px; padding: 12px; }
+  .sa-registration-detail__fees dd { font-size: 1rem; }
+  .sa-registration-detail__fees small { display: block; }
+  .sa-registration-detail__summary { flex-direction: column; gap: 8px; }
+}

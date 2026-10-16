@@ -8,6 +8,7 @@ class TimestampedEntity {
 }
 
 export class Community extends TimestampedEntity {
+  registrationApplicationId?: string;
   @ApiProperty() name!: string;
   @ApiProperty() address!: string;
   @ApiPropertyOptional() description?: string;

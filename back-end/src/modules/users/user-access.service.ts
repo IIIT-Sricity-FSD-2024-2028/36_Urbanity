@@ -34,6 +34,11 @@ export class UserAccessService {
   update(actor: AuthenticatedUser, id: string, dto: UpdateUserDto) {
     dto=Object.fromEntries(Object.entries(dto).filter(([,value])=>value!==undefined));
     const current = this.users.findById(id); this.assertAccess(actor, current);
+    if (current.registrationApplicationId) {
+      const identityChange = ['role','communityId','towerId','apartmentId'].some(key => key in dto) || ('email' in dto && dto.email?.trim().toLowerCase() !== current.email.toLowerCase());
+      const ownActiveProfile = actor.id === id && actor.role === RoleName.CommunityAdmin && current.accountState === 'ACTIVE';
+      if (identityChange || ('password' in dto && !ownActiveProfile)) throw new ForbiddenException('Registration account identity and scope use the onboarding workflow; only the active account owner may change their password');
+    }
     if ('residentSituation' in dto) throw new BadRequestException('Occupancy changes require rental or ownership workflows');
     if ('role' in dto || 'apartmentId' in dto || 'communityId' in dto) this.community.assertRentalUserChange(id, dto.apartmentId);
     if (actor.role === RoleName.CommunityAdmin && actor.id === id && ('role' in dto || 'communityId' in dto)) throw new ForbiddenException('Community Admins cannot change their own role or community');
@@ -45,7 +50,7 @@ export class UserAccessService {
     if (actor.role === RoleName.CommunityAdmin && this.communityIdFor(next) !== this.actorCommunity(actor)) throw new ForbiddenException('Users cannot be moved across communities');
     const { password, ...data } = requested; return this.safe(this.users.update(id, { ...data, ...(password ? { passwordHash: hashSync(password, 10) } : {}) }));
   }
-  delete(actor: AuthenticatedUser, id: string) { this.community.assertRentalUserChange(id); const user = this.users.findById(id); this.assertAccess(actor, user); const communityId = this.communityIdFor(user); if (communityId) this.subscriptions.assertCommunityActive(communityId); if (actor.id === id) throw new ForbiddenException('Users cannot delete themselves'); return this.safe(this.users.delete(id)); }
+  delete(actor: AuthenticatedUser, id: string) { this.community.assertRentalUserChange(id); const user = this.users.findById(id); this.assertAccess(actor, user); if (user.registrationApplicationId) throw new ForbiddenException('Registration-linked accounts must retain their onboarding records'); const communityId = this.communityIdFor(user); if (communityId) this.subscriptions.assertCommunityActive(communityId); if (actor.id === id) throw new ForbiddenException('Users cannot delete themselves'); return this.safe(this.users.delete(id)); }
   private actorCommunity(actor: AuthenticatedUser) { const user = this.users.findById(actor.id); if (!user.communityId) throw new ForbiddenException('Community Admin is missing a community association'); return user.communityId; }
   private communityIdFor(user: User) { if (user.communityId) return user.communityId; if (user.towerId) return this.community.getTower(user.towerId).communityId; if (user.apartmentId) return this.community.getTower(this.community.getFloor(this.community.getApartment(user.apartmentId).floorId).towerId).communityId; return undefined; }
   private assertAccess(actor: AuthenticatedUser, user: User) { if (actor.role !== RoleName.SuperAdmin && this.communityIdFor(user) !== this.actorCommunity(actor)) throw new ForbiddenException('User belongs to another community'); }

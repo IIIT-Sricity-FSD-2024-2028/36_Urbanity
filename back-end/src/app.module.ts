@@ -1,3 +1,4 @@
+import { RegistrationsModule } from './modules/registrations/registrations.module';
 import { AmenitiesModule } from './modules/amenities/amenities.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
@@ -33,6 +34,7 @@ import { PaidServicesModule } from './modules/paid-services/paid-services.module
 @Module({
   imports: [
     LoggingModule,
+    RegistrationsModule,
     AmenitiesModule,
     AuthModule,
     RolesModule,

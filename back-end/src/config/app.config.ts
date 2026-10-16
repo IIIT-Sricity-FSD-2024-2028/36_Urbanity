@@ -20,7 +20,7 @@ export const appConfig = {
     origin: corsOrigins,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    credentials: false,
+    credentials: true,
   },
   jwt: {
     secret: jwtSecret,

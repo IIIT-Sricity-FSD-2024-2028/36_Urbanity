@@ -1,3 +1,5 @@
+import { RegistrationPage } from "../features/registration/pages/RegistrationPage.jsx";
+import { RegistrationStatusPage } from "../features/registration/pages/RegistrationStatusPage.jsx";
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "../auth/ProtectedRoute.jsx";
 import { RoleRoute } from "../auth/RoleRoute.jsx";
@@ -29,6 +31,8 @@ export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
+      { path: ROUTES.REGISTER, element: <RegistrationPage /> },
+      { path: `${ROUTES.REGISTER}/:reference`, element: <RegistrationStatusPage /> },
       {
         path: ROUTES.HOME,
         element: <LandingPage />,
