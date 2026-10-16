@@ -15,33 +15,438 @@
         ]
       }
     },
-    "/amenities": {
+    "/community-registrations/pricing": {
       "get": {
-        "operationId": "AmenitiesController_list",
+        "operationId": "PublicRegistrationController_pricing",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "security": [
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/quote": {
+      "post": {
+        "operationId": "PublicRegistrationController_quote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SizeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations": {
+      "post": {
+        "operationId": "PublicRegistrationController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/{id}/status": {
+      "get": {
+        "operationId": "PublicRegistrationController_status",
+        "parameters": [
           {
-            "bearer": []
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
         "tags": [
-          "Amenities"
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/{id}/mock-payments": {
+      "post": {
+        "operationId": "PublicRegistrationController_mockPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/{id}/payments": {
+      "post": {
+        "operationId": "PublicRegistrationController_evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/{id}/setup-session": {
+      "post": {
+        "operationId": "PublicRegistrationController_begin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/community-registrations/{id}/credential-setup": {
+      "post": {
+        "operationId": "PublicRegistrationController_setup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicRegistration"
+        ]
+      }
+    },
+    "/registration-administration/pricing": {
+      "get": {
+        "operationId": "RegistrationAdminController_pricing",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      },
+      "patch": {
+        "operationId": "RegistrationAdminController_configure",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration": {
+      "get": {
+        "operationId": "RegistrationAdminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration/{id}": {
+      "get": {
+        "operationId": "RegistrationAdminController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration/{id}/accept-and-notify": {
+      "post": {
+        "operationId": "RegistrationAdminController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration/{id}/review": {
+      "post": {
+        "operationId": "RegistrationAdminController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration/{id}/payments/{paymentId}/review": {
+      "post": {
+        "operationId": "RegistrationAdminController_payment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/registration-administration/{id}/activate": {
+      "post": {
+        "operationId": "RegistrationAdminController_activate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "RegistrationAdmin"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "UsersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
         ]
       },
       "post": {
-        "operationId": "AmenitiesController_create",
+        "operationId": "UsersController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AmenityDto"
+                "$ref": "#/components/schemas/CreateUserDto"
               }
             }
           }
@@ -51,171 +456,14 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "Amenities"
+          "Users"
         ]
       }
     },
-    "/amenities/{id}": {
-      "patch": {
-        "operationId": "AmenitiesController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AmenityDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenities/{id}/availability": {
-      "post": {
-        "operationId": "AmenitiesController_availability",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BookingWindowDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenities/{id}/bookings": {
-      "post": {
-        "operationId": "AmenitiesController_book",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateBookingDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenities/{id}/availability/day": {
-      "post": {
-        "operationId": "AmenitiesController_day",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DayAvailabilityDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenities/{id}/blocks": {
+    "/users/{id}": {
       "get": {
-        "operationId": "AmenitiesController_blocks",
+        "operationId": "UsersController_get",
         "parameters": [
           {
             "name": "id",
@@ -231,110 +479,12 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "Amenities"
+          "Users"
         ]
       },
-      "post": {
-        "operationId": "AmenitiesController_block",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MaintenanceBlockDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenities/{id}/blocks/{blockId}/release": {
       "patch": {
-        "operationId": "AmenitiesController_release",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "blockId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenities"
-        ]
-      }
-    },
-    "/amenity-bookings": {
-      "get": {
-        "operationId": "AmenityBookingsController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/change-availability": {
-      "post": {
-        "operationId": "AmenityBookingsController_options",
+        "operationId": "UsersController_update",
         "parameters": [
           {
             "name": "id",
@@ -350,91 +500,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangeAvailabilityDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/changes": {
-      "post": {
-        "operationId": "AmenityBookingsController_change",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeBookingDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/changes/{changeId}/approve": {
-      "patch": {
-        "operationId": "AmenityBookingsController_approveChange",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "changeId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReasonDto"
+                "$ref": "#/components/schemas/UpdateUserDto"
               }
             }
           }
@@ -444,65 +510,12 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "Amenity bookings"
+          "Users"
         ]
-      }
-    },
-    "/amenity-bookings/{id}/changes/{changeId}/reject": {
-      "patch": {
-        "operationId": "AmenityBookingsController_rejectChange",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "changeId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReasonDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/approve": {
-      "patch": {
-        "operationId": "AmenityBookingsController_approve",
+      },
+      "delete": {
+        "operationId": "UsersController_delete",
         "parameters": [
           {
             "name": "id",
@@ -513,104 +526,13 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReasonDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/reject": {
-      "patch": {
-        "operationId": "AmenityBookingsController_reject",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReasonDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
-        ]
-      }
-    },
-    "/amenity-bookings/{id}/cancel": {
-      "patch": {
-        "operationId": "AmenityBookingsController_cancel",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReasonDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Amenity bookings"
+          "Users"
         ]
       }
     },
@@ -1347,117 +1269,6 @@
         ]
       }
     },
-    "/users": {
-      "get": {
-        "operationId": "UsersController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      },
-      "post": {
-        "operationId": "UsersController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      }
-    },
-    "/users/{id}": {
-      "get": {
-        "operationId": "UsersController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      },
-      "patch": {
-        "operationId": "UsersController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      },
-      "delete": {
-        "operationId": "UsersController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      }
-    },
     "/subscriptions": {
       "get": {
         "operationId": "SubscriptionController_list",
@@ -1535,6 +1346,605 @@
         },
         "tags": [
           "Subscription"
+        ]
+      }
+    },
+    "/amenities": {
+      "get": {
+        "operationId": "AmenitiesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      },
+      "post": {
+        "operationId": "AmenitiesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmenityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}": {
+      "patch": {
+        "operationId": "AmenitiesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmenityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/availability": {
+      "post": {
+        "operationId": "AmenitiesController_availability",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingWindowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/bookings": {
+      "post": {
+        "operationId": "AmenitiesController_book",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/availability/day": {
+      "post": {
+        "operationId": "AmenitiesController_day",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DayAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/blocks": {
+      "get": {
+        "operationId": "AmenitiesController_blocks",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      },
+      "post": {
+        "operationId": "AmenitiesController_block",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceBlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/blocks/{blockId}/release": {
+      "patch": {
+        "operationId": "AmenitiesController_release",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenity-bookings": {
+      "get": {
+        "operationId": "AmenityBookingsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/change-availability": {
+      "post": {
+        "operationId": "AmenityBookingsController_options",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes": {
+      "post": {
+        "operationId": "AmenityBookingsController_change",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes/{changeId}/approve": {
+      "patch": {
+        "operationId": "AmenityBookingsController_approveChange",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "changeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes/{changeId}/reject": {
+      "patch": {
+        "operationId": "AmenityBookingsController_rejectChange",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "changeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/approve": {
+      "patch": {
+        "operationId": "AmenityBookingsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/reject": {
+      "patch": {
+        "operationId": "AmenityBookingsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/cancel": {
+      "patch": {
+        "operationId": "AmenityBookingsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
         ]
       }
     },
@@ -5880,6 +6290,383 @@
       }
     },
     "schemas": {
+      "SizeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ApplicationDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MockPaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "EvidenceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PricingDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AcceptanceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PaymentReviewDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "residentSituation": {
+            "type": "string",
+            "enum": [
+              "OWNER_OCCUPANT",
+              "TENANT_PENDING"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Rao",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "asha@example.com",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91-9876543210",
+            "maxLength": 20
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
+          },
+          "communityId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "apartmentId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "towerId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "residentSituation": {
+            "type": "string",
+            "enum": [
+              "OWNER_OCCUPANT",
+              "TENANT_PENDING"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Rao",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "asha@example.com",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91-9876543210",
+            "maxLength": 20
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
+          },
+          "communityId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "apartmentId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "towerId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          }
+        }
+      },
+      "CreateCommunityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "adminName": {
+            "type": "string"
+          },
+          "adminEmail": {
+            "type": "string"
+          },
+          "adminPassword": {
+            "type": "string"
+          },
+          "contractedTowers": {
+            "type": "number"
+          },
+          "contractedApartments": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "address",
+          "adminName",
+          "adminEmail",
+          "adminPassword",
+          "contractedTowers",
+          "contractedApartments"
+        ]
+      },
+      "UpdateCommunityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTowerDto": {
+        "type": "object",
+        "properties": {
+          "communityId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "communityId",
+          "name",
+          "code"
+        ]
+      },
+      "UpdateTowerDto": {
+        "type": "object",
+        "properties": {
+          "communityId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateFloorDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "towerId",
+          "floorNumber",
+          "label"
+        ]
+      },
+      "UpdateFloorDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "floorId": {
+            "type": "string"
+          },
+          "apartmentNumber": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "floorId",
+          "apartmentNumber",
+          "label"
+        ]
+      },
+      "UpdateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "floorId": {
+            "type": "string"
+          },
+          "apartmentNumber": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          }
+        }
+      },
+      "TransferApartmentOwnershipDto": {
+        "type": "object",
+        "properties": {
+          "expectedOwnerUserId": {
+            "type": "object",
+            "nullable": true
+          },
+          "newOwnerUserId": {
+            "type": "object",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "effectiveDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "effectiveDate"
+        ]
+      },
+      "AssociateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "apartmentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "apartmentId"
+        ]
+      },
+      "AssociateTowerDto": {
+        "type": "object",
+        "properties": {
+          "towerId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "towerId"
+        ]
+      },
+      "RequestUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "contractedTowers": {
+            "type": "number"
+          },
+          "contractedApartments": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "contractedTowers",
+          "contractedApartments"
+        ]
+      },
       "AmenityDto": {
         "type": "object",
         "properties": {
@@ -6151,347 +6938,6 @@
         },
         "required": [
           "reason"
-        ]
-      },
-      "CreateCommunityDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "adminName": {
-            "type": "string"
-          },
-          "adminEmail": {
-            "type": "string"
-          },
-          "adminPassword": {
-            "type": "string"
-          },
-          "contractedTowers": {
-            "type": "number"
-          },
-          "contractedApartments": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "name",
-          "address",
-          "adminName",
-          "adminEmail",
-          "adminPassword",
-          "contractedTowers",
-          "contractedApartments"
-        ]
-      },
-      "UpdateCommunityDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateTowerDto": {
-        "type": "object",
-        "properties": {
-          "communityId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "communityId",
-          "name",
-          "code"
-        ]
-      },
-      "UpdateTowerDto": {
-        "type": "object",
-        "properties": {
-          "communityId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateFloorDto": {
-        "type": "object",
-        "properties": {
-          "towerId": {
-            "type": "string"
-          },
-          "floorNumber": {
-            "type": "number"
-          },
-          "label": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "towerId",
-          "floorNumber",
-          "label"
-        ]
-      },
-      "UpdateFloorDto": {
-        "type": "object",
-        "properties": {
-          "towerId": {
-            "type": "string"
-          },
-          "floorNumber": {
-            "type": "number"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateApartmentDto": {
-        "type": "object",
-        "properties": {
-          "floorId": {
-            "type": "string"
-          },
-          "apartmentNumber": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "ownerUserId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "floorId",
-          "apartmentNumber",
-          "label"
-        ]
-      },
-      "UpdateApartmentDto": {
-        "type": "object",
-        "properties": {
-          "floorId": {
-            "type": "string"
-          },
-          "apartmentNumber": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "ownerUserId": {
-            "type": "string"
-          }
-        }
-      },
-      "TransferApartmentOwnershipDto": {
-        "type": "object",
-        "properties": {
-          "expectedOwnerUserId": {
-            "type": "object",
-            "nullable": true
-          },
-          "newOwnerUserId": {
-            "type": "object",
-            "nullable": true
-          },
-          "reason": {
-            "type": "string"
-          },
-          "effectiveDate": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "reason",
-          "effectiveDate"
-        ]
-      },
-      "AssociateApartmentDto": {
-        "type": "object",
-        "properties": {
-          "apartmentId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "apartmentId"
-        ]
-      },
-      "AssociateTowerDto": {
-        "type": "object",
-        "properties": {
-          "towerId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "towerId"
-        ]
-      },
-      "CreateUserDto": {
-        "type": "object",
-        "properties": {
-          "residentSituation": {
-            "type": "string",
-            "enum": [
-              "OWNER_OCCUPANT",
-              "TENANT_PENDING"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "example": "Asha Rao",
-            "maxLength": 100
-          },
-          "email": {
-            "type": "string",
-            "example": "asha@example.com",
-            "maxLength": 100
-          },
-          "password": {
-            "type": "string",
-            "example": "a-strong-development-password",
-            "minLength": 8,
-            "maxLength": 128
-          },
-          "phone": {
-            "type": "string",
-            "example": "+91-9876543210",
-            "maxLength": 20
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "SUPER_ADMIN",
-              "COMMUNITY_ADMIN",
-              "TOWER_REPRESENTATIVE",
-              "RESIDENT",
-              "MAINTENANCE_WORKER"
-            ],
-            "example": "RESIDENT"
-          },
-          "communityId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "apartmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "towerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          }
-        },
-        "required": [
-          "name",
-          "email",
-          "password",
-          "role"
-        ]
-      },
-      "UpdateUserDto": {
-        "type": "object",
-        "properties": {
-          "residentSituation": {
-            "type": "string",
-            "enum": [
-              "OWNER_OCCUPANT",
-              "TENANT_PENDING"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "example": "Asha Rao",
-            "maxLength": 100
-          },
-          "email": {
-            "type": "string",
-            "example": "asha@example.com",
-            "maxLength": 100
-          },
-          "password": {
-            "type": "string",
-            "example": "a-strong-development-password",
-            "minLength": 8,
-            "maxLength": 128
-          },
-          "phone": {
-            "type": "string",
-            "example": "+91-9876543210",
-            "maxLength": 20
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "SUPER_ADMIN",
-              "COMMUNITY_ADMIN",
-              "TOWER_REPRESENTATIVE",
-              "RESIDENT",
-              "MAINTENANCE_WORKER"
-            ],
-            "example": "RESIDENT"
-          },
-          "communityId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "apartmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "towerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          }
-        }
-      },
-      "RequestUpgradeDto": {
-        "type": "object",
-        "properties": {
-          "contractedTowers": {
-            "type": "number"
-          },
-          "contractedApartments": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "contractedTowers",
-          "contractedApartments"
         ]
       },
       "LoginDto": {
