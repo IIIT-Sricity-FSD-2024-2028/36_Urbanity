@@ -182,7 +182,7 @@ export class ComplaintsService {
   private residentLocation(residentId: string) {
     const user = this.users.findById(residentId);
     if (user.role !== RoleName.Resident) throw new BadRequestException('Complaints must be submitted by a RESIDENT user');
-    const hierarchy = this.community.resolveResidentHierarchy(residentId);
+    const hierarchy = this.community.resolveResidentOccupancy(residentId);
     return { communityId: hierarchy.community.id, towerId: hierarchy.tower.id, floorId: hierarchy.floor.id, apartmentId: hierarchy.apartment.id };
   }
   private validateRequestedLocation(dto: CreateCommunityComplaintDto, location: { communityId: string; towerId: string; floorId: string; apartmentId: string }) {
@@ -257,7 +257,12 @@ export class ComplaintsService {
     return user.communityId;
   }
   private assertComplaintCommunity(complaint: CommunityComplaint) {
-    const location = this.residentLocation(complaint.residentId);
+    // Historical complaints retain the backend-derived apartment snapshot when
+    // their resident moves. Validate the resource hierarchy, not today's occupant.
+    const apartment=this.community.getApartment(complaint.apartmentId);
+    const floor=this.community.getFloor(apartment.floorId);
+    const tower=this.community.getTower(floor.towerId);
+    const location={apartmentId:apartment.id,floorId:floor.id,towerId:tower.id,communityId:tower.communityId};
     if (complaint.communityId !== location.communityId || complaint.towerId !== location.towerId || complaint.floorId !== location.floorId || complaint.apartmentId !== location.apartmentId) {
       throw new ForbiddenException('Complaint location no longer matches the resident hierarchy');
     }

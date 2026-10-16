@@ -1,0 +1,1465 @@
+[1mdiff --git a/F04_IMPLEMENTATION.md b/F04_IMPLEMENTATION.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..230d133[m
+[1m--- /dev/null[m
+[1m+++ b/F04_IMPLEMENTATION.md[m
+[36m@@ -0,0 +1,175 @@[m
+[32m+[m[32m# F04: Paid Services Marketplace[m
+[32m+[m
+[32m+[m[32mBranch: `feat/f04-paid-services-marketplace`.[m
+[32m+[m
+[32m+[m[32m## Implemented workflow[m
+[32m+[m
+[32m+[m[32mCommunity Admins publish community-scoped catalogue entries, including specialization,[m
+[32m+[m[32mstarting price, and active/inactive availability. The catalogue starts empty; no[m
+[32m+[m[32mproduction-looking sample services are inserted. Residents request a service for[m
+[32m+[m[32mtheir backend-derived apartment. The request snapshots the service and location.[m
+[32m+[m
+[32m+[m[32mA Community Admin in the request community or a Tower Representative in its tower[m
+[32m+[m[32massigns an available, qualified existing Maintenance Worker. There is no provider[m
+[32m+[m[32mactor, provider account, or registration flow. Super Admin marketplace access is[m
+[32m+[m[32mnot added; existing Super Admin functionality is unchanged.[m
+[32m+[m
+[32m+[m[32mThe assigned worker submits an estimate. Only the requesting resident can approve,[m
+[32m+[m[32mreject, or request revisions. An estimate is the total service price, including[m
+[32m+[m[32mmaterials. Each revision is retained. Submitting a revision pauses chargeable work;[m
+[32m+[m[32mthe latest estimate must be approved before starting, reporting progress, or[m
+[32m+[m[32mcompleting work. An approved increase must precede additional chargeable work.[m
+[32m+[m
+[32m+[m[32mThe resident or an authorized Community Admin/Tower Representative schedules a[m
+[32m+[m[32mfuture appointment of at most eight hours. Explicit timezones are required by the[m
+[32m+[m[32mAPI; the UI converts device-local appointment input to UTC. Overlapping appointments[m
+[32m+[m[32mfor either the worker or resident are rejected. Work starts inside its appointment[m
+[32m+[m[32mwindow; an expired unstarted appointment must be rescheduled.[m
+[32m+[m
+[32m+[m[32mWorkers post progress notes and submit a completion report plus final cost. Final[m
+[32m+[m[32mcost cannot exceed the latest resident-approved estimate. An authorized Community[m
+[32m+[m[32mAdmin/Tower Representative approves it or requests corrections. Correcting an old[m
+[32m+[m[32mbill does not release a worker's newer assignment.[m
+[32m+[m
+[32m+[m[32mAfter final-cost approval, an authority creates exactly one payment tracking record.[m
+[32m+[m[32mThe backend derives its amount from the approved final cost and its payee from the[m
+[32m+[m[32massigned worker profile/user. Clients cannot choose the amount or payee. All amounts[m
+[32m+[m[32mare integer INR paise. Paid service reviews remain separate from complaint reviews[m
+[32m+[m[32mand do not alter existing complaint performance statistics.[m
+[32m+[m
+[32m+[m[32m## Payment tracking, not payment processing[m
+[32m+[m
+[32m+[m[32m`APPROVED -> PAYMENT_REPORTED -> EVIDENCE_VERIFIED -> RECEIPT_CONFIRMED`[m
+[32m+[m
+[32m+[m[32m- Authorization transfers no money. The resident pays the worker outside Urbanity.[m
+[32m+[m[32m- The resident uploads a JPEG/PNG/WebP receipt (maximum five images, 5 MB each),[m
+[32m+[m[32m  then reports its transaction reference and evidence ID.[m
+[32m+[m[32m- Evidence is accessible only through authenticated, request-scoped retrieval.[m
+[32m+[m[32m- An authority independently checks the receipt, amount, payee, and reference, then[m
+[32m+[m[32m  records manual verification. Rejected evidence returns the payment to `APPROVED`[m
+[32m+[m[32m  for correction, retaining the rejection in activity history.[m
+[32m+[m[32m- Only the assigned intended worker payee can acknowledge receipt after verification.[m
+[32m+[m[32m- There is no gateway, automatic transfer, bank reconciliation, or automatic `PAID`[m
+[32m+[m[32m  status. `RECEIPT_CONFIRMED` denotes a worker's manual acknowledgement.[m
+[32m+[m[32m- Reporting the same external reference for multiple payment records is rejected.[m
+[32m+[m[32m  Duplicate approvals, stale request versions, and unauthorized mutations are rejected.[m
+[32m+[m[32m- Transactions are separate from subscription simulation, rent, maintenance dues,[m
+[32m+[m[32m  and community expenses.[m
+[32m+[m
+[32m+[m[32m## Backend and APIs[m
+[32m+[m
+[32m+[m[32mNew module: `back-end/src/modules/paid-services/`:[m
+[32m+[m
+[32m+[m[32m- `paid-services.dto.ts`: validated request contracts and domain records.[m
+[32m+[m[32m- `paid-services.service.ts`: scoped catalogue, request workflow, estimates,[m
+[32m+[m[32m  scheduling, progress, final costs, payments, reviews, and audit history.[m
+[32m+[m[32m- `paid-services.controller.ts`: JWT/RBAC-protected API endpoints.[m
+[32m+[m[32m- `paid-service-evidence.service.ts`: validated local receipt storage/retrieval.[m
+[32m+[m[32m- `paid-services.module.ts`: module wiring.[m
+[32m+[m
+[32m+[m[32mRegistered in `back-end/src/app.module.ts`. Reuses CommunityService, WorkforceService,[m
+[32m+[m[32mComplaintsService, SubscriptionService, existing user resources, JWT/Roles guards,[m
+[32m+[m[32mvalidation, response wrappers, logging, and exception handling.[m
+[32m+[m
+[32m+[m[32m| Method | Path under `/paid-services` | Purpose |[m
+[32m+[m[32m| --- | --- | --- |[m
+[32m+[m[32m| GET / POST | `/catalogue` | Scoped catalogue listing / Community Admin creation |[m
+[32m+[m[32m| PATCH | `/catalogue/:id` | Community Admin update or deactivation |[m
+[32m+[m[32m| GET / POST | `/requests` | Scoped history / resident request creation |[m
+[32m+[m[32m| GET | `/requests/:id` | Scoped request details |[m
+[32m+[m[32m| GET | `/requests/:id/eligible-workers` | Authorized worker selection |[m
+[32m+[m[32m| POST | `/requests/:id/assign` | Authority assignment |[m
+[32m+[m[32m| POST | `/requests/:id/estimates` | Assigned worker estimate/revision |[m
+[32m+[m[32m| POST | `/requests/:id/estimate-decision` | Resident decision |[m
+[32m+[m[32m| POST | `/requests/:id/schedule` | Resident/authority appointment |[m
+[32m+[m[32m| POST | `/requests/:id/start` | Assigned worker start |[m
+[32m+[m[32m| POST | `/requests/:id/progress` | Assigned worker progress note |[m
+[32m+[m[32m| POST | `/requests/:id/complete` | Assigned worker completion/final bill |[m
+[32m+[m[32m| POST | `/requests/:id/final-cost-review` | Authority final-cost decision |[m
+[32m+[m[32m| POST | `/requests/:id/payment-approval` | Authority payment authorization |[m
+[32m+[m[32m| POST | `/requests/:id/evidence` | Resident multipart receipt upload |[m
+[32m+[m[32m| GET | `/requests/:id/evidence/:evidenceId` | Scoped receipt retrieval |[m
+[32m+[m[32m| POST | `/requests/:id/payment-report` | Resident external payment report |[m
+[32m+[m[32m| POST | `/requests/:id/payment-verification` | Authority evidence decision |[m
+[32m+[m[32m| POST | `/requests/:id/payment-receipt` | Worker receipt acknowledgement |[m
+[32m+[m[32m| POST | `/requests/:id/review` | Owning resident review |[m
+[32m+[m[32m| POST | `/requests/:id/cancel` | Resident/authority cancellation before work starts |[m
+[32m+[m
+[32m+[m[32mWorkflow mutations require the current integer `version`; uploads validate their[m
+[32m+[m[32mcurrent payment state and increment the version. Request creation requires a[m
+[32m+[m[32mresident-scoped UUID `clientRequestId` for safe retries. There is no generic status[m
+[32m+[m[32mor payment patch endpoint.[m
+[32m+[m
+[32m+[m[32mNecessary workforce integration adds paid-service reservations and prevents profile[m
+[32m+[m[32mchanges/deactivation during reserved work. Complaints expose their existing active[m
+[32m+[m[32massignment query so paid-service eligibility also considers complaint assignments.[m
+[32m+[m
+[32m+[m[32m## Frontend and changed files[m
+[32m+[m
+[32m+[m[32mNew shared marketplace workflow under `front-end/src/features/paid-services/`:[m
+[32m+[m
+[32m+[m[32m- `pages/PaidServicesPage.jsx`[m
+[32m+[m[32m- `services/paidServicesService.js`[m
+[32m+[m[32m- `paid-services.css`[m
+[32m+[m
+[32m+[m[32mIt reuses the shared API client, auth context, async resource hook, portal layouts,[m
+[32m+[m[32mnavigation, forms, cards, tables, modal/confirmation dialog, status badges, rating[m
+[32m+[m[32mdisplay, loading/empty/error states, toast feedback, and design tokens. The shared[m
+[32m+[m[32mworkflow serves its four participating actors, without importing another actor's[m
+[32m+[m[32mcomponents/services or changing shared authentication/UI foundations.[m
+[32m+[m
+[32m+[m[32mModified `src/constants/routes.js`, `src/constants/navigation.js`, and the Resident,[m
+[32m+[m[32mMaintenance Worker, Tower Representative, and Community Admin `routes.jsx` files.[m
+[32m+[m[32mEach existing exact-role namespace retains its protection and gains `/services`.[m
+[32m+[m
+[32m+[m[32mNew tests: `back-end/test/paid-services.e2e-spec.ts`.[m
+[32m+[m[32mThis report is new; existing `docs/`, SQL material, designs, and legacy portals were[m
+[32m+[m[32mnot modified. No new dependencies were added.[m
+[32m+[m
+[32m+[m[32m## Persistence and integration limits[m
+[32m+[m
+[32m+[m[32mThe existing backend has only process-local in-memory repositories. F04 follows[m
+[32m+[m[32mthat convention. Requests, catalogue, reservations, and payment tracking reset on[m
+[32m+[m[32mrestart. Uploaded evidence files are local; metadata does not survive a restart.[m
+[32m+[m[32mDurable deployment needs database persistence and a receipt-file retention policy.[m
+[32m+[m
+[32m+[m[32mChecks and mutations run synchronously in one Node process. Version checks prevent[m
+[32m+[m[32mstale/concurrent updates within that process, including simultaneous payment[m
+[32m+[m[32mapproval. These guarantees do not extend across multiple backend processes. A future[m
+[32m+[m[32mdatabase adapter needs transactions, unique payment/idempotency constraints, atomic[m
+[32m+[m[32mworker reservations, and booking conflict enforcement. No unrelated persistence[m
+[32m+[m[32minfrastructure was introduced.[m
+[32m+[m
+[32m+[m[32mExisting worker availability permits one active job at a time. Assignment reserves[m
+[32m+[m[32mthe worker until first completion or cancellation before start, including the time[m
+[32m+[m[32mspent waiting for estimates and appointments. Completed appointment windows remain[m
+[32m+[m[32munavailable until their scheduled end. A calendar supporting multiple future jobs,[m
+[32m+[m[32mworker reassignment, post-start cancellation/disputes, and actual gateway integration[m
+[32m+[m[32mwould be separately scoped work. Existing user deletion/relocation rules were not[m
+[32m+[m[32mredesigned by this feature.[m
+[32m+[m
+[32m+[m[32m## Validation[m
+[32m+[m
+[32m+[m[32mExecuted successfully:[m
+[32m+[m
+[32m+[m[32m- `npm.cmd run build` in `back-end/`: passed.[m
+[32m+[m[32m- `npm.cmd test -- --runInBand` in `back-end/`: 7 suites, 19 tests passed.[m
+[32m+[m[32m- `npm.cmd run test:e2e -- --runInBand` in `back-end/`: 2 suites, 48 tests passed,[m
+[32m+[m[32m  including 14 F04 tests and 34 existing regression tests.[m
+[32m+[m[32m- `npm.cmd run build` in `front-end/`: passed. Vite reports configuration-format[m
+[32m+[m[32m  and bundle-size warnings; they do not fail the build.[m
+[32m+[m[32m- `node --check` for the new frontend service: passed.[m
+[32m+[m[32m- `git diff --check`: passed.[m
+[32m+[m
+[32m+[m[32mF04 tests cover catalogue authorization/validation, request ownership and retry[m
+[32m+[m[32mdeduplication, inactive services, snapshot pricing, community/tower/resident/worker[m
+[32m+[m[32misolation, specialization and availability, shared complaint/service reservations,[m
+[32m+[m[32minitial and revised estimate decisions, stale versions, work approval gates,[m
+[32m+[m[32mtimezone/appointment validation, resident and worker scheduling conflicts, progress,[m
+[32m+[m[32mfinal-cost ceilings/corrections/review, worker payee derivation, simultaneous and[m
+[32m+[m[32mduplicate payment approvals, receipt validation/access, evidence rejection and[m
+[32m+[m[32mmanual verification, worker acknowledgement, and resident reviews.[m
+[32m+[m
+[32m+[m[32mBrowser validation was attempted, but no connected browser was available. Interactive[m
+[32m+[m[32mand responsive visual checks remain unverified; frontend compilation and API tests[m
+[32m+[m[32mare not a substitute for that validation.[m
+[1mdiff --git a/back-end/src/app.module.ts b/back-end/src/app.module.ts[m
+[1mindex 089090f..14a8c11 100644[m
+[1m--- a/back-end/src/app.module.ts[m
+[1m+++ b/back-end/src/app.module.ts[m
+[36m@@ -26,6 +26,7 @@[m [mimport { HttpExceptionFilter } from './common/filters/http-exception.filter';[m
+ import { ComplaintRouteContextMiddleware } from './common/middleware/complaint-route-context.middleware';[m
+ import { ComplaintsController } from './modules/complaints/complaints.controller';[m
+ import { AttachmentsController } from './modules/attachments/attachments.controller';[m
+[32m+[m[32mimport { PaidServicesModule } from './modules/paid-services/paid-services.module';[m
+ [m
+ @Module({[m
+   imports: [[m
+[36m@@ -45,6 +46,7 @@[m [mimport { AttachmentsController } from './modules/attachments/attachments.control[m
+     AttachmentsModule,[m
+     DashboardModule,[m
+     ReportsModule,[m
+[32m+[m[32m    PaidServicesModule,[m
+   ],[m
+   controllers: [AppController],[m
+   providers: [[m
+[1mdiff --git a/back-end/src/modules/complaints/complaints.service.ts b/back-end/src/modules/complaints/complaints.service.ts[m
+[1mindex 70bebab..6fafb65 100644[m
+[1m--- a/back-end/src/modules/complaints/complaints.service.ts[m
+[1m+++ b/back-end/src/modules/complaints/complaints.service.ts[m
+[36m@@ -208,7 +208,7 @@[m [mexport class ComplaintsService {[m
+     this.assertCanActAsAuthority(actor, complaint);[m
+   }[m
+   private activeAssignment(complaintId: string) { const assignment = this.assignments.find((item) => item.complaintId === complaintId && item.status !== ComplaintAssignmentStatus.Completed); if (!assignment) throw new BadRequestException('Complaint has no active worker assignment'); return assignment; }[m
+[31m-  private hasActiveAssignment(workerId: string) { return this.assignments.some((item) => item.workerId === workerId && item.status !== ComplaintAssignmentStatus.Completed); }[m
+[32m+[m[32m  hasActiveAssignment(workerId: string) { return this.assignments.some((item) => item.workerId === workerId && item.status !== ComplaintAssignmentStatus.Completed); }[m
+   assertCanViewComplaint(actor: AuthenticatedUser, complaint: CommunityComplaint) {[m
+     const complaintCommunityId = this.assertComplaintCommunity(complaint).communityId;[m
+     if (actor.role === RoleName.SuperAdmin) return;[m
+[1mdiff --git a/back-end/src/modules/paid-services/paid-service-evidence.service.ts b/back-end/src/modules/paid-services/paid-service-evidence.service.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..7570754[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/src/modules/paid-services/paid-service-evidence.service.ts[m
+[36m@@ -0,0 +1,37 @@[m
+[32m+[m[32mimport { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';[m
+[32m+[m[32mimport { randomUUID } from 'crypto';[m
+[32m+[m[32mimport { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';[m
+[32m+[m[32mimport { basename, resolve } from 'path';[m
+[32m+[m[32mimport type { AuthenticatedUser } from '../auth/interfaces/auth.interface';[m
+[32m+[m[32mimport { PaidServicesService } from './paid-services.service';[m
+[32m+[m
+[32m+[m[32mexport const PAID_SERVICE_UPLOAD_DIRECTORY = 'PAID_SERVICE_UPLOAD_DIRECTORY';[m
+[32m+[m[32m@Injectable()[m
+[32m+[m[32mexport class PaidServiceEvidenceService {[m
+[32m+[m[32m  constructor(private readonly services: PaidServicesService, @Inject(PAID_SERVICE_UPLOAD_DIRECTORY) private readonly directory: string) {}[m
+[32m+[m[32m  upload(actor: AuthenticatedUser, id: string, file?: Express.Multer.File) {[m
+[32m+[m[32m    this.services.get(actor, id);[m
+[32m+[m[32m    if (!file?.buffer?.length || file.size > 5 * 1024 * 1024) throw new BadRequestException('Choose a nonempty image up to 5 MB');[m
+[32m+[m[32m    const types = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };[m
+[32m+[m[32m    const extension = types[file.mimetype];[m
+[32m+[m[32m    const bytes = file.buffer;[m
+[32m+[m[32m    const valid = file.mimetype === 'image/png' ? bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))[m
+[32m+[m[32m      : file.mimetype === 'image/jpeg' ? bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255[m
+[32m+[m[32m      : file.mimetype === 'image/webp' && bytes.length >= 12 && bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';[m
+[32m+[m[32m    if (!extension || !valid) throw new BadRequestException('Only JPEG, PNG, and WebP evidence images are allowed');[m
+[32m+[m[32m    const evidenceId = randomUUID(), storedName = `${evidenceId}.${extension}`;[m
+[32m+[m[32m    mkdirSync(this.directory, { recursive: true });[m
+[32m+[m[32m    const path = resolve(this.directory, storedName);[m
+[32m+[m[32m    writeFileSync(path, bytes, { flag: 'wx' });[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      return this.services.addEvidence(actor, id, { id: evidenceId, storedName, originalName: basename(file.originalname), mimeType: file.mimetype, uploadedAt: new Date().toISOString() });[m
+[32m+[m[32m    } catch (error) { unlinkSync(path); throw error; }[m
+[32m+[m[32m  }[m
+[32m+[m[32m  read(actor: AuthenticatedUser, id: string, evidenceId: string) {[m
+[32m+[m[32m    const evidence = this.services.evidence(actor, id, evidenceId);[m
+[32m+[m[32m    if (!/^[0-9a-f-]+\.(png|jpg|webp)$/.test(evidence.storedName)) throw new BadRequestException('Invalid evidence path');[m
+[32m+[m[32m    const path = resolve(this.directory, evidence.storedName);[m
+[32m+[m[32m    if (!existsSync(path)) throw new NotFoundException('Evidence image is unavailable');[m
+[32m+[m[32m    return { content: readFileSync(path), mimeType: evidence.mimeType };[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/back-end/src/modules/paid-services/paid-services.controller.ts b/back-end/src/modules/paid-services/paid-services.controller.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..3e258f7[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/src/modules/paid-services/paid-services.controller.ts[m
+[36m@@ -0,0 +1,71 @@[m
+[32m+[m[32mimport { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';[m
+[32m+[m[32mimport { FileInterceptor } from '@nestjs/platform-express';[m
+[32m+[m[32mimport { ApiBearerAuth, ApiTags } from '@nestjs/swagger';[m
+[32m+[m[32mimport { memoryStorage } from 'multer';[m
+[32m+[m[32mimport type { Response } from 'express';[m
+[32m+[m[32mimport { apiResponse } from '../../common/api-response';[m
+[32m+[m[32mimport { CurrentUser } from '../../common/decorators/current-user.decorator';[m
+[32m+[m[32mimport { Roles } from '../../common/decorators/roles.decorator';[m
+[32m+[m[32mimport { RoleName } from '../../common/enums/roles.enum';[m
+[32m+[m[32mimport { RolesGuard } from '../../common/guards/roles.guard';[m
+[32m+[m[32mimport type { AuthenticatedUser } from '../auth/interfaces/auth.interface';[m
+[32m+[m[32mimport { AssignServiceWorkerDto, CompleteServiceDto, CreateCatalogueDto, CreateServiceRequestDto, DecideEstimateDto, ReportServicePaymentDto, ReviewFinalCostDto, ReviewServiceDto, ScheduleServiceDto, SubmitEstimateDto, UpdateCatalogueDto, VerifyServicePaymentDto, VersionDto } from './paid-services.dto';[m
+[32m+[m[32mimport { PaidServicesService } from './paid-services.service';[m
+[32m+[m[32mimport { PaidServiceEvidenceService } from './paid-service-evidence.service';[m
+[32m+[m[32mimport { ServiceProgressDto } from './paid-services.dto';[m
+[32m+[m
+[32m+[m[32m@ApiTags('paid services')[m
+[32m+[m[32m@ApiBearerAuth('bearerAuth')[m
+[32m+[m[32m@UseGuards(RolesGuard)[m
+[32m+[m[32m@Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative, RoleName.Resident, RoleName.MaintenanceWorker)[m
+[32m+[m[32m@Controller('paid-services')[m
+[32m+[m[32mexport class PaidServicesController {[m
+[32m+[m[32m  constructor(private readonly service: PaidServicesService, private readonly files: PaidServiceEvidenceService) {}[m
+[32m+[m[32m  @Get('catalogue') catalogue(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.listCatalogue(actor)); }[m
+[32m+[m[32m  @Post('catalogue') @Roles(RoleName.CommunityAdmin)[m
+[32m+[m[32m  createCatalogue(@CurrentUser() actor: AuthenticatedUser, @Body() dto: CreateCatalogueDto) { return apiResponse(this.service.createCatalogue(actor, dto)); }[m
+[32m+[m[32m  @Patch('catalogue/:id') @Roles(RoleName.CommunityAdmin)[m
+[32m+[m[32m  updateCatalogue(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCatalogueDto) { return apiResponse(this.service.updateCatalogue(actor, id, dto)); }[m
+[32m+[m[32m  @Get('requests') list(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.list(actor)); }[m
+[32m+[m[32m  @Post('requests') @Roles(RoleName.Resident)[m
+[32m+[m[32m  create(@CurrentUser() actor: AuthenticatedUser, @Body() dto: CreateServiceRequestDto) { return apiResponse(this.service.createRequest(actor, dto)); }[m
+[32m+[m[32m  @Get('requests/:id') get(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) { return apiResponse(this.service.get(actor, id)); }[m
+[32m+[m[32m  @Get('requests/:id/eligible-workers') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  workers(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) { return apiResponse(this.service.eligibleWorkers(actor, id)); }[m
+[32m+[m[32m  @Post('requests/:id/assign') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  assign(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AssignServiceWorkerDto) { return apiResponse(this.service.assign(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/estimates') @Roles(RoleName.MaintenanceWorker)[m
+[32m+[m[32m  estimate(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SubmitEstimateDto) { return apiResponse(this.service.submitEstimate(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/estimate-decision') @Roles(RoleName.Resident)[m
+[32m+[m[32m  decision(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: DecideEstimateDto) { return apiResponse(this.service.decideEstimate(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/schedule') @Roles(RoleName.Resident, RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  schedule(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ScheduleServiceDto) { return apiResponse(this.service.schedule(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/start') @Roles(RoleName.MaintenanceWorker)[m
+[32m+[m[32m  start(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: VersionDto) { return apiResponse(this.service.start(actor, id, dto.version)); }[m
+[32m+[m[32m  @Post('requests/:id/complete') @Roles(RoleName.MaintenanceWorker)[m
+[32m+[m[32m  complete(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CompleteServiceDto) { return apiResponse(this.service.complete(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/progress') @Roles(RoleName.MaintenanceWorker)[m
+[32m+[m[32m  progress(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ServiceProgressDto) { return apiResponse(this.service.progress(actor, id, dto.version, dto.note)); }[m
+[32m+[m[32m  @Post('requests/:id/final-cost-review') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  finalCost(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReviewFinalCostDto) { return apiResponse(this.service.reviewFinalCost(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/payment-approval') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  paymentApproval(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: VersionDto) { return apiResponse(this.service.approvePayment(actor, id, dto.version)); }[m
+[32m+[m[32m  @Post('requests/:id/payment-report') @Roles(RoleName.Resident)[m
+[32m+[m[32m  report(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReportServicePaymentDto) { return apiResponse(this.service.reportPayment(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/payment-verification') @Roles(RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  verify(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: VerifyServicePaymentDto) { return apiResponse(this.service.verifyPayment(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/payment-receipt') @Roles(RoleName.MaintenanceWorker)[m
+[32m+[m[32m  receipt(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: VersionDto) { return apiResponse(this.service.confirmReceipt(actor, id, dto.version)); }[m
+[32m+[m[32m  @Post('requests/:id/review') @Roles(RoleName.Resident)[m
+[32m+[m[32m  review(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReviewServiceDto) { return apiResponse(this.service.review(actor, id, dto)); }[m
+[32m+[m[32m  @Post('requests/:id/cancel') @Roles(RoleName.Resident, RoleName.CommunityAdmin, RoleName.TowerRepresentative)[m
+[32m+[m[32m  cancel(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: VersionDto) { return apiResponse(this.service.cancel(actor, id, dto.version)); }[m
+[32m+[m[32m  @Post('requests/:id/evidence') @Roles(RoleName.Resident)[m
+[32m+[m[32m  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }))[m
+[32m+[m[32m  upload(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @UploadedFile() file: Express.Multer.File) { return apiResponse(this.files.upload(actor, id, file)); }[m
+[32m+[m[32m  @Get('requests/:id/evidence/:evidenceId')[m
+[32m+[m[32m  evidence(@CurrentUser() actor: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string, @Param('evidenceId', ParseUUIDPipe) evidenceId: string, @Res() response: Response) {[m
+[32m+[m[32m    const { content, mimeType } = this.files.read(actor, id, evidenceId);[m
+[32m+[m[32m    response.type(mimeType).send(content);[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/back-end/src/modules/paid-services/paid-services.dto.ts b/back-end/src/modules/paid-services/paid-services.dto.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..7b314e0[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/src/modules/paid-services/paid-services.dto.ts[m
+[36m@@ -0,0 +1,93 @@[m
+[32m+[m[32mimport { PartialType } from '@nestjs/swagger';[m
+[32m+[m[32mimport { IsBoolean, IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min } from 'class-validator';[m
+[32m+[m[32mimport { WorkType } from '../workforce/workforce.dto';[m
+[32m+[m
+[32m+[m[32mexport class CreateCatalogueDto {[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(100) name!: string;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) description!: string;[m
+[32m+[m[32m  @IsEnum(WorkType) specialization!: WorkType;[m
+[32m+[m[32m  // All monetary values are integer INR paise; no floating point arithmetic.[m
+[32m+[m[32m  @IsInt() @Min(1) @Max(100000000) startingPricePaise!: number;[m
+[32m+[m[32m  @IsBoolean() active!: boolean;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class UpdateCatalogueDto extends PartialType(CreateCatalogueDto) {}[m
+[32m+[m[32mexport class CreateServiceRequestDto {[m
+[32m+[m[32m  @IsUUID('4') catalogueId!: string;[m
+[32m+[m[32m  @IsUUID('4') clientRequestId!: string;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) description!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class VersionDto { @IsInt() @Min(1) version!: number; }[m
+[32m+[m[32mexport class AssignServiceWorkerDto extends VersionDto { @IsUUID('4') workerId!: string; }[m
+[32m+[m[32mexport class SubmitEstimateDto extends VersionDto {[m
+[32m+[m[32m  @IsInt() @Min(1) @Max(100000000) amountPaise!: number;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) description!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport enum EstimateDecision { Approve = 'APPROVE', Reject = 'REJECT', RequestRevision = 'REQUEST_REVISION' }[m
+[32m+[m[32mexport class DecideEstimateDto extends VersionDto {[m
+[32m+[m[32m  @IsUUID('4') estimateId!: string;[m
+[32m+[m[32m  @IsEnum(EstimateDecision) decision!: EstimateDecision;[m
+[32m+[m[32m  @IsOptional() @IsString() @Matches(/\S/) @MaxLength(2000) note?: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class ScheduleServiceDto extends VersionDto {[m
+[32m+[m[32m  @IsISO8601({ strict: true }) @Matches(/(Z|[+-]\d{2}:\d{2})$/) startsAt!: string;[m
+[32m+[m[32m  @IsISO8601({ strict: true }) @Matches(/(Z|[+-]\d{2}:\d{2})$/) endsAt!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class CompleteServiceDto extends VersionDto {[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) completionReport!: string;[m
+[32m+[m[32m  @IsInt() @Min(1) @Max(100000000) finalCostPaise!: number;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class ServiceProgressDto extends VersionDto {[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) note!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class ReviewFinalCostDto extends VersionDto {[m
+[32m+[m[32m  @IsBoolean() approved!: boolean;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) note!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class ReportServicePaymentDto extends VersionDto {[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(200) reference!: string;[m
+[32m+[m[32m  @IsUUID('4') evidenceId!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class VerifyServicePaymentDto extends VersionDto {[m
+[32m+[m[32m  @IsBoolean() approved!: boolean;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) verificationNote!: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport class ReviewServiceDto extends VersionDto {[m
+[32m+[m[32m  @IsInt() @Min(1) @Max(5) rating!: number;[m
+[32m+[m[32m  @IsString() @Matches(/\S/) @MaxLength(2000) feedback!: string;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport interface CatalogueEntry {[m
+[32m+[m[32m  id: string; communityId: string; name: string; description: string;[m
+[32m+[m[32m  specialization: WorkType; startingPricePaise: number; active: boolean;[m
+[32m+[m[32m  createdAt: string; updatedAt: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport type ServiceStatus = 'REQUESTED' | 'ASSIGNED' | 'AWAITING_ESTIMATE_APPROVAL' | 'ESTIMATE_REJECTED' | 'REVISION_REQUESTED' | 'ESTIMATE_APPROVED' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FINAL_COST_REJECTED' | 'FINAL_COST_APPROVED' | 'CANCELLED';[m
+[32m+[m[32mexport interface ServiceEstimate {[m
+[32m+[m[32m  id: string; number: number; amountPaise: number; description: string; submittedAt: string;[m
+[32m+[m[32m  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED';[m
+[32m+[m[32m  decidedAt?: string; decisionNote?: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport interface PaymentEvidence {[m
+[32m+[m[32m  id: string; storedName: string; originalName: string; mimeType: string; uploadedAt: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport interface ServicePayment {[m
+[32m+[m[32m  id: string; requestId: string; workerId: string; payeeUserId: string; amountPaise: number; currency: 'INR';[m
+[32m+[m[32m  approvedBy: string; approvedAt: string;[m
+[32m+[m[32m  status: 'APPROVED' | 'PAYMENT_REPORTED' | 'EVIDENCE_VERIFIED' | 'RECEIPT_CONFIRMED';[m
+[32m+[m[32m  reference?: string; evidenceId?: string; reportedAt?: string;[m
+[32m+[m[32m  verifiedBy?: string; verifiedAt?: string; verificationNote?: string; receiptConfirmedAt?: string;[m
+[32m+[m[32m}[m
+[32m+[m[32mexport interface PaidServiceRequest {[m
+[32m+[m[32m  id: string; clientRequestId: string; residentId: string; communityId: string; towerId: string; apartmentId: string;[m
+[32m+[m[32m  location: { communityName: string; towerName: string; floorLabel: string; apartmentNumber: string };[m
+[32m+[m[32m  service: { catalogueId: string; name: string; specialization: WorkType; startingPricePaise: number };[m
+[32m+[m[32m  description: string; status: ServiceStatus; version: number; workerId?: string;[m
+[32m+[m[32m  estimates: ServiceEstimate[]; approvedEstimateId?: string;[m
+[32m+[m[32m  appointment?: { startsAt: string; endsAt: string }; startedAt?: string;[m
+[32m+[m[32m  completionReport?: string; finalCostPaise?: number; completedAt?: string;[m
+[32m+[m[32m  finalReview?: { approved: boolean; note: string; reviewedBy: string; reviewedAt: string; estimateId: string };[m
+[32m+[m[32m  payment?: ServicePayment; evidence: PaymentEvidence[];[m
+[32m+[m[32m  review?: { rating: number; feedback: string; createdAt: string };[m
+[32m+[m[32m  history: { status: ServiceStatus; actorId: string; at: string; note: string }[];[m
+[32m+[m[32m  createdAt: string; updatedAt: string;[m
+[32m+[m[32m}[m
+[1mdiff --git a/back-end/src/modules/paid-services/paid-services.module.ts b/back-end/src/modules/paid-services/paid-services.module.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0984661[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/src/modules/paid-services/paid-services.module.ts[m
+[36m@@ -0,0 +1,13 @@[m
+[32m+[m[32mimport { Module } from '@nestjs/common';[m
+[32m+[m[32mimport { UsersModule } from '../users/users.module';[m
+[32m+[m[32mimport { CommunityModule } from '../community/community.module';[m
+[32m+[m[32mimport { WorkforceModule } from '../workforce/workforce.module';[m
+[32m+[m[32mimport { ComplaintsModule } from '../complaints/complaints.module';[m
+[32m+[m[32mimport { SubscriptionModule } from '../subscriptions/subscription.module';[m
+[32m+[m[32mimport { PaidServicesController } from './paid-services.controller';[m
+[32m+[m[32mimport { PaidServicesService } from './paid-services.service';[m
+[32m+[m[32mimport { PaidServiceEvidenceService, PAID_SERVICE_UPLOAD_DIRECTORY } from './paid-service-evidence.service';[m
+[32m+[m[32mimport { resolve } from 'path';[m
+[32m+[m
+[32m+[m[32m@Module({ imports: [UsersModule, CommunityModule, WorkforceModule, ComplaintsModule, SubscriptionModule], controllers: [PaidServicesController], providers: [PaidServicesService, PaidServiceEvidenceService, { provide: PAID_SERVICE_UPLOAD_DIRECTORY, useFactory: () => resolve(process.cwd(), 'uploads', 'paid-services') }] })[m
+[32m+[m[32mexport class PaidServicesModule {}[m
+[1mdiff --git a/back-end/src/modules/paid-services/paid-services.service.ts b/back-end/src/modules/paid-services/paid-services.service.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..37931de[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/src/modules/paid-services/paid-services.service.ts[m
+[36m@@ -0,0 +1,266 @@[m
+[32m+[m[32mimport { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';[m
+[32m+[m[32mimport { randomUUID } from 'crypto';[m
+[32m+[m[32mimport { CrudRepository } from '../../common/crud/crud.repository';[m
+[32m+[m[32mimport { CrudService } from '../../common/crud/crud.service';[m
+[32m+[m[32mimport { RoleName } from '../../common/enums/roles.enum';[m
+[32m+[m[32mimport { User } from '../../data/schemas';[m
+[32m+[m[32mimport { serviceToken } from '../../data/urbanity.resources';[m
+[32m+[m[32mimport type { AuthenticatedUser } from '../auth/interfaces/auth.interface';[m
+[32m+[m[32mimport { CommunityService } from '../community/community.service';[m
+[32m+[m[32mimport { ComplaintsService } from '../complaints/complaints.service';[m
+[32m+[m[32mimport { SubscriptionService } from '../subscriptions/subscription.service';[m
+[32m+[m[32mimport { WorkforceService } from '../workforce/workforce.service';[m
+[32m+[m[32mimport { WorkerStatus } from '../workforce/workforce.dto';[m
+[32m+[m[32mimport { AssignServiceWorkerDto, CatalogueEntry, CompleteServiceDto, CreateCatalogueDto, CreateServiceRequestDto, DecideEstimateDto, EstimateDecision, PaidServiceRequest, PaymentEvidence, ReportServicePaymentDto, ReviewFinalCostDto, ReviewServiceDto, ScheduleServiceDto, ServiceStatus, SubmitEstimateDto, UpdateCatalogueDto, VerifyServicePaymentDto } from './paid-services.dto';[m
+[32m+[m
+[32m+[m[32mconst now = () => new Date().toISOString();[m
+[32m+[m
+[32m+[m[32m@Injectable()[m
+[32m+[m[32mexport class PaidServicesService {[m
+[32m+[m[32m  private readonly catalogue = new CrudService(new CrudRepository<CatalogueEntry>(), 'Service');[m
+[32m+[m[32m  private readonly requests = new CrudService(new CrudRepository<PaidServiceRequest>(), 'Service request');[m
+[32m+[m[32m  constructor([m
+[32m+[m[32m    @Inject(serviceToken('users')) private readonly users: CrudService<User, any, any>,[m
+[32m+[m[32m    private readonly community: CommunityService,[m
+[32m+[m[32m    private readonly workforce: WorkforceService,[m
+[32m+[m[32m    private readonly complaints: ComplaintsService,[m
+[32m+[m[32m    private readonly subscriptions: SubscriptionService,[m
+[32m+[m[32m  ) {}[m
+[32m+[m
+[32m+[m[32m  listCatalogue(actor: AuthenticatedUser) {[m
+[32m+[m[32m    const communityId = this.actorCommunity(actor);[m
+[32m+[m[32m    return this.catalogue.findAll().filter((item) => item.communityId === communityId && (actor.role === RoleName.CommunityAdmin || item.active));[m
+[32m+[m[32m  }[m
+[32m+[m[32m  createCatalogue(actor: AuthenticatedUser, dto: CreateCatalogueDto) {[m
+[32m+[m[32m    this.requireRole(actor, RoleName.CommunityAdmin);[m
+[32m+[m[32m    const communityId = this.actorCommunity(actor);[m
+[32m+[m[32m    this.subscriptions.assertCommunityActive(communityId);[m
+[32m+[m[32m    this.uniqueName(communityId, dto.name);[m
+[32m+[m[32m    const at = now();[m
+[32m+[m[32m    return this.catalogue.create({ ...dto, name: dto.name.trim(), description: dto.description.trim(), communityId, createdAt: at, updatedAt: at });[m
+[32m+[m[32m  }[m
+[32m+[m[32m  updateCatalogue(actor: AuthenticatedUser, id: string, dto: UpdateCatalogueDto) {[m
+[32m+[m[32m    this.requireRole(actor, RoleName.CommunityAdmin);[m
+[32m+[m[32m    const entry = this.catalogue.findById(id);[m
+[32m+[m[32m    if (entry.communityId !== this.actorCommunity(actor)) throw new ForbiddenException('Service belongs to another community');[m
+[32m+[m[32m    this.subscriptions.assertCommunityActive(entry.communityId);[m
+[32m+[m[32m    if (!Object.keys(dto).length || Object.values(dto).some((value) => value === null)) throw new BadRequestException('Provide valid service fields');[m
+[32m+[m[32m    if (dto.name) this.uniqueName(entry.communityId, dto.name, id);[m
+[32m+[m[32m    return this.catalogue.update(id, { ...dto, ...(dto.name ? { name: dto.name.trim() } : {}), ...(dto.description ? { description: dto.description.trim() } : {}), updatedAt: now() });[m
+[32m+[m[32m  }[m
+[32m+[m[32m  createRequest(actor: AuthenticatedUser, dto: CreateServiceRequestDto) {[m
+[32m+[m[32m    this.requireRole(actor, RoleName.Resident);[m
+[32m+[m[32m    const previous = this.requests.findAll().find((item) => item.residentId === actor.id && item.clientRequestId === dto.clientRequestId);[m
+[32m+[m[32m    if (previous) {[m
+[32m+[m[32m      if (previous.service.catalogueId !== dto.catalogueId || previous.description !== dto.description.trim()) throw new ConflictException('This submission key was already used for a different request');[m
+[32m+[m[32m      return this.view(previous);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    const location = this.community.resolveResidentHierarchy(actor.id);[m
+[32m+[m[32m    const entry = this.catalogue.findById(dto.catalogueId);[m
+[32m+[m[32m    if (entry.communityId !== location.community.id || !entry.active) throw new BadRequestException('Select an active service in your community');[m
+[32m+[m[32m    this.subscriptions.assertCommunityActive(location.community.id);[m
+[32m+[m[32m    const at = now();[m
+[32m+[m[32m    const item = this.requests.create({[m
+[32m+[m[32m      clientRequestId: dto.clientRequestId, residentId: actor.id, communityId: location.community.id,[m
+[32m+[m[32m      towerId: location.tower.id, apartmentId: location.apartment.id,[m
+[32m+[m[32m      location: { communityName: location.community.name, towerName: location.tower.name, floorLabel: location.floor.label || String(location.floor.floorNumber), apartmentNumber: location.apartment.apartmentNumber },[m
+[32m+[m[32m      service: { catalogueId: entry.id, name: entry.name, specialization: entry.specialization, startingPricePaise: entry.startingPricePaise },[m
+[32m+[m[32m      description: dto.description.trim(), status: 'REQUESTED', version: 1, estimates: [], evidence: [],[m
+[32m+[m[32m      history: [{ status: 'REQUESTED', actorId: actor.id, at, note: 'Service requested' }], createdAt: at, updatedAt: at,[m
+[32m+[m[32m    });[m
+[32m+[m[32m    return this.view(item);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  list(actor: AuthenticatedUser) { return this.requests.findAll().filter((item) => this.canView(actor, item)).map((item) => this.view(item)); }[m
+[32m+[m[32m  get(actor: AuthenticatedUser, id: string) { return this.view(this.access(actor, id)); }[m
+[32m+[m[32m  eligibleWorkers(actor: AuthenticatedUser, id: string) {[m
+[32m+[m[32m    const item = this.access(actor, id); this.authority(actor, item);[m
+[32m+[m[32m    return this.workforce.findAll().filter((worker) => worker.communityId === item.communityId && worker.specialization === item.service.specialization && worker.status === WorkerStatus.Available && !this.workforce.hasPaidServiceReservation(worker.id) && !this.complaints.hasActiveAssignment(worker.id))[m
+[32m+[m[32m      .filter((worker) => { try { this.workforce.assertValidAssignmentTarget(worker.id); return true; } catch { return false; } })[m
+[32m+[m[32m      .map((worker) => this.workforce.toViewModel(worker));[m
+[32m+[m[32m  }[m
+[32m+[m[32m  assign(actor: AuthenticatedUser, id: string, dto: AssignServiceWorkerDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.authority(actor, item); this.status(item, 'REQUESTED');[m
+[32m+[m[32m    const worker = this.workforce.assertValidAssignmentTarget(dto.workerId);[m
+[32m+[m[32m    if (worker.communityId !== item.communityId || worker.specialization !== item.service.specialization || worker.status !== WorkerStatus.Available || this.complaints.hasActiveAssignment(worker.id)) throw new BadRequestException('Worker must be available, qualified, and in this community');[m
+[32m+[m[32m    this.workforce.reservePaidService(worker.id, item.id);[m
+[32m+[m[32m    item.workerId = worker.id;[m
+[32m+[m[32m    return this.change(item, actor, 'ASSIGNED', 'Worker assigned');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  submitEstimate(actor: AuthenticatedUser, id: string, dto: SubmitEstimateDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.worker(actor, item);[m
+[32m+[m[32m    this.status(item, 'ASSIGNED', 'ESTIMATE_REJECTED', 'REVISION_REQUESTED', 'ESTIMATE_APPROVED', 'SCHEDULED', 'IN_PROGRESS');[m
+[32m+[m[32m    item.estimates.push({ id: randomUUID(), number: item.estimates.length + 1, amountPaise: dto.amountPaise, description: dto.description.trim(), status: 'PENDING', submittedAt: now() });[m
+[32m+[m[32m    return this.change(item, actor, 'AWAITING_ESTIMATE_APPROVAL', item.startedAt ? 'Work paused for revised estimate approval' : 'Estimate submitted');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  decideEstimate(actor: AuthenticatedUser, id: string, dto: DecideEstimateDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.owner(actor, item); this.status(item, 'AWAITING_ESTIMATE_APPROVAL');[m
+[32m+[m[32m    const estimate = item.estimates.at(-1)!;[m
+[32m+[m[32m    if (estimate.id !== dto.estimateId || estimate.status !== 'PENDING') throw new ConflictException('This estimate is no longer awaiting approval');[m
+[32m+[m[32m    if (dto.decision !== EstimateDecision.Approve && !dto.note?.trim()) throw new BadRequestException('Explain the rejection or requested revision');[m
+[32m+[m[32m    estimate.decidedAt = now(); estimate.decisionNote = dto.note?.trim();[m
+[32m+[m[32m    if (dto.decision === EstimateDecision.Approve) {[m
+[32m+[m[32m      estimate.status = 'APPROVED'; item.approvedEstimateId = estimate.id;[m
+[32m+[m[32m      // Any revised total replaces the previous ceiling; pending/rejected revisions block all work.[m
+[32m+[m[32m      return this.change(item, actor, item.startedAt ? 'IN_PROGRESS' : item.appointment ? 'SCHEDULED' : 'ESTIMATE_APPROVED', 'Resident approved estimate');[m
+[32m+[m[32m    }[m
+[32m+[m[32m    estimate.status = dto.decision === EstimateDecision.Reject ? 'REJECTED' : 'REVISION_REQUESTED';[m
+[32m+[m[32m    return this.change(item, actor, dto.decision === EstimateDecision.Reject ? 'ESTIMATE_REJECTED' : 'REVISION_REQUESTED', dto.note!.trim());[m
+[32m+[m[32m  }[m
+[32m+[m[32m  schedule(actor: AuthenticatedUser, id: string, dto: ScheduleServiceDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version);[m
+[32m+[m[32m    if (actor.role === RoleName.Resident) this.owner(actor, item); else this.authority(actor, item);[m
+[32m+[m[32m    this.status(item, 'ESTIMATE_APPROVED', 'SCHEDULED');[m
+[32m+[m[32m    this.approvedEstimate(item);[m
+[32m+[m[32m    const start = Date.parse(dto.startsAt), end = Date.parse(dto.endsAt);[m
+[32m+[m[32m    if (!Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start || end - start > 8 * 60 * 60 * 1000) throw new BadRequestException('Choose a future appointment lasting at most 8 hours');[m
+[32m+[m[32m    const conflict = this.requests.findAll().some((other) => other.id !== item.id && other.status !== 'CANCELLED' && other.appointment && (other.workerId === item.workerId || other.residentId === item.residentId) && start < Date.parse(other.appointment.endsAt) && end > Date.parse(other.appointment.startsAt));[m
+[32m+[m[32m    if (conflict) throw new ConflictException('The worker or resident already has an overlapping appointment');[m
+[32m+[m[32m    item.appointment = { startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString() };[m
+[32m+[m[32m    return this.change(item, actor, 'SCHEDULED', 'Appointment scheduled');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  start(actor: AuthenticatedUser, id: string, version: number) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, version); this.worker(actor, item); this.status(item, 'SCHEDULED'); this.approvedEstimate(item);[m
+[32m+[m[32m    if (!item.appointment || Date.now() < Date.parse(item.appointment.startsAt) || Date.now() >= Date.parse(item.appointment.endsAt)) throw new BadRequestException('Start work within the scheduled appointment; reschedule an expired appointment');[m
+[32m+[m[32m    item.startedAt = now();[m
+[32m+[m[32m    return this.change(item, actor, 'IN_PROGRESS', 'Work started');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  complete(actor: AuthenticatedUser, id: string, dto: CompleteServiceDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.worker(actor, item); this.status(item, 'IN_PROGRESS', 'FINAL_COST_REJECTED');[m
+[32m+[m[32m    const estimate = this.approvedEstimate(item);[m
+[32m+[m[32m    if (dto.finalCostPaise > estimate.amountPaise) throw new BadRequestException('Final cost exceeds the approved estimate; obtain approval of a revised estimate first');[m
+[32m+[m[32m    if (!item.completedAt) this.workforce.releasePaidService(item.workerId!, item.id);[m
+[32m+[m[32m    item.completionReport = dto.completionReport.trim(); item.finalCostPaise = dto.finalCostPaise; item.completedAt = now();[m
+[32m+[m[32m    return this.change(item, actor, 'COMPLETED', 'Completion and final cost submitted');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  progress(actor: AuthenticatedUser, id: string, version: number, note: string) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, version); this.worker(actor, item); this.status(item, 'IN_PROGRESS'); this.approvedEstimate(item);[m
+[32m+[m[32m    return this.change(item, actor, item.status, `Work update: ${note.trim()}`);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  reviewFinalCost(actor: AuthenticatedUser, id: string, dto: ReviewFinalCostDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.authority(actor, item); this.status(item, 'COMPLETED');[m
+[32m+[m[32m    const estimate = this.approvedEstimate(item);[m
+[32m+[m[32m    if (!item.completedAt || !item.finalCostPaise || item.finalCostPaise > estimate.amountPaise) throw new BadRequestException('Final cost requires a completed service within the approved estimate');[m
+[32m+[m[32m    item.finalReview = { approved: dto.approved, note: dto.note.trim(), reviewedBy: actor.id, reviewedAt: now(), estimateId: estimate.id };[m
+[32m+[m[32m    return this.change(item, actor, dto.approved ? 'FINAL_COST_APPROVED' : 'FINAL_COST_REJECTED', dto.note.trim());[m
+[32m+[m[32m  }[m
+[32m+[m[32m  approvePayment(actor: AuthenticatedUser, id: string, version: number) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, version); this.authority(actor, item); this.status(item, 'FINAL_COST_APPROVED');[m
+[32m+[m[32m    if (item.payment) throw new ConflictException('A payment record already exists for this service');[m
+[32m+[m[32m    const estimate = this.approvedEstimate(item);[m
+[32m+[m[32m    if (!item.finalReview?.approved || item.finalReview.estimateId !== estimate.id || !item.finalCostPaise || item.finalCostPaise > estimate.amountPaise) throw new BadRequestException('An authorized final cost is required');[m
+[32m+[m[32m    const worker = this.workforce.findById(item.workerId!);[m
+[32m+[m[32m    const payee = this.users.findById(worker.userId);[m
+[32m+[m[32m    if (payee.role !== RoleName.MaintenanceWorker || payee.communityId !== item.communityId || worker.communityId !== item.communityId) throw new BadRequestException('Assigned worker payee must still belong to this community');[m
+[32m+[m[32m    item.payment = { id: randomUUID(), requestId: item.id, workerId: worker.id, payeeUserId: payee.id, amountPaise: item.finalCostPaise, currency: 'INR', status: 'APPROVED', approvedBy: actor.id, approvedAt: now() };[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Worker payment authorized; no funds transferred');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  addEvidence(actor: AuthenticatedUser, id: string, evidence: PaymentEvidence) {[m
+[32m+[m[32m    const item = this.access(actor, id); this.owner(actor, item);[m
+[32m+[m[32m    if (!item.payment || item.payment.status !== 'APPROVED') throw new BadRequestException('Payment evidence can be uploaded after payment authorization and before reporting');[m
+[32m+[m[32m    if (item.evidence.length >= 5) throw new BadRequestException('At most five payment evidence images are allowed');[m
+[32m+[m[32m    item.evidence.push(evidence);[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Payment evidence uploaded');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  evidence(actor: AuthenticatedUser, id: string, evidenceId: string) {[m
+[32m+[m[32m    const item = this.access(actor, id);[m
+[32m+[m[32m    const evidence = item.evidence.find((entry) => entry.id === evidenceId);[m
+[32m+[m[32m    if (!evidence) throw new BadRequestException('Payment evidence not found');[m
+[32m+[m[32m    return evidence;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  reportPayment(actor: AuthenticatedUser, id: string, dto: ReportServicePaymentDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.owner(actor, item);[m
+[32m+[m[32m    const payment = item.payment;[m
+[32m+[m[32m    if (!payment || payment.status !== 'APPROVED') throw new BadRequestException('Payment must be authorized and not already reported');[m
+[32m+[m[32m    if (!item.evidence.some((entry) => entry.id === dto.evidenceId)) throw new BadRequestException('Upload payment evidence for this request');[m
+[32m+[m[32m    if (this.requests.findAll().some((other) => other.payment?.reference?.toLowerCase() === dto.reference.trim().toLowerCase())) throw new ConflictException('This payment reference has already been reported');[m
+[32m+[m[32m    Object.assign(payment, { status: 'PAYMENT_REPORTED', reference: dto.reference.trim(), evidenceId: dto.evidenceId, reportedAt: now() });[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Resident reported an external payment; verification pending');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  verifyPayment(actor: AuthenticatedUser, id: string, dto: VerifyServicePaymentDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.authority(actor, item);[m
+[32m+[m[32m    if (item.payment?.status !== 'PAYMENT_REPORTED') throw new BadRequestException('Only reported payment evidence can be verified');[m
+[32m+[m[32m    if (!dto.approved) {[m
+[32m+[m[32m      const reference = item.payment.reference;[m
+[32m+[m[32m      Object.assign(item.payment, { status: 'APPROVED', reference: undefined, evidenceId: undefined, reportedAt: undefined });[m
+[32m+[m[32m      return this.change(item, actor, item.status, `Payment evidence rejected for reference ${reference}: ${dto.verificationNote.trim()}`);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    Object.assign(item.payment, { status: 'EVIDENCE_VERIFIED', verifiedBy: actor.id, verifiedAt: now(), verificationNote: dto.verificationNote.trim() });[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Authority manually verified payment evidence; worker receipt pending');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  confirmReceipt(actor: AuthenticatedUser, id: string, version: number) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, version); this.worker(actor, item);[m
+[32m+[m[32m    if (item.payment?.status !== 'EVIDENCE_VERIFIED' || item.payment.payeeUserId !== actor.id) throw new BadRequestException('Only the intended worker payee may confirm a verified payment receipt');[m
+[32m+[m[32m    item.payment.status = 'RECEIPT_CONFIRMED'; item.payment.receiptConfirmedAt = now();[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Worker manually acknowledged receipt; no gateway verification');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  review(actor: AuthenticatedUser, id: string, dto: ReviewServiceDto) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, dto.version); this.owner(actor, item); this.status(item, 'FINAL_COST_APPROVED');[m
+[32m+[m[32m    if (item.review) throw new ConflictException('This service already has a resident review');[m
+[32m+[m[32m    item.review = { rating: dto.rating, feedback: dto.feedback.trim(), createdAt: now() };[m
+[32m+[m[32m    return this.change(item, actor, item.status, 'Resident reviewed service');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  cancel(actor: AuthenticatedUser, id: string, version: number) {[m
+[32m+[m[32m    const item = this.mutation(actor, id, version);[m
+[32m+[m[32m    if (actor.role === RoleName.Resident) this.owner(actor, item); else this.authority(actor, item);[m
+[32m+[m[32m    if (item.startedAt || item.status === 'CANCELLED' || item.payment) throw new BadRequestException('Only requests whose work has not started can be cancelled');[m
+[32m+[m[32m    if (item.workerId) this.workforce.releasePaidService(item.workerId, item.id);[m
+[32m+[m[32m    return this.change(item, actor, 'CANCELLED', 'Service cancelled before work began');[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  private actorCommunity(actor: AuthenticatedUser) {[m
+[32m+[m[32m    const user = this.users.findById(actor.id);[m
+[32m+[m[32m    if (user.communityId) return user.communityId;[m
+[32m+[m[32m    if (user.towerId) return this.community.getTower(user.towerId).communityId;[m
+[32m+[m[32m    if (user.apartmentId) return this.community.resolveResidentHierarchy(actor.id).community.id;[m
+[32m+[m[32m    throw new ForbiddenException('A community association is required');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private canView(actor: AuthenticatedUser, item: PaidServiceRequest) {[m
+[32m+[m[32m    if (this.actorCommunity(actor) !== item.communityId) return false;[m
+[32m+[m[32m    if (actor.role === RoleName.CommunityAdmin) return true;[m
+[32m+[m[32m    if (actor.role === RoleName.TowerRepresentative) return this.users.findById(actor.id).towerId === item.towerId;[m
+[32m+[m[32m    if (actor.role === RoleName.Resident) return actor.id === item.residentId;[m
+[32m+[m[32m    if (actor.role === RoleName.MaintenanceWorker) return this.workforce.getWorkerProfileForUser(actor.id).id === item.workerId;[m
+[32m+[m[32m    return false;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private access(actor: AuthenticatedUser, id: string) {[m
+[32m+[m[32m    const item = this.requests.findById(id);[m
+[32m+[m[32m    if (!this.canView(actor, item)) throw new ForbiddenException('You do not have access to this service request');[m
+[32m+[m[32m    return item;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private mutation(actor: AuthenticatedUser, id: string, version: number) {[m
+[32m+[m[32m    const item = this.access(actor, id);[m
+[32m+[m[32m    if (item.version !== version) throw new ConflictException('This request changed. Refresh it before trying again');[m
+[32m+[m[32m    return item;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private requireRole(actor: AuthenticatedUser, role: RoleName) { if (actor.role !== role) throw new ForbiddenException(`This action requires ${role}`); }[m
+[32m+[m[32m  private owner(actor: AuthenticatedUser, item: PaidServiceRequest) { this.requireRole(actor, RoleName.Resident); if (actor.id !== item.residentId) throw new ForbiddenException('Only the requesting resident may do this'); }[m
+[32m+[m[32m  private authority(actor: AuthenticatedUser, item: PaidServiceRequest) {[m
+[32m+[m[32m    if (![RoleName.CommunityAdmin, RoleName.TowerRepresentative].includes(actor.role) || !this.canView(actor, item)) throw new ForbiddenException('A Community Admin or the tower representative must authorize this action');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private worker(actor: AuthenticatedUser, item: PaidServiceRequest) {[m
+[32m+[m[32m    this.requireRole(actor, RoleName.MaintenanceWorker);[m
+[32m+[m[32m    const worker = this.workforce.getWorkerProfileForUser(actor.id);[m
+[32m+[m[32m    if (item.workerId !== worker.id || worker.communityId !== item.communityId) throw new ForbiddenException('Only the assigned maintenance worker may do this');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private status(item: PaidServiceRequest, ...allowed: ServiceStatus[]) { if (!allowed.includes(item.status)) throw new BadRequestException(`This action is not allowed while service is ${item.status}`); }[m
+[32m+[m[32m  private approvedEstimate(item: PaidServiceRequest) {[m
+[32m+[m[32m    const estimate = item.estimates.at(-1);[m
+[32m+[m[32m    if (!estimate || estimate.id !== item.approvedEstimateId || estimate.status !== 'APPROVED') throw new BadRequestException('The latest estimate requires resident approval');[m
+[32m+[m[32m    return estimate;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private uniqueName(communityId: string, name: string, excludedId?: string) {[m
+[32m+[m[32m    if (this.catalogue.findAll().some((entry) => entry.communityId === communityId && entry.id !== excludedId && entry.name.toLowerCase() === name.trim().toLowerCase())) throw new ConflictException('A service with this name already exists');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private change(item: PaidServiceRequest, actor: AuthenticatedUser, status: ServiceStatus, note: string) {[m
+[32m+[m[32m    item.status = status; item.version += 1; item.updatedAt = now();[m
+[32m+[m[32m    item.history.push({ status, actorId: actor.id, at: item.updatedAt, note });[m
+[32m+[m[32m    return this.view(item);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  private view(item: PaidServiceRequest) {[m
+[32m+[m[32m    // Keep historical service records usable if a user is later removed.[m
+[32m+[m[32m    const worker = this.workforce.findAll().find((entry) => entry.id === item.workerId);[m
+[32m+[m[32m    const workerUser = worker && this.users.findAll().find((entry) => entry.id === worker.userId);[m
+[32m+[m[32m    const resident = this.users.findAll().find((entry) => entry.id === item.residentId);[m
+[32m+[m[32m    return structuredClone({ ...item, workerName: workerUser?.name, residentName: resident?.name, evidence: item.evidence.map(({ storedName: _storedName, ...entry }) => entry) });[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/back-end/src/modules/workforce/workforce.service.ts b/back-end/src/modules/workforce/workforce.service.ts[m
+[1mindex b0b096c..52732fa 100644[m
+[1m--- a/back-end/src/modules/workforce/workforce.service.ts[m
+[1m+++ b/back-end/src/modules/workforce/workforce.service.ts[m
+[36m@@ -20,6 +20,8 @@[m [mconst profiles: WorkerProfile[] = [[m
+ [m
+ @Injectable()[m
+ export class WorkforceService {[m
+[32m+[m[32m  // ponytail: process-local reservations match current repositories; persist atomically with requests when a database is introduced.[m
+[32m+[m[32m  private readonly paidServiceReservations = new Map<string, string>();[m
+   private readonly repository = new CrudRepository<WorkerProfile>(profiles);[m
+   private readonly crud = new CrudService(this.repository, 'Worker profile');[m
+   constructor([m
+[36m@@ -44,6 +46,7 @@[m [mexport class WorkforceService {[m
+     return profile;[m
+   }[m
+   assertValidAssignmentTarget(id: string) {[m
+[32m+[m[32m    if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Worker is reserved for an active paid service');[m
+     const profile = this.findById(id);[m
+     const user = this.users.findById(profile.userId);[m
+     if (user.role !== RoleName.MaintenanceWorker) {[m
+[36m@@ -86,6 +89,7 @@[m [mexport class WorkforceService {[m
+     return this.create(dto);[m
+   }[m
+   update(id: string, dto: UpdateWorkerProfileDto) {[m
+[32m+[m[32m    if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Finish or cancel the worker paid service before changing the profile');[m
+     const current = this.findById(id);[m
+     if (dto.userId && dto.userId !== current.userId) throw new BadRequestException('A worker profile user cannot be changed');[m
+     if (dto.status === WorkerStatus.Busy) throw new BadRequestException('BUSY status is managed by worker assignment operations');[m
+[36m@@ -103,7 +107,19 @@[m [mexport class WorkforceService {[m
+   updatePerformance(id: string, rating: number, completedWorkCount: number) {[m
+     return this.crud.update(id, { rating, completedWorkCount, updatedAt: new Date().toISOString() });[m
+   }[m
+[31m-  deactivate(id: string) { return this.crud.update(id, { status: WorkerStatus.Inactive, updatedAt: new Date().toISOString() }); }[m
+[32m+[m[32m  deactivate(id: string) { if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Worker has an active paid service'); return this.crud.update(id, { status: WorkerStatus.Inactive, updatedAt: new Date().toISOString() }); }[m
+[32m+[m[32m  hasPaidServiceReservation(id: string) { return this.paidServiceReservations.has(id); }[m
+[32m+[m[32m  reservePaidService(id: string, requestId: string) {[m
+[32m+[m[32m    const worker = this.assertValidAssignmentTarget(id);[m
+[32m+[m[32m    if (worker.status !== WorkerStatus.Available) throw new BadRequestException('Worker is unavailable');[m
+[32m+[m[32m    this.paidServiceReservations.set(id, requestId);[m
+[32m+[m[32m    return this.updateSystemStatus(id, WorkerStatus.Busy);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  releasePaidService(id: string, requestId: string) {[m
+[32m+[m[32m    if (this.paidServiceReservations.get(id) !== requestId) throw new BadRequestException('Worker is not reserved for this service');[m
+[32m+[m[32m    this.paidServiceReservations.delete(id);[m
+[32m+[m[32m    return this.updateSystemStatus(id, WorkerStatus.Available);[m
+[32m+[m[32m  }[m
+   deactivateForActor(actor: AuthenticatedUser, id: string) {[m
+     const profile = this.findById(id); this.assertCanAccessProfile(actor, profile); this.subscriptions.assertCommunityActive(profile.communityId);[m
+     return this.deactivate(id);[m
+[1mdiff --git a/back-end/test/paid-services.e2e-spec.ts b/back-end/test/paid-services.e2e-spec.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..22abff4[m
+[1m--- /dev/null[m
+[1m+++ b/back-end/test/paid-services.e2e-spec.ts[m
+[36m@@ -0,0 +1,249 @@[m
+[32m+[m[32mimport { ValidationPipe } from '@nestjs/common';[m
+[32m+[m[32mimport type { INestApplication } from '@nestjs/common';[m
+[32m+[m[32mimport { Test } from '@nestjs/testing';[m
+[32m+[m[32mimport { JwtService } from '@nestjs/jwt';[m
+[32m+[m[32mimport { randomUUID } from 'crypto';[m
+[32m+[m[32mimport { mkdtemp, rm } from 'fs/promises';[m
+[32m+[m[32mimport { tmpdir } from 'os';[m
+[32m+[m[32mimport { join } from 'path';[m
+[32m+[m[32mimport request from 'supertest';[m
+[32m+[m[32mimport { AppModule } from '../src/app.module';[m
+[32m+[m[32mimport { SEEDED_USERS } from '../src/data/urbanity.resources';[m
+[32m+[m[32mimport { LOG_DIRECTORY } from '../src/common/logging/logging.constants';[m
+[32m+[m[32mimport { LoggingService } from '../src/common/logging/logging.service';[m
+[32m+[m[32mimport { PAID_SERVICE_UPLOAD_DIRECTORY } from '../src/modules/paid-services/paid-service-evidence.service';[m
+[32m+[m
+[32m+[m[32mjest.setTimeout(30000);[m
+[32m+[m[32mconst root = '/paid-services';[m
+[32m+[m[32mconst workerId = '50000000-0000-4000-8000-000000000001';[m
+[32m+[m[32mconst electricianId = '50000000-0000-4000-8000-000000000002';[m
+[32m+[m[32mconst workerBId = '50000000-0000-4000-8000-000000000005';[m
+[32m+[m[32mconst png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);[m
+[32m+[m
+[32m+[m[32mdescribe('F04 paid services marketplace', () => {[m
+[32m+[m[32m  let app: INestApplication, server: any, directory: string;[m
+[32m+[m[32m  let tokens: Record<string, string>;[m
+[32m+[m[32m  let entry: any;[m
+[32m+[m[32m  beforeEach(async () => {[m
+[32m+[m[32m    directory = await mkdtemp(join(tmpdir(), 'urbanity-f04-'));[m
+[32m+[m[32m    const module = await Test.createTestingModule({ imports: [AppModule] })[m
+[32m+[m[32m      .overrideProvider(LOG_DIRECTORY).useValue(join(directory, 'logs'))[m
+[32m+[m[32m      .overrideProvider(PAID_SERVICE_UPLOAD_DIRECTORY).useValue(join(directory, 'evidence')).compile();[m
+[32m+[m[32m    app = module.createNestApplication();[m
+[32m+[m[32m    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));[m
+[32m+[m[32m    await app.init(); server = app.getHttpServer();[m
+[32m+[m[32m    tokens = {};[m
+[32m+[m[32m    const accounts = {[m
+[32m+[m[32m      admin: 'community.admin@urbanity.local', resident: 'resident@urbanity.local', worker: 'maintenance.worker@urbanity.local',[m
+[32m+[m[32m      representative: 'tower.representative@urbanity.local', adminB: 'community.admin.b@urbanity.local',[m
+[32m+[m[32m      residentB: 'resident.b@urbanity.local', workerB: 'maintenance.worker.b@urbanity.local', super: 'superadmin@urbanity.local',[m
+[32m+[m[32m    };[m
+[32m+[m[32m    for (const [key, email] of Object.entries(accounts)) {[m
+[32m+[m[32m      const user = SEEDED_USERS.find((item) => item.email === email)!;[m
+[32m+[m[32m      tokens[key] = `Bearer ${app.get(JwtService).sign({ sub: user.id, role: user.role, email }, { expiresIn: '2h' })}`;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    entry = (await request(server).post(`${root}/catalogue`).set('Authorization', tokens.admin).send({ name: 'Kitchen plumbing', description: 'Private apartment plumbing service', specialization: 'PLUMBING', startingPricePaise: 10000, active: true }).expect(201)).body.data;[m
+[32m+[m[32m  });[m
+[32m+[m[32m  afterEach(async () => { jest.restoreAllMocks(); await app?.get(LoggingService).flush(); await app?.close(); await rm(directory, { recursive: true, force: true, maxRetries: 3 }); });[m
+[32m+[m[32m  const create = async (actor = 'resident', catalogueId?: string, clientRequestId = randomUUID()) => (await request(server).post(`${root}/requests`).set('Authorization', tokens[actor]).send({ catalogueId: catalogueId || entry.id, clientRequestId, description: 'Replace kitchen tap' }).expect(201)).body.data;[m
+[32m+[m[32m  const get = async (id: string, actor = 'resident') => (await request(server).get(`${root}/requests/${id}`).set('Authorization', tokens[actor]).expect(200)).body.data;[m
+[32m+[m[32m  const action = async (item: any, name: string, actor: string, body = {}, expected = 201) => (await request(server).post(`${root}/requests/${item.id}/${name}`).set('Authorization', tokens[actor]).send({ version: item.version, ...body }).expect(expected)).body.data;[m
+[32m+[m[32m  async function estimated() {[m
+[32m+[m[32m    let item = await create();[m
+[32m+[m[32m    item = await action(item, 'assign', 'representative', { workerId });[m
+[32m+[m[32m    return action(item, 'estimates', 'worker', { amountPaise: 15000, description: 'Tap and labour, total INR 150' });[m
+[32m+[m[32m  }[m
+[32m+[m[32m  async function scheduled() {[m
+[32m+[m[32m    let item = await estimated();[m
+[32m+[m[32m    item = await action(item, 'estimate-decision', 'resident', { estimateId: item.estimates[0].id, decision: 'APPROVE' });[m
+[32m+[m[32m    const start = Date.now() + 60000;[m
+[32m+[m[32m    return action(item, 'schedule', 'resident', { startsAt: new Date(start).toISOString(), endsAt: new Date(start + 3600000).toISOString() });[m
+[32m+[m[32m  }[m
+[32m+[m[32m  async function started() {[m
+[32m+[m[32m    let item = await scheduled();[m
+[32m+[m[32m    jest.spyOn(Date, 'now').mockReturnValue(Date.parse(item.appointment.startsAt) + 1000);[m
+[32m+[m[32m    return action(item, 'start', 'worker');[m
+[32m+[m[32m  }[m
+[32m+[m[32m  async function completed() { return action(await started(), 'complete', 'worker', { finalCostPaise: 14000, completionReport: 'Tap replaced and checked for leaks' }); }[m
+[32m+[m[32m  async function paymentApproved() {[m
+[32m+[m[32m    let item = await completed();[m
+[32m+[m[32m    item = await action(item, 'final-cost-review', 'representative', { approved: true, note: 'Scope completed and final bill checked' });[m
+[32m+[m[32m    return action(item, 'payment-approval', 'admin');[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  it('requires authentication and catalogue management authority, validates amounts and community scope', async () => {[m
+[32m+[m[32m    await request(server).get(`${root}/catalogue`).expect(401);[m
+[32m+[m[32m    await request(server).post(`${root}/catalogue`).set('Authorization', tokens.resident).send({}).expect(403);[m
+[32m+[m[32m    await request(server).get(`${root}/catalogue`).set('Authorization', tokens.super).expect(403);[m
+[32m+[m[32m    await request(server).post(`${root}/catalogue`).set('Authorization', tokens.admin).send({ name: '   ', description: 'Test', specialization: 'PLUMBING', startingPricePaise: 0, active: true }).expect(400);[m
+[32m+[m[32m    await request(server).patch(`${root}/catalogue/${entry.id}`).set('Authorization', tokens.adminB).send({ active: false }).expect(403);[m
+[32m+[m[32m    await request(server).patch(`${root}/catalogue/${entry.id}`).set('Authorization', tokens.admin).send({ active: null }).expect(400);[m
+[32m+[m[32m    await request(server).get(`${root}/catalogue`).set('Authorization', tokens.residentB).expect(200).expect(({ body }) => expect(body.data).toEqual([]));[m
+[32m+[m[32m    await request(server).post(`${root}/requests`).set('Authorization', tokens.residentB).send({ catalogueId: entry.id, clientRequestId: randomUUID(), description: 'Test' }).expect(400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('derives request ownership, deduplicates retries and snapshots catalogue pricing', async () => {[m
+[32m+[m[32m    const key = randomUUID(), item = await create('resident', entry.id, key);[m
+[32m+[m[32m    expect((await create('resident', entry.id, key)).id).toBe(item.id);[m
+[32m+[m[32m    await request(server).post(`${root}/requests`).set('Authorization', tokens.resident).send({ catalogueId: entry.id, clientRequestId: key, description: 'Different work' }).expect(409);[m
+[32m+[m[32m    await request(server).post(`${root}/requests`).set('Authorization', tokens.resident).send({ catalogueId: entry.id, clientRequestId: randomUUID(), description: 'Test', residentId: 'fake' }).expect(400);[m
+[32m+[m[32m    await request(server).patch(`${root}/catalogue/${entry.id}`).set('Authorization', tokens.admin).send({ startingPricePaise: 30000, active: false }).expect(200);[m
+[32m+[m[32m    expect((await get(item.id)).service.startingPricePaise).toBe(10000);[m
+[32m+[m[32m    await request(server).post(`${root}/requests`).set('Authorization', tokens.resident).send({ catalogueId: entry.id, clientRequestId: randomUUID(), description: 'Test' }).expect(400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('isolates requests by community, resident, assigned worker, and tower', async () => {[m
+[32m+[m[32m    const item = await create();[m
+[32m+[m[32m    for (const actor of ['adminB', 'residentB', 'workerB', 'worker']) await request(server).get(`${root}/requests/${item.id}`).set('Authorization', tokens[actor]).expect(403);[m
+[32m+[m[32m    await request(server).get(`${root}/requests`).set('Authorization', tokens.adminB).expect(200).expect(({ body }) => expect(body.data).toEqual([]));[m
+[32m+[m[32m    const other = SEEDED_USERS.find((user) => user.email === 'tower.representative.b@urbanity.local');[m
+[32m+[m[32m    const secondTower = SEEDED_USERS.find((user) => user.towerId === '20000000-0000-4000-8000-000000000002');[m
+[32m+[m[32m    const user = other || secondTower!;[m
+[32m+[m[32m    const token = `Bearer ${app.get(JwtService).sign({ sub: user.id })}`;[m
+[32m+[m[32m    await request(server).get(`${root}/requests/${item.id}`).set('Authorization', token).expect(403);[m
+[32m+[m[32m    await action(item, 'assign', 'resident', { workerId }, 403);[m
+[32m+[m[32m    await action(item, 'assign', 'representative', { workerId });[m
+[32m+[m[32m    await get(item.id, 'worker');[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('assigns only qualified available workers and reserves them across complaint and service work', async () => {[m
+[32m+[m[32m    let item = await create();[m
+[32m+[m[32m    await action(item, 'assign', 'admin', { workerId: workerBId }, 400);[m
+[32m+[m[32m    await action(item, 'assign', 'admin', { workerId: electricianId }, 400);[m
+[32m+[m[32m    item = await action(item, 'assign', 'admin', { workerId });[m
+[32m+[m[32m    const second = await create();[m
+[32m+[m[32m    await action(second, 'assign', 'admin', { workerId }, 400);[m
+[32m+[m[32m    await request(server).patch(`/workforce/workers/${workerId}`).set('Authorization', tokens.admin).send({ status: 'AVAILABLE' }).expect(400);[m
+[32m+[m[32m    await request(server).delete(`/workforce/workers/${workerId}`).set('Authorization', tokens.admin).expect(400);[m
+[32m+[m[32m    const complaintId = '60000000-0000-4000-8000-000000000001';[m
+[32m+[m[32m    await request(server).patch(`/complaints/${complaintId}/status`).set('Authorization', tokens.representative).send({ status: 'UNDER_REVIEW' }).expect(200);[m
+[32m+[m[32m    await request(server).post(`/complaints/${complaintId}/assign`).set('Authorization', tokens.representative).send({ workerId }).expect(400);[m
+[32m+[m[32m    await action(item, 'cancel', 'resident');[m
+[32m+[m[32m    await request(server).post(`/complaints/${complaintId}/assign`).set('Authorization', tokens.representative).send({ workerId }).expect(201);[m
+[32m+[m[32m    await action(second, 'assign', 'admin', { workerId }, 400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('blocks work before resident approval, supports rejection and revisions, and checks request versions', async () => {[m
+[32m+[m[32m    let item = await estimated();[m
+[32m+[m[32m    await action(item, 'start', 'worker', {}, 400);[m
+[32m+[m[32m    await action(item, 'estimate-decision', 'worker', { estimateId: item.estimates[0].id, decision: 'APPROVE' }, 403);[m
+[32m+[m[32m    await action(item, 'estimate-decision', 'resident', { estimateId: item.estimates[0].id, decision: 'REJECT' }, 400);[m
+[32m+[m[32m    const stale = item;[m
+[32m+[m[32m    item = await action(item, 'estimate-decision', 'resident', { estimateId: item.estimates[0].id, decision: 'REQUEST_REVISION', note: 'Reduce material cost' });[m
+[32m+[m[32m    await action(stale, 'estimate-decision', 'resident', { estimateId: stale.estimates[0].id, decision: 'APPROVE' }, 409);[m
+[32m+[m[32m    item = await action(item, 'estimates', 'worker', { amountPaise: 14000, description: 'Lower-priced tap' });[m
+[32m+[m[32m    item = await action(item, 'estimate-decision', 'resident', { estimateId: item.estimates[1].id, decision: 'REJECT', note: 'Still too expensive' });[m
+[32m+[m[32m    expect(item.status).toBe('ESTIMATE_REJECTED');[m
+[32m+[m[32m    await action(item, 'start', 'worker', {}, 400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('validates scheduling windows, timezone, expiry and resident appointment conflicts', async () => {[m
+[32m+[m[32m    let first = await scheduled();[m
+[32m+[m[32m    await action(first, 'start', 'worker', {}, 400);[m
+[32m+[m[32m    await action(first, 'schedule', 'resident', { startsAt: '2020-01-01T00:00:00Z', endsAt: '2020-01-01T01:00:00Z' }, 400);[m
+[32m+[m[32m    await action(first, 'schedule', 'resident', { startsAt: '2030-01-01T10:00:00', endsAt: '2030-01-01T11:00:00' }, 400);[m
+[32m+[m[32m    const electrical = (await request(server).post(`${root}/catalogue`).set('Authorization', tokens.admin).send({ name: 'Electrical repair', description: 'Electrical service', specialization: 'ELECTRICAL', startingPricePaise: 10000, active: true }).expect(201)).body.data;[m
+[32m+[m[32m    let second = await create('resident', electrical.id);[m
+[32m+[m[32m    second = await action(second, 'assign', 'admin', { workerId: electricianId });[m
+[32m+[m[32m    const electrician = SEEDED_USERS.find((user) => user.id === 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb5')!;[m
+[32m+[m[32m    tokens.electrician = `Bearer ${app.get(JwtService).sign({ sub: electrician.id })}`;[m
+[32m+[m[32m    second = await action(second, 'estimates', 'electrician', { amountPaise: 10000, description: 'Electrical labour' });[m
+[32m+[m[32m    second = await action(second, 'estimate-decision', 'resident', { estimateId: second.estimates[0].id, decision: 'APPROVE' });[m
+[32m+[m[32m    await action(second, 'schedule', 'resident', first.appointment, 409);[m
+[32m+[m[32m    const end = Date.parse(first.appointment.endsAt);[m
+[32m+[m[32m    await action(second, 'schedule', 'resident', { startsAt: new Date(end).toISOString(), endsAt: new Date(end + 3600000).toISOString() });[m
+[32m+[m[32m    jest.spyOn(Date, 'now').mockReturnValue(end + 1);[m
+[32m+[m[32m    await action(first, 'start', 'worker', {}, 400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('pauses work for an increased estimate and prevents completion until the resident approves', async () => {[m
+[32m+[m[32m    let item = await started();[m
+[32m+[m[32m    item = await action(item, 'progress', 'worker', { note: 'Existing tap removed; checking supply pipe' });[m
+[32m+[m[32m    expect(item.history.at(-1).note).toContain('checking supply pipe');[m
+[32m+[m[32m    await action(item, 'complete', 'worker', { finalCostPaise: 20000, completionReport: 'Extra pipe required' }, 400);[m
+[32m+[m[32m    item = await action(item, 'estimates', 'worker', { amountPaise: 20000, description: 'Total including additional pipe' });[m
+[32m+[m[32m    await action(item, 'progress', 'worker', { note: 'Unauthorized additional work' }, 400);[m
+[32m+[m[32m    await action(item, 'complete', 'worker', { finalCostPaise: 20000, completionReport: 'Extra pipe installed' }, 400);[m
+[32m+[m[32m    item = await action(item, 'estimate-decision', 'resident', { estimateId: item.estimates[1].id, decision: 'APPROVE' });[m
+[32m+[m[32m    expect(item.status).toBe('IN_PROGRESS');[m
+[32m+[m[32m    item = await action(item, 'complete', 'worker', { finalCostPaise: 19000, completionReport: 'Tap and extra pipe installed' });[m
+[32m+[m[32m    expect(item.status).toBe('COMPLETED');[m
+[32m+[m[32m    await action(item, 'cancel', 'resident', {}, 400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('requires authorized final-cost review and permits corrected bills before payment', async () => {[m
+[32m+[m[32m    let item = await completed();[m
+[32m+[m[32m    await action(item, 'payment-approval', 'admin', {}, 400);[m
+[32m+[m[32m    await action(item, 'final-cost-review', 'worker', { approved: true, note: 'My own bill' }, 403);[m
+[32m+[m[32m    item = await action(item, 'final-cost-review', 'representative', { approved: false, note: 'Correct the itemized report' });[m
+[32m+[m[32m    await action(item, 'payment-approval', 'admin', {}, 400);[m
+[32m+[m[32m    item = await action(item, 'complete', 'worker', { finalCostPaise: 13000, completionReport: 'Corrected material cost and labour report' });[m
+[32m+[m[32m    item = await action(item, 'final-cost-review', 'admin', { approved: true, note: 'Corrected report approved' });[m
+[32m+[m[32m    expect(item.status).toBe('FINAL_COST_APPROVED');[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('derives payment amount and worker payee, forbids self-approval and duplicate payment records', async () => {[m
+[32m+[m[32m    const item = await paymentApproved();[m
+[32m+[m[32m    expect(item.payment).toMatchObject({ requestId: item.id, workerId, payeeUserId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3', amountPaise: 14000, currency: 'INR', status: 'APPROVED' });[m
+[32m+[m[32m    await action(item, 'payment-approval', 'worker', {}, 403);[m
+[32m+[m[32m    await action(item, 'payment-approval', 'resident', {}, 403);[m
+[32m+[m[32m    await action(item, 'payment-approval', 'admin', {}, 409);[m
+[32m+[m[32m    await action(item, 'payment-approval', 'admin', { amountPaise: 1, payeeUserId: 'fake' }, 400);[m
+[32m+[m[32m    expect((await get(item.id)).payment.id).toBe(item.payment.id);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('accepts only one simultaneous payment approval for the same request version', async () => {[m
+[32m+[m[32m    let item = await completed();[m
+[32m+[m[32m    item = await action(item, 'final-cost-review', 'admin', { approved: true, note: 'Final cost checked' });[m
+[32m+[m[32m    const responses = await Promise.all([1, 2].map(() => request(server).post(`${root}/requests/${item.id}/payment-approval`).set('Authorization', tokens.admin).send({ version: item.version })));[m
+[32m+[m[32m    expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);[m
+[32m+[m[32m    expect((await get(item.id)).payment.amountPaise).toBe(14000);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('does not release a newer service reservation when correcting an earlier final report', async () => {[m
+[32m+[m[32m    let previous = await completed();[m
+[32m+[m[32m    previous = await action(previous, 'final-cost-review', 'admin', { approved: false, note: 'Correct report wording' });[m
+[32m+[m[32m    let next = await create();[m
+[32m+[m[32m    next = await action(next, 'assign', 'admin', { workerId });[m
+[32m+[m[32m    previous = await action(previous, 'complete', 'worker', { finalCostPaise: 14000, completionReport: 'Corrected report for earlier repair' });[m
+[32m+[m[32m    expect(previous.status).toBe('COMPLETED');[m
+[32m+[m[32m    await request(server).get('/workforce/workers/me').set('Authorization', tokens.worker).expect(200).expect(({ body }) => expect(body.data.status).toBe('BUSY'));[m
+[32m+[m[32m    await action(next, 'cancel', 'resident');[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('rejects overlapping worker appointments even for different residents', async () => {[m
+[32m+[m[32m    const first = await completed();[m
+[32m+[m[32m    const other = SEEDED_USERS.find((user) => user.id === 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4')!;[m
+[32m+[m[32m    tokens.otherResident = `Bearer ${app.get(JwtService).sign({ sub: other.id }, { expiresIn: '2h' })}`;[m
+[32m+[m[32m    let next = await create('otherResident');[m
+[32m+[m[32m    next = await action(next, 'assign', 'admin', { workerId });[m
+[32m+[m[32m    next = await action(next, 'estimates', 'worker', { amountPaise: 12000, description: 'Replace another tap' });[m
+[32m+[m[32m    next = await action(next, 'estimate-decision', 'otherResident', { estimateId: next.estimates[0].id, decision: 'APPROVE' });[m
+[32m+[m[32m    await action(next, 'schedule', 'otherResident', { startsAt: new Date(Date.now() + 1000).toISOString(), endsAt: first.appointment.endsAt }, 409);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('requires scoped payment evidence, independent verification and intended worker receipt acknowledgement', async () => {[m
+[32m+[m[32m    let item = await paymentApproved();[m
+[32m+[m[32m    await action(item, 'payment-receipt', 'worker', {}, 400);[m
+[32m+[m[32m    await action(item, 'payment-report', 'resident', { reference: 'UPI-123', evidenceId: randomUUID() }, 400);[m
+[32m+[m[32m    await request(server).post(`${root}/requests/${item.id}/evidence`).set('Authorization', tokens.worker).attach('file', png, { filename: 'receipt.png', contentType: 'image/png' }).expect(403);[m
+[32m+[m[32m    await request(server).post(`${root}/requests/${item.id}/evidence`).set('Authorization', tokens.resident).attach('file', Buffer.from('fake'), { filename: 'receipt.png', contentType: 'image/png' }).expect(400);[m
+[32m+[m[32m    item = (await request(server).post(`${root}/requests/${item.id}/evidence`).set('Authorization', tokens.resident).attach('file', png, { filename: 'receipt.png', contentType: 'image/png' }).expect(201)).body.data;[m
+[32m+[m[32m    expect(item.evidence[0]).not.toHaveProperty('storedName');[m
+[32m+[m[32m    const url = `${root}/requests/${item.id}/evidence/${item.evidence[0].id}`;[m
+[32m+[m[32m    await request(server).get(url).set('Authorization', tokens.adminB).expect(403);[m
+[32m+[m[32m    await request(server).get(url).set('Authorization', tokens.admin).expect(200).expect('Content-Type', /image\/png/);[m
+[32m+[m[32m    item = await action(item, 'payment-report', 'resident', { reference: 'UPI-123', evidenceId: item.evidence[0].id });[m
+[32m+[m[32m    expect(item.payment.status).toBe('PAYMENT_REPORTED');[m
+[32m+[m[32m    await action(item, 'payment-verification', 'resident', { approved: true, verificationNote: 'Self verify' }, 403);[m
+[32m+[m[32m    await action(item, 'payment-receipt', 'worker', {}, 400);[m
+[32m+[m[32m    item = await action(item, 'payment-verification', 'representative', { approved: false, verificationNote: 'Receipt needs correction' });[m
+[32m+[m[32m    expect(item.payment.status).toBe('APPROVED');[m
+[32m+[m[32m    item = await action(item, 'payment-report', 'resident', { reference: 'UPI-123-corrected', evidenceId: item.evidence[0].id });[m
+[32m+[m[32m    item = await action(item, 'payment-verification', 'representative', { approved: true, verificationNote: 'Checked bank receipt, payee and amount' });[m
+[32m+[m[32m    await action(item, 'payment-receipt', 'admin', {}, 403);[m
+[32m+[m[32m    item = await action(item, 'payment-receipt', 'worker');[m
+[32m+[m[32m    expect(item.payment.status).toBe('RECEIPT_CONFIRMED');[m
+[32m+[m[32m    await action(item, 'payment-receipt', 'worker', {}, 400);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it('records only an owning resident review after completion is approved', async () => {[m
+[32m+[m[32m    let item = await create();[m
+[32m+[m[32m    await action(item, 'review', 'resident', { rating: 5, feedback: 'Too early' }, 400);[m
+[32m+[m[32m    // Cancel to release this request and use a completed request for the review.[m
+[32m+[m[32m    await action(item, 'cancel', 'resident');[m
+[32m+[m[32m    item = await paymentApproved();[m
+[32m+[m[32m    await action(item, 'review', 'worker', { rating: 5, feedback: 'Self review' }, 403);[m
+[32m+[m[32m    await action(item, 'review', 'resident', { rating: 6, feedback: 'Invalid' }, 400);[m
+[32m+[m[32m    item = await action(item, 'review', 'resident', { rating: 5, feedback: 'Clean repair and good communication' });[m
+[32m+[m[32m    expect(item.review.rating).toBe(5);[m
+[32m+[m[32m    await action(item, 'review', 'resident', { rating: 4, feedback: 'Duplicate' }, 409);[m
+[32m+[m[32m  });[m
+[32m+[m[32m});[m
+[1mdiff --git a/front-end/src/constants/navigation.js b/front-end/src/constants/navigation.js[m
+[1mindex 6503c72..7e4a07a 100644[m
+[1m--- a/front-end/src/constants/navigation.js[m
+[1m+++ b/front-end/src/constants/navigation.js[m
+[36m@@ -25,6 +25,7 @@[m [mexport const NAVIGATION_BY_ROLE = Object.freeze({[m
+     [[m
+       { label: "Dashboard", to: ROUTES.COMMUNITY_ADMIN, icon: "dashboard" },[m
+       { label: "Complaints", to: ROUTES.COMMUNITY_ADMIN_COMPLAINTS, icon: "complaints" },[m
+[32m+[m[32m      { label: "Paid Services", to: ROUTES.COMMUNITY_ADMIN_SERVICES, icon: "workforce" },[m
+       { label: "Hierarchy", to: ROUTES.COMMUNITY_ADMIN_HIERARCHY, icon: "hierarchy" },[m
+       { label: "Community Users", to: ROUTES.COMMUNITY_ADMIN_USERS, icon: "users" },[m
+       { label: "Workforce", to: ROUTES.COMMUNITY_ADMIN_WORKFORCE, icon: "workforce" },[m
+[36m@@ -42,6 +43,7 @@[m [mexport const NAVIGATION_BY_ROLE = Object.freeze({[m
+     [[m
+       { label: "Dashboard", to: ROUTES.TOWER_REPRESENTATIVE, icon: "dashboard" },[m
+       { label: "Complaints", to: ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS, icon: "complaints" },[m
+[32m+[m[32m      { label: "Paid Services", to: ROUTES.TOWER_REPRESENTATIVE_SERVICES, icon: "workforce" },[m
+       { label: "Workforce", to: ROUTES.TOWER_REPRESENTATIVE_WORKFORCE, icon: "workforce" },[m
+       { label: "Tower & Residents", to: ROUTES.TOWER_REPRESENTATIVE_RESIDENTS, icon: "communities" },[m
+       { label: "Reports", to: ROUTES.TOWER_REPRESENTATIVE_REPORTS, icon: "reports" },[m
+[36m@@ -55,6 +57,7 @@[m [mexport const NAVIGATION_BY_ROLE = Object.freeze({[m
+     [[m
+       { label: "Dashboard", to: ROUTES.RESIDENT, icon: "dashboard" },[m
+       { label: "My complaints", to: ROUTES.RESIDENT_COMPLAINTS, icon: "complaints" },[m
+[32m+[m[32m      { label: "Paid Services", to: ROUTES.RESIDENT_SERVICES, icon: "workforce" },[m
+       { label: "Create complaint", to: ROUTES.RESIDENT_NEW_COMPLAINT, icon: "create" },[m
+       { label: "Amenities", to: ROUTES.RESIDENT_AMENITIES, icon: "communities" },[m
+       { label: "Amenity bookings", to: ROUTES.RESIDENT_BOOKINGS, icon: "tasks" },[m
+[36m@@ -68,6 +71,7 @@[m [mexport const NAVIGATION_BY_ROLE = Object.freeze({[m
+     [[m
+       { label: "Dashboard", to: ROUTES.MAINTENANCE_WORKER, icon: "dashboard" },[m
+       { label: "Assigned Tasks", to: ROUTES.MAINTENANCE_WORKER_TASKS, icon: "tasks" },[m
+[32m+[m[32m      { label: "Paid Services", to: ROUTES.MAINTENANCE_WORKER_SERVICES, icon: "workforce" },[m
+       { label: "Completed Work", to: ROUTES.MAINTENANCE_WORKER_COMPLETED, icon: "completed" },[m
+       { label: "Profile", to: ROUTES.MAINTENANCE_WORKER_PROFILE, icon: "profile" },[m
+     ],[m
+[1mdiff --git a/front-end/src/constants/routes.js b/front-end/src/constants/routes.js[m
+[1mindex feb1ff6..7af3f54 100644[m
+[1m--- a/front-end/src/constants/routes.js[m
+[1m+++ b/front-end/src/constants/routes.js[m
+[36m@@ -9,6 +9,7 @@[m [mexport const ROUTES = Object.freeze({[m
+   SUPER_ADMIN_REPORTS: "/super-admin/reports",[m
+   SUPER_ADMIN_PROFILE: "/super-admin/profile",[m
+   COMMUNITY_ADMIN: "/community-admin",[m
+[32m+[m[32m  COMMUNITY_ADMIN_SERVICES: "/community-admin/services",[m
+   COMMUNITY_ADMIN_COMPLAINTS: "/community-admin/complaints",[m
+   COMMUNITY_ADMIN_HIERARCHY: "/community-admin/hierarchy",[m
+   COMMUNITY_ADMIN_USERS: "/community-admin/users",[m
+[36m@@ -19,18 +20,21 @@[m [mexport const ROUTES = Object.freeze({[m
+   COMMUNITY_ADMIN_BOOKINGS: "/community-admin/amenity-bookings",[m
+   COMMUNITY_ADMIN_PROFILE: "/community-admin/profile",[m
+   TOWER_REPRESENTATIVE: "/tower-representative",[m
+[32m+[m[32m  TOWER_REPRESENTATIVE_SERVICES: "/tower-representative/services",[m
+   TOWER_REPRESENTATIVE_COMPLAINTS: "/tower-representative/complaints",[m
+   TOWER_REPRESENTATIVE_WORKFORCE: "/tower-representative/workforce",[m
+   TOWER_REPRESENTATIVE_RESIDENTS: "/tower-representative/residents",[m
+   TOWER_REPRESENTATIVE_REPORTS: "/tower-representative/reports",[m
+   TOWER_REPRESENTATIVE_PROFILE: "/tower-representative/profile",[m
+   RESIDENT: "/resident",[m
+[32m+[m[32m  RESIDENT_SERVICES: "/resident/services",[m
+   RESIDENT_COMPLAINTS: "/resident/complaints",[m
+   RESIDENT_NEW_COMPLAINT: "/resident/complaints/new",[m
+   RESIDENT_AMENITIES: "/resident/amenities",[m
+   RESIDENT_BOOKINGS: "/resident/amenity-bookings",[m
+   RESIDENT_PROFILE: "/resident/profile",[m
+   MAINTENANCE_WORKER: "/maintenance-worker",[m
+[32m+[m[32m  MAINTENANCE_WORKER_SERVICES: "/maintenance-worker/services",[m
+   MAINTENANCE_WORKER_TASKS: "/maintenance-worker/tasks",[m
+   MAINTENANCE_WORKER_COMPLETED: "/maintenance-worker/completed",[m
+   MAINTENANCE_WORKER_PROFILE: "/maintenance-worker/profile",[m
+[1mdiff --git a/front-end/src/features/community-admin/routes.jsx b/front-end/src/features/community-admin/routes.jsx[m
+[1mindex 9f6121d..a2463ea 100644[m
+[1m--- a/front-end/src/features/community-admin/routes.jsx[m
+[1m+++ b/front-end/src/features/community-admin/routes.jsx[m
+[36m@@ -1,5 +1,6 @@[m
+ import { AmenitiesPage } from "../amenities/pages/AmenitiesPage.jsx";[m
+ import { BookingsPage } from "../amenities/pages/BookingsPage.jsx";[m
+[32m+[m[32mimport { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";[m
+ import { Navigate, Route, Routes } from "react-router-dom";[m
+ import { ROUTES } from "../../constants/routes.js";[m
+ import { ComplaintsPage } from "./pages/ComplaintsPage.jsx";[m
+[36m@@ -13,5 +14,18 @@[m [mimport { WorkforcePage } from "./pages/WorkforcePage.jsx";[m
+ import "./community-admin.css";[m
+ [m
+ export function CommunityAdminRoutes() {[m
+[31m-  return <Routes><Route path="amenities" element={<AmenitiesPage />} /><Route path="amenity-bookings" element={<BookingsPage />} /><Route index element={<DashboardPage />} /><Route path="complaints" element={<ComplaintsPage />} /><Route path="hierarchy" element={<HierarchyPage />} /><Route path="users" element={<UsersPage />} /><Route path="workforce" element={<WorkforcePage />} /><Route path="subscription" element={<SubscriptionPage />} /><Route path="reports" element={<ReportsPage />} /><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to={ROUTES.COMMUNITY_ADMIN} replace />} /></Routes>;[m
+[32m+[m[32m  return <Routes>[m
+[32m+[m[32m    <Route index element={<DashboardPage />} />[m
+[32m+[m[32m    <Route path="services" element={<PaidServicesPage />} />[m
+[32m+[m[32m    <Route path="complaints" element={<ComplaintsPage />} />[m
+[32m+[m[32m    <Route path="hierarchy" element={<HierarchyPage />} />[m
+[32m+[m[32m    <Route path="users" element={<UsersPage />} />[m
+[32m+[m[32m    <Route path="workforce" element={<WorkforcePage />} />[m
+[32m+[m[32m    <Route path="subscription" element={<SubscriptionPage />} />[m
+[32m+[m[32m    <Route path="reports" element={<ReportsPage />} />[m
+[32m+[m[32m    <Route path="amenities" element={<AmenitiesPage />} />[m
+[32m+[m[32m    <Route path="amenity-bookings" element={<BookingsPage />} />[m
+[32m+[m[32m    <Route path="profile" element={<ProfilePage />} />[m
+[32m+[m[32m    <Route path="*" element={<Navigate to={ROUTES.COMMUNITY_ADMIN} replace />} />[m
+[32m+[m[32m  </Routes>;[m
+ }[m
+[1mdiff --git a/front-end/src/features/maintenance-worker/routes.jsx b/front-end/src/features/maintenance-worker/routes.jsx[m
+[1mindex 21d6318..c839ddf 100644[m
+[1m--- a/front-end/src/features/maintenance-worker/routes.jsx[m
+[1m+++ b/front-end/src/features/maintenance-worker/routes.jsx[m
+[36m@@ -6,10 +6,12 @@[m [mimport { TaskDetailsPage } from "./pages/TaskDetailsPage.jsx";[m
+ import { CompletedPage } from "./pages/CompletedPage.jsx";[m
+ import { ProfilePage } from "./pages/ProfilePage.jsx";[m
+ import "./maintenance-worker.css";[m
+[32m+[m[32mimport { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";[m
+ [m
+ export function MaintenanceWorkerRoutes() {[m
+   return <Routes>[m
+     <Route index element={<DashboardPage />} />[m
+[32m+[m[32m    <Route path="services" element={<PaidServicesPage />} />[m
+     <Route path="tasks" element={<TasksPage />} />[m
+     <Route path="tasks/:id" element={<TaskDetailsPage />} />[m
+     <Route path="completed" element={<CompletedPage />} />[m
+[1mdiff --git a/front-end/src/features/paid-services/pages/PaidServicesPage.jsx b/front-end/src/features/paid-services/pages/PaidServicesPage.jsx[m
+[1mnew file mode 100644[m
+[1mindex 0000000..cd49e8c[m
+[1m--- /dev/null[m
+[1m+++ b/front-end/src/features/paid-services/pages/PaidServicesPage.jsx[m
+[36m@@ -0,0 +1,234 @@[m
+[32m+[m[32mimport { useCallback, useEffect, useRef, useState } from "react";[m
+[32m+[m[32mimport { useAuth } from "../../../auth/useAuth.js";[m
+[32m+[m[32mimport { useAsyncResource } from "../../../hooks/useAsyncResource.js";[m
+[32m+[m[32mimport { Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LoadingState, Modal, Select, Textarea, useToast } from "../../../components/ui/index.js";[m
+[32m+[m[32mimport { DataTable, PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";[m
+[32m+[m[32mimport { paidServicesService as service } from "../services/paidServicesService.js";[m
+[32m+[m[32mimport "../paid-services.css";[m
+[32m+[m
+[32m+[m[32mconst workTypes = ["PLUMBING", "ELECTRICAL", "CARPENTRY", "HVAC", "LIFT_MAINTENANCE", "CLEANING", "GENERAL_MAINTENANCE"];[m
+[32m+[m[32mconst money = (paise) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format((paise || 0) / 100);[m
+[32m+[m[32mconst label = (value) => String(value || "").replaceAll("_", " ");[m
+[32m+[m[32mconst date = (value) => value ? new Date(value).toLocaleString() : "Not scheduled";[m
+[32m+[m[32mconst authorityRoles = ["COMMUNITY_ADMIN", "TOWER_REPRESENTATIVE"];[m
+[32m+[m[32mconst asPaise = (value) => {[m
+[32m+[m[32m  if (!/^\d+(\.\d{1,2})?$/.test(String(value))) throw new Error("Enter an amount with at most two decimal places.");[m
+[32m+[m[32m  const [whole, decimal = ""] = String(value).split(".");[m
+[32m+[m[32m  const amount = Number(whole) * 100 + Number(decimal.padEnd(2, "0"));[m
+[32m+[m[32m  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000000) throw new Error("Amount must be between ₹0.01 and ₹10,00,000.");[m
+[32m+[m[32m  return amount;[m
+[32m+[m[32m};[m
+[32m+[m
+[32m+[m[32m// This form is local to the marketplace workflow; all controls and feedback are shared UI.[m
+[32m+[m[32mfunction ActionForm({ title, button, busy, onSubmit, children }) {[m
+[32m+[m[32m  const [error, setError] = useState("");[m
+[32m+[m[32m  return <Card title={title}><form className="paid-services-form" onSubmit={async (event) => {[m
+[32m+[m[32m    event.preventDefault(); if (busy) return;[m
+[32m+[m[32m    const form = event.currentTarget; setError("");[m
+[32m+[m[32m    try { if (await onSubmit(Object.fromEntries(new FormData(form)))) form.reset(); }[m
+[32m+[m[32m    catch (failure) { setError(failure.message); }[m
+[32m+[m[32m  }}><fieldset disabled={busy}>{children}<Button type="submit" loading={busy}>{button}</Button></fieldset>{error && <ErrorState message={error} />}</form></Card>;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction CatalogueModal({ entry, busy, onClose, onSave }) {[m
+[32m+[m[32m  return <Modal isOpen onClose={busy ? undefined : onClose} title={entry?.id ? "Edit service" : "Add service"}>[m
+[32m+[m[32m    <ActionForm title="Catalogue details" button="Save service" busy={busy} onSubmit={async (values) => onSave(entry?.id, {[m
+[32m+[m[32m      name: values.name.trim(), description: values.description.trim(), specialization: values.specialization,[m
+[32m+[m[32m      startingPricePaise: asPaise(values.price), active: values.active === "true",[m
+[32m+[m[32m    })}>[m
+[32m+[m[32m      <Input label="Service name" name="name" maxLength={100} required defaultValue={entry?.name || ""} />[m
+[32m+[m[32m      <Textarea label="Description" name="description" maxLength={2000} required defaultValue={entry?.description || ""} />[m
+[32m+[m[32m      <Select label="Worker specialization" name="specialization" defaultValue={entry?.specialization || ""} required><option value="">Choose specialization</option>{workTypes.map((type) => <option key={type} value={type}>{label(type)}</option>)}</Select>[m
+[32m+[m[32m      <Input label="Starting price (INR)" name="price" type="number" min="0.01" max="1000000" step="0.01" required defaultValue={entry ? entry.startingPricePaise / 100 : ""} hint="A guide price; the worker submits an estimate for resident approval." />[m
+[32m+[m[32m      <Select label="Availability" name="active" defaultValue={String(entry?.active ?? true)}><option value="true">Available to residents</option><option value="false">Inactive</option></Select>[m
+[32m+[m[32m    </ActionForm>[m
+[32m+[m[32m  </Modal>;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction BookingModal({ entry, busy, onClose, onCreate }) {[m
+[32m+[m[32m  const clientRequestId = useRef(crypto.randomUUID());[m
+[32m+[m[32m  return <Modal isOpen onClose={busy ? undefined : onClose} title={`Request ${entry.name}`}>[m
+[32m+[m[32m    <p className="paid-services-prose">{entry.description}</p><p>Starting from <strong>{money(entry.startingPricePaise)}</strong>. You approve the worker's estimate before work starts. Payment is to the assigned maintenance worker.</p>[m
+[32m+[m[32m    <ActionForm title="Your request" button="Request service" busy={busy} onSubmit={(values) => onCreate({ catalogueId: entry.id, clientRequestId: clientRequestId.current, description: values.description.trim() })}>[m
+[32m+[m[32m      <Textarea label="Describe the work needed in your apartment" name="description" required maxLength={2000} rows={5} />[m
+[32m+[m[32m    </ActionForm>[m
+[32m+[m[32m  </Modal>;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction RequestDetails({ id, role, onClose, onChanged }) {[m
+[32m+[m[32m  const loader = useCallback((signal) => service.request(id, signal), [id]);[m
+[32m+[m[32m  const resource = useAsyncResource(loader);[m
+[32m+[m[32m  const item = resource.data;[m
+[32m+[m[32m  const isAuthority = authorityRoles.includes(role), isResident = role === "RESIDENT", isWorker = role === "MAINTENANCE_WORKER";[m
+[32m+[m[32m  const [busy, setBusy] = useState(false), [error, setError] = useState("");[m
+[32m+[m[32m  const [preview, setPreview] = useState(null);[m
+[32m+[m[32m  const [confirmCancel, setConfirmCancel] = useState(false);[m
+[32m+[m[32m  const locked = useRef(false);[m
+[32m+[m[32m  const { showToast } = useToast();[m
+[32m+[m[32m  const workerLoader = useCallback((signal) => isAuthority && item?.status === "REQUESTED" ? service.workers(id, signal) : Promise.resolve([]), [id, isAuthority, item?.status]);[m
+[32m+[m[32m  const workers = useAsyncResource(workerLoader);[m
+[32m+[m[32m  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);[m
+[32m+[m
+[32m+[m[32m  async function run(action, payload = {}) {[m
+[32m+[m[32m    if (locked.current || !item) return false;[m
+[32m+[m[32m    locked.current = true; setBusy(true); setError("");[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      const result = action === "upload" ? await service.uploadEvidence(id, payload.file) : await service.action(id, action, { ...payload, version: item.version });[m
+[32m+[m[32m      resource.setData(result); showToast({ type: "success", message: "Service request updated." });[m
+[32m+[m[32m      await onChanged(); return true;[m
+[32m+[m[32m    } catch (failure) { setError(failure.message); showToast({ type: "error", message: failure.message }); return false; }[m
+[32m+[m[32m    finally { locked.current = false; setBusy(false); }[m
+[32m+[m[32m  }[m
+[32m+[m[32m  async function viewEvidence(entry) {[m
+[32m+[m[32m    if (locked.current) return;[m
+[32m+[m[32m    locked.current = true; setBusy(true); setError("");[m
+[32m+[m[32m    try { const blob = await service.evidence(id, entry.id); setPreview({ url: URL.createObjectURL(blob), name: entry.originalName }); }[m
+[32m+[m[32m    catch (failure) { setError(failure.message); }[m
+[32m+[m[32m    finally { locked.current = false; setBusy(false); }[m
+[32m+[m[32m  }[m
+[32m+[m[32m  const current = item?.estimates.at(-1);[m
+[32m+[m[32m  const payment = item?.payment;[m
+[32m+[m[32m  const disabled = busy || resource.loading;[m
+[32m+[m[32m  return <><Modal isOpen size="lg" onClose={busy || confirmCancel ? undefined : onClose} title={item?.service.name || "Service request"} footer={<Button variant="secondary" onClick={onClose} disabled={busy}>Close</Button>}>[m
+[32m+[m[32m    <div className="paid-services-stack">[m
+[32m+[m[32m      <div className="paid-services-actions"><Button variant="secondary" onClick={resource.reload} disabled={disabled}>Refresh details</Button></div>[m
+[32m+[m[32m      {resource.loading && <LoadingState message="Loading service request..." />}[m
+[32m+[m[32m      {resource.error && <ErrorState message={resource.error.message} onRetry={resource.reload} />}[m
+[32m+[m[32m      {error && <ErrorState message={error} />}[m
+[32m+[m[32m      {item && <>[m
+[32m+[m[32m        <Card title="Request details" actions={<StatusBadge status={item.status} />}>[m
+[32m+[m[32m          <p className="paid-services-prose">{item.description}</p>[m
+[32m+[m[32m          <dl className="paid-services-facts">[m
+[32m+[m[32m            <div><dt>Resident</dt><dd>{item.residentName || "Resident account unavailable"}</dd></div>[m
+[32m+[m[32m            <div><dt>Assigned worker / intended payee</dt><dd>{item.workerName || "Awaiting assignment"}</dd></div>[m
+[32m+[m[32m            <div><dt>Service location</dt><dd>{[item.location.communityName, item.location.towerName, item.location.floorLabel, item.location.apartmentNumber].join(" / ")}</dd></div>[m
+[32m+[m[32m            <div><dt>Requested</dt><dd>{date(item.createdAt)}</dd></div>[m
+[32m+[m[32m            <div><dt>Appointment</dt><dd>{item.appointment ? `${date(item.appointment.startsAt)} – ${date(item.appointment.endsAt)}` : "Awaiting approved estimate"}</dd></div>[m
+[32m+[m[32m          </dl>[m
+[32m+[m[32m        </Card>[m
+[32m+[m[32m        {isAuthority && item.status === "REQUESTED" && <Card title="Assign an eligible maintenance worker">[m
+[32m+[m[32m          {workers.loading ? <LoadingState /> : workers.error ? <ErrorState message={workers.error.message} onRetry={workers.reload} /> : !workers.data?.length ? <EmptyState title="No eligible workers" message="A worker must be available, have matching specialization, and belong to this community." /> :[m
+[32m+[m[32m            <ActionForm button="Assign worker" busy={disabled} onSubmit={(values) => run("assign", { workerId: values.workerId })}>[m
+[32m+[m[32m              <Select label="Available worker" name="workerId" required><option value="">Choose worker</option>{workers.data.map((worker) => <option key={worker.id} value={worker.id}>{worker.userName} · {label(worker.specialization)}</option>)}</Select>[m
+[32m+[m[32m            </ActionForm>}[m
+[32m+[m[32m        </Card>}[m
+[32m+[m[32m        {item.estimates.length > 0 && <Card title="Estimate history"><div className="paid-services-stack">{item.estimates.map((estimate) => <section key={estimate.id}>[m
+[32m+[m[32m          <p><strong>Estimate {estimate.number}: {money(estimate.amountPaise)}</strong> <StatusBadge status={estimate.status} /></p>[m
+[32m+[m[32m          <p className="paid-services-prose">{estimate.description}</p><p className="paid-services-muted">Submitted {date(estimate.submittedAt)}{estimate.decidedAt && ` · Decided ${date(estimate.decidedAt)}`}</p>[m
+[32m+[m[32m          {estimate.decisionNote && <p className="paid-services-prose">Resident note: {estimate.decisionNote}</p>}[m
+[32m+[m[32m        </section>)}</div></Card>}[m
+[32m+[m[32m        {isWorker && ["ASSIGNED", "ESTIMATE_REJECTED", "REVISION_REQUESTED", "ESTIMATE_APPROVED", "SCHEDULED", "IN_PROGRESS"].includes(item.status) && <ActionForm title={item.estimates.length ? "Submit revised estimate" : "Submit estimate"} button="Send estimate for resident approval" busy={disabled} onSubmit={(values) => run("estimates", { amountPaise: asPaise(values.amount), description: values.description.trim() })}>[m
+[32m+[m[32m          <p>Enter the total price for the entire service, including materials and any additional work. A revision pauses work until the resident approves it.</p>[m
+[32m+[m[32m          <Input label="Total estimate (INR)" name="amount" type="number" min="0.01" max="1000000" step="0.01" required />[m
+[32m+[m[32m          <Textarea label="Scope, materials, and cost breakdown" name="description" maxLength={2000} required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {isResident && item.status === "AWAITING_ESTIMATE_APPROVAL" && <ActionForm title="Decide the latest estimate" button="Submit estimate decision" busy={disabled} onSubmit={(values) => run("estimate-decision", { estimateId: current.id, decision: values.decision, ...(values.note.trim() ? { note: values.note.trim() } : {}) })}>[m
+[32m+[m[32m          <p>Proposed total: <strong>{money(current.amountPaise)}</strong>. Approval authorizes this scope and maximum price.</p>[m
+[32m+[m[32m          <Select label="Your decision" name="decision" required><option value="">Choose decision</option><option value="APPROVE">Approve estimate</option><option value="REJECT">Reject estimate</option><option value="REQUEST_REVISION">Request revision</option></Select>[m
+[32m+[m[32m          <Textarea label="Decision note" name="note" maxLength={2000} hint="Required when rejecting or requesting changes." />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {(isResident || isAuthority) && ["ESTIMATE_APPROVED", "SCHEDULED"].includes(item.status) && <ActionForm title="Schedule appointment" button="Save appointment" busy={disabled} onSubmit={(values) => {[m
+[32m+[m[32m          const start = new Date(values.startsAt), end = new Date(values.endsAt);[m
+[32m+[m[32m          if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) throw new Error("Choose valid appointment times.");[m
+[32m+[m[32m          return run("schedule", { startsAt: start.toISOString(), endsAt: end.toISOString() });[m
+[32m+[m[32m        }}>[m
+[32m+[m[32m          <p>Times use your device's local timezone. Choose a future window of up to 8 hours; work must start within this window.</p>[m
+[32m+[m[32m          <Input label="Starts at" name="startsAt" type="datetime-local" required /><Input label="Ends at" name="endsAt" type="datetime-local" required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {isWorker && item.status === "SCHEDULED" && <Card title="Begin chargeable work"><p>Start only within the scheduled appointment and the latest approved scope.</p><Button loading={busy} disabled={disabled} onClick={() => run("start")}>Start work</Button></Card>}[m
+[32m+[m[32m        {isWorker && item.status === "IN_PROGRESS" && <ActionForm title="Report work progress" button="Post progress update" busy={disabled} onSubmit={(values) => run("progress", { note: values.note.trim() })}>[m
+[32m+[m[32m          <Textarea label="Progress update" name="note" maxLength={2000} required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {isWorker && ["IN_PROGRESS", "FINAL_COST_REJECTED"].includes(item.status) && <ActionForm title="Completion and final cost" button="Submit completion for review" busy={disabled} onSubmit={(values) => run("complete", { finalCostPaise: asPaise(values.amount), completionReport: values.report.trim() })}>[m
+[32m+[m[32m          <p>Final cost cannot exceed the latest approved estimate of {money(current?.amountPaise)}. Obtain an approved revision before additional chargeable work.</p>[m
+[32m+[m[32m          <Textarea label="Work completed and materials used" name="report" maxLength={2000} required defaultValue={item.completionReport || ""} />[m
+[32m+[m[32m          <Input label="Final total (INR)" name="amount" type="number" min="0.01" max={current?.amountPaise / 100} step="0.01" required defaultValue={item.finalCostPaise ? item.finalCostPaise / 100 : ""} />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {item.completedAt && <Card title="Completion report"><p className="paid-services-prose">{item.completionReport}</p><p>Final cost: <strong>{money(item.finalCostPaise)}</strong> · Submitted {date(item.completedAt)}</p>{item.finalReview && <p className="paid-services-prose">Authority review: {item.finalReview.note} ({item.finalReview.approved ? "Approved" : "Changes requested"})</p>}</Card>}[m
+[32m+[m[32m        {isAuthority && item.status === "COMPLETED" && <ActionForm title="Review completion and final cost" button="Submit final-cost review" busy={disabled} onSubmit={(values) => run("final-cost-review", { approved: values.approved === "true", note: values.note.trim() })}>[m
+[32m+[m[32m          <Select label="Decision" name="approved" required><option value="">Choose decision</option><option value="true">Approve completion and final cost</option><option value="false">Request a corrected completion report / cost</option></Select>[m
+[32m+[m[32m          <Textarea label="Review note" name="note" maxLength={2000} required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {isAuthority && item.status === "FINAL_COST_APPROVED" && !payment && <Card title="Authorize worker payment"><p>Authorize {money(item.finalCostPaise)} to {item.workerName || "the assigned worker"}. This creates a tracking record and transfers no funds.</p><Button loading={busy} disabled={disabled} onClick={() => run("payment-approval")}>Authorize worker payment</Button></Card>}[m
+[32m+[m[32m        {payment && <Card title="Worker payment tracking" actions={<StatusBadge status={payment.status} />}>[m
+[32m+[m[32m          <p><strong>{money(payment.amountPaise)}</strong> payable to {item.workerName || "the assigned maintenance worker"}.</p>[m
+[32m+[m[32m          <p className="paid-services-muted">Payments take place outside Urbanity. Evidence verification and receipt acknowledgement are manual; there is no payment gateway or automatic transfer.</p>[m
+[32m+[m[32m          <dl className="paid-services-facts"><div><dt>Payment record</dt><dd>{payment.id}</dd></div><div><dt>Worker payee ID</dt><dd>{payment.payeeUserId}</dd></div>{payment.reference && <div><dt>External transaction reference</dt><dd>{payment.reference}</dd></div>}{payment.verifiedAt && <div><dt>Evidence verified</dt><dd>{date(payment.verifiedAt)} · {payment.verificationNote}</dd></div>}{payment.receiptConfirmedAt && <div><dt>Worker acknowledged receipt</dt><dd>{date(payment.receiptConfirmedAt)}</dd></div>}</dl>[m
+[32m+[m[32m        </Card>}[m
+[32m+[m[32m        {isResident && payment?.status === "APPROVED" && <>[m
+[32m+[m[32m          <ActionForm title="Upload external payment evidence" button="Upload evidence" busy={disabled} onSubmit={(values) => {[m
+[32m+[m[32m            const file = values.file;[m
+[32m+[m[32m            if (!file?.size || file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Choose a JPEG, PNG, or WebP image up to 5 MB.");[m
+[32m+[m[32m            return run("upload", { file });[m
+[32m+[m[32m          }}><Input label="Payment evidence image" name="file" type="file" accept="image/png,image/jpeg,image/webp" required hint="Up to five images, each at most 5 MB. Upload a receipt for payment to the assigned worker." /></ActionForm>[m
+[32m+[m[32m          {item.evidence.length > 0 && <ActionForm title="Report payment to worker" button="Report external payment" busy={disabled} onSubmit={(values) => run("payment-report", { reference: values.reference.trim(), evidenceId: values.evidenceId })}>[m
+[32m+[m[32m            <Input label="Bank / UPI transaction reference" name="reference" maxLength={200} required />[m
+[32m+[m[32m            <Select label="Payment evidence" name="evidenceId" required><option value="">Choose receipt</option>{item.evidence.map((entry) => <option key={entry.id} value={entry.id}>{entry.originalName}</option>)}</Select>[m
+[32m+[m[32m          </ActionForm>}[m
+[32m+[m[32m        </>}[m
+[32m+[m[32m        {item.evidence.length > 0 && <Card title="Payment evidence"><div className="paid-services-stack">{item.evidence.map((entry) => <div key={entry.id}><Button variant="secondary" disabled={disabled} onClick={() => viewEvidence(entry)}>{entry.originalName}{payment?.evidenceId === entry.id ? " (reported receipt)" : ""}</Button></div>)}{preview && <figure><img className="paid-services-preview" src={preview.url} alt={`Payment evidence: ${preview.name}`} /><figcaption>{preview.name}</figcaption></figure>}</div></Card>}[m
+[32m+[m[32m        {isAuthority && payment?.status === "PAYMENT_REPORTED" && <ActionForm title="Verify reported payment evidence" button="Record evidence decision" busy={disabled} onSubmit={(values) => run("payment-verification", { approved: values.approved === "true", verificationNote: values.note.trim() })}>[m
+[32m+[m[32m          <p>Inspect the reported receipt and independently confirm its amount, intended worker payee, and transaction reference before recording verification.</p>[m
+[32m+[m[32m          <Select label="Evidence decision" name="approved" required><option value="">Choose decision</option><option value="true">Evidence verified manually</option><option value="false">Reject evidence and request correction</option></Select>[m
+[32m+[m[32m          <Textarea label="Verification details" name="note" maxLength={2000} required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {isWorker && payment?.status === "EVIDENCE_VERIFIED" && <Card title="Acknowledge receipt"><p>Confirm only if you have personally received {money(payment.amountPaise)} for this service.</p><Button disabled={disabled} loading={busy} onClick={() => run("payment-receipt")}>I received this payment</Button></Card>}[m
+[32m+[m[32m        {isResident && item.status === "FINAL_COST_APPROVED" && !item.review && <ActionForm title="Review your service" button="Submit review" busy={disabled} onSubmit={(values) => run("review", { rating: Number(values.rating), feedback: values.feedback.trim() })}>[m
+[32m+[m[32m          <Select label="Rating" name="rating" required><option value="">Choose rating</option>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} / 5</option>)}</Select>[m
+[32m+[m[32m          <Textarea label="Your experience" name="feedback" maxLength={2000} required />[m
+[32m+[m[32m        </ActionForm>}[m
+[32m+[m[32m        {item.review && <Card title="Resident review"><RatingStars value={item.review.rating} /><p className="paid-services-prose">{item.review.feedback}</p></Card>}[m
+[32m+[m[32m        {(isResident || isAuthority) && !item.startedAt && item.status !== "CANCELLED" && <Card title="Cancel request"><p>Cancellation is available before chargeable work starts.</p><Button variant="danger" disabled={disabled} onClick={() => setConfirmCancel(true)}>Cancel service request</Button></Card>}[m
+[32m+[m[32m        <Card title="Activity history"><ol className="paid-services-history">{item.history.map((entry, index) => <li key={index}><span>{date(entry.at)}</span> · <StatusBadge status={entry.status} /><p>{entry.note}</p></li>)}</ol></Card>[m
+[32m+[m[32m      </>}[m
+[32m+[m[32m    </div>[m
+[32m+[m[32m  </Modal><ConfirmDialog isOpen={confirmCancel} onClose={() => setConfirmCancel(false)} onConfirm={async () => { if (await run("cancel")) setConfirmCancel(false); }} loading={busy} title="Cancel service request" message="Cancel this request and release its assigned worker?" confirmLabel="Cancel request" cancelLabel="Keep request" /></>;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport function PaidServicesPage() {[m
+[32m+[m[32m  const { user } = useAuth();[m
+[32m+[m[32m  const role = user.role, isResident = role === "RESIDENT", isAdmin = role === "COMMUNITY_ADMIN";[m
+[32m+[m[32m  const { showToast } = useToast();[m
+[32m+[m[32m  const loader = useCallback(async (signal) => {[m
+[32m+[m[32m    const [catalogue, requests] = await Promise.all([service.catalogue(signal), service.requests(signal)]);[m
+[32m+[m[32m    return { catalogue, requests };[m
+[32m+[m[32m  }, []);[m
+[32m+[m[32m  const resource = useAsyncResource(loader);[m
+[32m+[m[32m  const [catalogueModal, setCatalogueModal] = useState(null), [booking, setBooking] = useState(null), [selected, setSelected] = useState(null);[m
+[32m+[m[32m  const [busy, setBusy] = useState(false), [filter, setFilter] = useState("ALL");[m
+[32m+[m[32m  const locked = useRef(false);[m
+[32m+[m[32m  async function mutate(action, afterSuccess) {[m
+[32m+[m[32m    if (locked.current) return false;[m
+[32m+[m[32m    locked.current = true; setBusy(true);[m
+[32m+[m[32m    try { await action(); afterSuccess(); showToast({ type: "success", message: "Saved successfully." }); await resource.reload(); return true; }[m
+[32m+[m[32m    catch (error) { showToast({ type: "error", message: error.message }); throw error; }[m
+[32m+[m[32m    finally { locked.current = false; setBusy(false); }[m
+[32m+[m[32m  }[m
+[32m+[m[32m  const rows = (resource.data?.requests || []).filter((item) => filter === "ALL" || (filter === "HISTORY" ? ["FINAL_COST_APPROVED", "CANCELLED"].includes(item.status) : !["FINAL_COST_APPROVED", "CANCELLED"].includes(item.status)));[m
+[32m+[m[32m  return <div className="paid-services-stack">[m
+[32m+[m[32m    <PageHeader eyebrow="Paid services" title={isResident ? "Services marketplace" : "Paid service requests"} description="Apartment services performed by your community's maintenance workers." actions={<Button variant="secondary" disabled={busy || resource.loading} onClick={resource.reload}>Refresh</Button>} />[m
+[32m+[m[32m    {resource.loading && <LoadingState message="Loading services..." />}[m
+[32m+[m[32m    {resource.error && <ErrorState message={resource.error.message} onRetry={resource.reload} />}[m
+[32m+[m[32m    {resource.data && <>[m
+[32m+[m[32m      {(isResident || isAdmin) && <Card title="Service catalogue" actions={isAdmin && <Button onClick={() => setCatalogueModal({})}>Add service</Button>}>[m
+[32m+[m[32m        {!resource.data.catalogue.length ? <EmptyState title="No services available" message={isAdmin ? "Add a community service to make it available to residents." : "Your Community Admin has not published any services yet."} /> : <div className="paid-services-grid">{resource.data.catalogue.map((entry) => <Card key={entry.id} title={entry.name} actions={<StatusBadge status={entry.active ? "AVAILABLE" : "INACTIVE"} />}>[m
+[32m+[m[32m          <p className="paid-services-prose">{entry.description}</p><p>{label(entry.specialization)} · From <strong>{money(entry.startingPricePaise)}</strong></p>[m
+[32m+[m[32m          <Button variant={isResident ? "primary" : "secondary"} onClick={() => isResident ? setBooking(entry) : setCatalogueModal(entry)}>{isResident ? "Request service" : "Edit service"}</Button>[m
+[32m+[m[32m        </Card>)}</div>}[m
+[32m+[m[32m      </Card>}[m
+[32m+[m[32m      <Card title={isResident ? "My requests and service history" : "Service requests"} actions={<Select aria-label="Filter service requests" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="ALL">All requests</option><option value="ACTIVE">Active requests</option><option value="HISTORY">Completed / cancelled</option></Select>} flush>[m
+[32m+[m[32m        <DataTable rows={rows} columns={[[m
+[32m+[m[32m          { key: "service", header: "Service", render: (value) => value.name },[m
+[32m+[m[32m          { key: "residentName", header: "Resident", render: (value) => value || "Unavailable" },[m
+[32m+[m[32m          { key: "workerName", header: "Worker", render: (value) => value || "Not assigned" },[m
+[32m+[m[32m          { key: "status", header: "Status", render: (value) => <StatusBadge status={value} /> },[m
+[32m+[m[32m          { key: "payment", header: "Payment", render: (value) => value ? <StatusBadge status={value.status} /> : "Not authorized" },[m
+[32m+[m[32m          { key: "actions", header: "Details", render: (_, row) => <Button variant="secondary" onClick={() => setSelected(row.id)}>View request</Button> },[m
+[32m+[m[32m        ]} emptyTitle="No service requests" emptyMessage={isResident ? "Browse the catalogue to request an apartment service." : "Requests in your authorized scope will appear here."} />[m
+[32m+[m[32m      </Card>[m
+[32m+[m[32m    </>}[m
+[32m+[m[32m    {catalogueModal && <CatalogueModal entry={catalogueModal} busy={busy} onClose={() => setCatalogueModal(null)} onSave={(id, payload) => mutate(() => service.saveCatalogue(id, payload), () => setCatalogueModal(null))} />}[m
+[32m+[m[32m    {booking && <BookingModal entry={booking} busy={busy} onClose={() => setBooking(null)} onCreate={(payload) => mutate(() => service.create(payload), () => setBooking(null))} />}[m
+[32m+[m[32m    {selected && <RequestDetails key={selected} id={selected} role={role} onClose={() => setSelected(null)} onChanged={resource.reload} />}[m
+[32m+[m[32m  </div>;[m
+[32m+[m[32m}[m
+[1mdiff --git a/front-end/src/features/paid-services/paid-services.css b/front-end/src/features/paid-services/paid-services.css[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b008d81[m
+[1m--- /dev/null[m
+[1m+++ b/front-end/src/features/paid-services/paid-services.css[m
+[36m@@ -0,0 +1,14 @@[m
+[32m+[m[32m.paid-services-stack { display: grid; gap: var(--space-5); }[m
+[32m+[m[32m.paid-services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--space-4); }[m
+[32m+[m[32m.paid-services-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }[m
+[32m+[m[32m.paid-services-form { display: grid; gap: var(--space-4); }[m
+[32m+[m[32m.paid-services-form fieldset { display: grid; gap: var(--space-4); border: 0; padding: 0; margin: 0; min-width: 0; }[m
+[32m+[m[32m.paid-services-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }[m
+[32m+[m[32m.paid-services-facts div { min-width: 0; }[m
+[32m+[m[32m.paid-services-facts dt { color: var(--color-text-secondary); }[m
+[32m+[m[32m.paid-services-facts dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }[m
+[32m+[m[32m.paid-services-prose { white-space: pre-wrap; overflow-wrap: anywhere; }[m
+[32m+[m[32m.paid-services-muted { color: var(--color-text-secondary); }[m
+[32m+[m[32m.paid-services-preview { width: 100%; max-height: 28rem; object-fit: contain; }[m
+[32m+[m[32m.paid-services-history { display: grid; gap: var(--space-3); padding-left: var(--space-5); }[m
+[32m+[m[32m@media (max-width: 680px) { .paid-services-facts { grid-template-columns: 1fr; } }[m
+[1mdiff --git a/front-end/src/features/paid-services/services/paidServicesService.js b/front-end/src/features/paid-services/services/paidServicesService.js[m
+[1mnew file mode 100644[m
+[1mindex 0000000..358926a[m
+[1m--- /dev/null[m
+[1m+++ b/front-end/src/features/paid-services/services/paidServicesService.js[m
+[36m@@ -0,0 +1,18 @@[m
+[32m+[m[32mimport { api } from "../../../api/client.js";[m
+[32m+[m
+[32m+[m[32mconst root = "/paid-services";[m
+[32m+[m[32mconst requestPath = (id) => `${root}/requests/${encodeURIComponent(id)}`;[m
+[32m+[m[32mexport const paidServicesService = {[m
+[32m+[m[32m  async catalogue(signal) { return (await api.get(`${root}/catalogue`, { signal })).data; },[m
+[32m+[m[32m  async saveCatalogue(id, payload) { return (await (id ? api.patch(`${root}/catalogue/${encodeURIComponent(id)}`, payload) : api.post(`${root}/catalogue`, payload))).data; },[m
+[32m+[m[32m  async requests(signal) { return (await api.get(`${root}/requests`, { signal })).data; },[m
+[32m+[m[32m  async request(id, signal) { return (await api.get(requestPath(id), { signal })).data; },[m
+[32m+[m[32m  async create(payload) { return (await api.post(`${root}/requests`, payload)).data; },[m
+[32m+[m[32m  async workers(id, signal) { return (await api.get(`${requestPath(id)}/eligible-workers`, { signal })).data; },[m
+[32m+[m[32m  async action(id, action, payload) { return (await api.post(`${requestPath(id)}/${action}`, payload)).data; },[m
+[32m+[m[32m  async uploadEvidence(id, file) {[m
+[32m+[m[32m    const data = new FormData(); data.append("file", file);[m
+[32m+[m[32m    return (await api.post(`${requestPath(id)}/evidence`, data)).data;[m
+[32m+[m[32m  },[m
+[32m+[m[32m  evidence(id, evidenceId) { return api.get(`${requestPath(id)}/evidence/${encodeURIComponent(evidenceId)}`, { responseType: "blob" }); },[m
+[32m+[m[32m};[m
+[1mdiff --git a/front-end/src/features/resident/routes.jsx b/front-end/src/features/resident/routes.jsx[m
+[1mindex 6174ecd..2abc1a9 100644[m
+[1m--- a/front-end/src/features/resident/routes.jsx[m
+[1m+++ b/front-end/src/features/resident/routes.jsx[m
+[36m@@ -8,10 +8,12 @@[m [mimport { CreateComplaintPage } from "./pages/CreateComplaintPage.jsx";[m
+ import { ComplaintDetailsPage } from "./pages/ComplaintDetailsPage.jsx";[m
+ import { ProfilePage } from "./pages/ProfilePage.jsx";[m
+ import "./resident.css";[m
+[32m+[m[32mimport { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";[m
+ [m
+ export function ResidentRoutes() {[m
+   return <Routes><Route path="amenities" element={<AmenitiesPage />} /><Route path="amenity-bookings" element={<BookingsPage />} />[m
+     <Route index element={<DashboardPage />} />[m
+[32m+[m[32m    <Route path="services" element={<PaidServicesPage />} />[m
+     <Route path="complaints" element={<ComplaintsPage />} />[m
+     <Route path="complaints/new" element={<CreateComplaintPage />} />[m
+     <Route path="complaints/:id" element={<ComplaintDetailsPage />} />[m
+[1mdiff --git a/front-end/src/features/tower-representative/routes.jsx b/front-end/src/features/tower-representative/routes.jsx[m
+[1mindex f3c47c8..4418fc2 100644[m
+[1m--- a/front-end/src/features/tower-representative/routes.jsx[m
+[1m+++ b/front-end/src/features/tower-representative/routes.jsx[m
+[36m@@ -8,10 +8,12 @@[m [mimport { ReportsPage } from "./pages/ReportsPage.jsx";[m
+ import { ResidentsPage } from "./pages/ResidentsPage.jsx";[m
+ import { WorkforcePage } from "./pages/WorkforcePage.jsx";[m
+ import "./tower-representative.css";[m
+[32m+[m[32mimport { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";[m
+ [m
+ export function TowerRepresentativeRoutes() {[m
+   return <Routes>[m
+     <Route index element={<DashboardPage />} />[m
+[32m+[m[32m    <Route path="services" element={<PaidServicesPage />} />[m
+     <Route path="complaints" element={<ComplaintsPage />} />[m
+     <Route path="complaints/:complaintId" element={<ComplaintDetailsPage />} />[m
+     <Route path="workforce" element={<WorkforcePage />} />[m

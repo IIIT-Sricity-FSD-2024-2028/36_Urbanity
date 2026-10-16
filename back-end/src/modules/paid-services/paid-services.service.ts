@@ -25,9 +25,12 @@ export class PaidServicesService {
     private readonly workforce: WorkforceService,
     private readonly complaints: ComplaintsService,
     private readonly subscriptions: SubscriptionService,
-  ) {}
+  ) {
+    this.community.registerOccupancyBlocker?.('paid-services', (apartmentId) => this.requests.findAll().some(r=>r.apartmentId===apartmentId&&r.status!=='CANCELLED'&&!r.completedAt) ? 'Complete or explicitly cancel unfinished paid services before activating tenancy; financial records remain unchanged' : undefined);
+  }
 
   listCatalogue(actor: AuthenticatedUser) {
+    if(actor.role===RoleName.Resident)this.community.resolveResidentOccupancy(actor.id);
     const communityId = this.actorCommunity(actor);
     return this.catalogue.findAll().filter((item) => item.communityId === communityId && (actor.role === RoleName.CommunityAdmin || item.active));
   }
@@ -55,7 +58,8 @@ export class PaidServicesService {
       if (previous.service.catalogueId !== dto.catalogueId || previous.description !== dto.description.trim()) throw new ConflictException('This submission key was already used for a different request');
       return this.view(previous);
     }
-    const location = this.community.resolveResidentHierarchy(actor.id);
+    const location = this.community.resolveResidentOccupancy(actor.id);
+    this.community.assertServiceOccupancy(actor.id,location.apartment.id);
     const entry = this.catalogue.findById(dto.catalogueId);
     if (entry.communityId !== location.community.id || !entry.active) throw new BadRequestException('Select an active service in your community');
     this.subscriptions.assertCommunityActive(location.community.id);
@@ -111,6 +115,7 @@ export class PaidServicesService {
     if (actor.role === RoleName.Resident) this.owner(actor, item); else this.authority(actor, item);
     this.status(item, 'ESTIMATE_APPROVED', 'SCHEDULED');
     this.approvedEstimate(item);
+    this.community.resolveResidentOccupancy(item.residentId,item.apartmentId,dto.startsAt,dto.endsAt);
     const start = Date.parse(dto.startsAt), end = Date.parse(dto.endsAt);
     if (!Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start || end - start > 8 * 60 * 60 * 1000) throw new BadRequestException('Choose a future appointment lasting at most 8 hours');
     const conflict = this.requests.findAll().some((other) => other.id !== item.id && other.status !== 'CANCELLED' && other.appointment && (other.workerId === item.workerId || other.residentId === item.residentId) && start < Date.parse(other.appointment.endsAt) && end > Date.parse(other.appointment.startsAt));
@@ -121,6 +126,7 @@ export class PaidServicesService {
   start(actor: AuthenticatedUser, id: string, version: number) {
     const item = this.mutation(actor, id, version); this.worker(actor, item); this.status(item, 'SCHEDULED'); this.approvedEstimate(item);
     if (!item.appointment || Date.now() < Date.parse(item.appointment.startsAt) || Date.now() >= Date.parse(item.appointment.endsAt)) throw new BadRequestException('Start work within the scheduled appointment; reschedule an expired appointment');
+    this.community.resolveResidentOccupancy(item.residentId,item.apartmentId);
     item.startedAt = now();
     return this.change(item, actor, 'IN_PROGRESS', 'Work started');
   }

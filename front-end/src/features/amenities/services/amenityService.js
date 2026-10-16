@@ -10,6 +10,22 @@ export const amenityService = {
     ).then(data),
   availability: (id, values) =>
     api.post(`/amenities/${id}/availability`, values).then(data),
+  day: (id, values, signal) =>
+    api
+      .post(`/amenities/${id}/availability/day`, values, { signal })
+      .then(data),
+  changeOptions: (id, values, signal) =>
+    api
+      .post(`/amenity-bookings/${id}/change-availability`, values, { signal })
+      .then(data),
+  change: (id, values) =>
+    api.post(`/amenity-bookings/${id}/changes`, values).then(data),
+  decideChange: (id, changeId, action, reason) =>
+    api
+      .patch(`/amenity-bookings/${id}/changes/${changeId}/${action}`, {
+        reason,
+      })
+      .then(data),
   book: (id, values) =>
     api.post(`/amenities/${id}/bookings`, values).then(data),
   transition: (id, action, reason) =>

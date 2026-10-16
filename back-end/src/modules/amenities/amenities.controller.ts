@@ -17,6 +17,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import {
   AmenityDto,
+  DayAvailabilityDto,
+  ChangeAvailabilityDto,
+  ChangeBookingDto,
   BookingWindowDto,
   CreateBookingDto,
   MaintenanceBlockDto,
@@ -65,6 +68,14 @@ export class AmenitiesController {
   ) {
     return apiResponse(this.service.book(actor, id, dto));
   }
+  @Post(':id/availability/day')
+  day(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DayAvailabilityDto,
+  ) {
+    return apiResponse(this.service.dayAvailability(actor, id, dto));
+  }
   @Get(':id/blocks')
   blocks(
     @CurrentUser() actor: AuthenticatedUser,
@@ -100,6 +111,47 @@ export class AmenityBookingsController {
   constructor(private readonly service: AmenitiesService) {}
   @Get() list(@CurrentUser() actor: AuthenticatedUser) {
     return apiResponse(this.service.listBookings(actor));
+  }
+  @Post(':id/change-availability')
+  options(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeAvailabilityDto,
+  ) {
+    return apiResponse(this.service.changeAvailability(actor, id, dto));
+  }
+  @Post(':id/changes')
+  @Roles(RoleName.Resident)
+  change(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeBookingDto,
+  ) {
+    return apiResponse(this.service.change(actor, id, dto));
+  }
+  @Patch(':id/changes/:changeId/approve')
+  @Roles(RoleName.CommunityAdmin)
+  approveChange(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('changeId', ParseUUIDPipe) changeId: string,
+    @Body() dto: ReasonDto,
+  ) {
+    return apiResponse(
+      this.service.decideChange(actor, id, changeId, true, dto.reason),
+    );
+  }
+  @Patch(':id/changes/:changeId/reject')
+  @Roles(RoleName.CommunityAdmin)
+  rejectChange(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('changeId', ParseUUIDPipe) changeId: string,
+    @Body() dto: ReasonDto,
+  ) {
+    return apiResponse(
+      this.service.decideChange(actor, id, changeId, false, dto.reason),
+    );
   }
   @Patch(':id/approve')
   @Roles(RoleName.CommunityAdmin)

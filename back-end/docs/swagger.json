@@ -15,37 +15,9 @@
         ]
       }
     },
-    "/auth/login": {
-      "post": {
-        "operationId": "AuthController_login",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "JWT access token issued successfully."
-          },
-          "401": {
-            "description": "Invalid credentials."
-          }
-        },
-        "summary": "Authenticate a user by email and password and receive a JWT access token",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/auth/me": {
+    "/amenities": {
       "get": {
-        "operationId": "AuthController_me",
+        "operationId": "AmenitiesController_list",
         "parameters": [],
         "responses": {
           "200": {
@@ -54,37 +26,22 @@
         },
         "security": [
           {
-            "bearerAuth": []
+            "bearer": []
           }
         ],
-        "summary": "Get the authenticated user context",
         "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/users": {
-      "get": {
-        "operationId": "UsersController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
+          "Amenities"
         ]
       },
       "post": {
-        "operationId": "UsersController_create",
+        "operationId": "AmenitiesController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUserDto"
+                "$ref": "#/components/schemas/AmenityDto"
               }
             }
           }
@@ -94,35 +51,19 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Users"
+          "Amenities"
         ]
       }
     },
-    "/users/{id}": {
-      "get": {
-        "operationId": "UsersController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Users"
-        ]
-      },
+    "/amenities/{id}": {
       "patch": {
-        "operationId": "UsersController_update",
+        "operationId": "AmenitiesController_update",
         "parameters": [
           {
             "name": "id",
@@ -138,7 +79,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserDto"
+                "$ref": "#/components/schemas/AmenityDto"
               }
             }
           }
@@ -148,12 +89,133 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Users"
+          "Amenities"
         ]
-      },
-      "delete": {
-        "operationId": "UsersController_delete",
+      }
+    },
+    "/amenities/{id}/availability": {
+      "post": {
+        "operationId": "AmenitiesController_availability",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingWindowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/bookings": {
+      "post": {
+        "operationId": "AmenitiesController_book",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/availability/day": {
+      "post": {
+        "operationId": "AmenitiesController_day",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DayAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/blocks": {
+      "get": {
+        "operationId": "AmenitiesController_blocks",
         "parameters": [
           {
             "name": "id",
@@ -169,8 +231,386 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "Users"
+          "Amenities"
+        ]
+      },
+      "post": {
+        "operationId": "AmenitiesController_block",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceBlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenities/{id}/blocks/{blockId}/release": {
+      "patch": {
+        "operationId": "AmenitiesController_release",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenities"
+        ]
+      }
+    },
+    "/amenity-bookings": {
+      "get": {
+        "operationId": "AmenityBookingsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/change-availability": {
+      "post": {
+        "operationId": "AmenityBookingsController_options",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes": {
+      "post": {
+        "operationId": "AmenityBookingsController_change",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes/{changeId}/approve": {
+      "patch": {
+        "operationId": "AmenityBookingsController_approveChange",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "changeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/changes/{changeId}/reject": {
+      "patch": {
+        "operationId": "AmenityBookingsController_rejectChange",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "changeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/approve": {
+      "patch": {
+        "operationId": "AmenityBookingsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/reject": {
+      "patch": {
+        "operationId": "AmenityBookingsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
+        ]
+      }
+    },
+    "/amenity-bookings/{id}/cancel": {
+      "patch": {
+        "operationId": "AmenityBookingsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Amenity bookings"
         ]
       }
     },
@@ -718,6 +1158,72 @@
         ]
       }
     },
+    "/apartments/{id}/ownership-transfer": {
+      "post": {
+        "operationId": "CommunityController_transferApartmentOwnership",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferApartmentOwnershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
+    "/apartments/{id}/ownership-history": {
+      "get": {
+        "operationId": "CommunityController_apartmentOwnershipHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "community hierarchy"
+        ]
+      }
+    },
     "/users/{id}/resident-apartment": {
       "patch": {
         "operationId": "CommunityController_associateResident",
@@ -841,6 +1347,117 @@
         ]
       }
     },
+    "/users": {
+      "get": {
+        "operationId": "UsersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
     "/subscriptions": {
       "get": {
         "operationId": "SubscriptionController_list",
@@ -918,6 +1535,54 @@
         },
         "tags": [
           "Subscription"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "JWT access token issued successfully."
+          },
+          "401": {
+            "description": "Invalid credentials."
+          }
+        },
+        "summary": "Authenticate a user by email and password and receive a JWT access token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get the authenticated user context",
+        "tags": [
+          "auth"
         ]
       }
     },
@@ -3338,6 +4003,1864 @@
           "reports"
         ]
       }
+    },
+    "/rentals/tenant-onboarding": {
+      "post": {
+        "operationId": "RentalsController_onboard",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardTenantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/inventory": {
+      "get": {
+        "operationId": "RentalsController_inventory",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/owner-assignment": {
+      "post": {
+        "operationId": "RentalsController_assignOwner",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases/{id}/review": {
+      "post": {
+        "operationId": "RentalsController_reviewLease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentalReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases/{id}/cancel": {
+      "post": {
+        "operationId": "RentalsController_cancelLease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentalReasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/listings": {
+      "get": {
+        "operationId": "RentalsController_listings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      },
+      "post": {
+        "operationId": "RentalsController_createListing",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/managed/listings": {
+      "get": {
+        "operationId": "RentalsController_managed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/owned-apartments": {
+      "get": {
+        "operationId": "RentalsController_ownedApartments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/managed/listings/{listingId}/tenants": {
+      "get": {
+        "operationId": "RentalsController_tenants",
+        "parameters": [
+          {
+            "name": "listingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/managed/leases": {
+      "get": {
+        "operationId": "RentalsController_managedLeases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/listings/{id}": {
+      "patch": {
+        "operationId": "RentalsController_updateListing",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases": {
+      "post": {
+        "operationId": "RentalsController_createLease",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me/leases/{id}/accept": {
+      "post": {
+        "operationId": "RentalsController_acceptLease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/managed/leases/{id}/activate": {
+      "post": {
+        "operationId": "RentalsController_activateLease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me": {
+      "get": {
+        "operationId": "RentalsController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me/leases/{id}": {
+      "get": {
+        "operationId": "RentalsController_lease",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me/leases/{id}/obligations/{obligationId}/payment-evidence": {
+      "post": {
+        "operationId": "RentalsController_paymentEvidence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "obligationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentEvidenceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/payments/{id}/verify": {
+      "post": {
+        "operationId": "RentalsController_verifyPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/payments/{id}/review": {
+      "post": {
+        "operationId": "RentalsController_reviewPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/payments/{id}/refunds": {
+      "post": {
+        "operationId": "RentalsController_recordRentRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositAdjustmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/refunds/{id}/review": {
+      "post": {
+        "operationId": "RentalsController_reviewRentRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me/leases/{id}/deposit/evidence": {
+      "post": {
+        "operationId": "RentalsController_depositEvidence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositEvidenceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases/{id}/deposit/deductions": {
+      "post": {
+        "operationId": "RentalsController_depositDeduction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositAdjustmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases/{id}/deposit/refunds": {
+      "post": {
+        "operationId": "RentalsController_depositRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositAdjustmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/deposits/{id}/review": {
+      "post": {
+        "operationId": "RentalsController_reviewDeposit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/deposits/{id}/decision": {
+      "post": {
+        "operationId": "RentalsController_decideDepositDeduction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositDeductionDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/deposits/{id}/dispute-resolution": {
+      "post": {
+        "operationId": "RentalsController_resolveDepositDispute",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositDisputeResolutionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/leases/{id}/amendments": {
+      "post": {
+        "operationId": "RentalsController_proposeAmendment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentAmendmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/amendments/{id}/decision": {
+      "post": {
+        "operationId": "RentalsController_decideAmendment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmendmentDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/amendments/{id}/withdraw": {
+      "post": {
+        "operationId": "RentalsController_withdrawAmendment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/me/leases/{id}/requests/{type}": {
+      "post": {
+        "operationId": "RentalsController_lifecycleRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/requests/{id}/decision": {
+      "post": {
+        "operationId": "RentalsController_decideRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/rentals/requests/{id}/withdraw": {
+      "post": {
+        "operationId": "RentalsController_withdrawRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/paid-services/catalogue": {
+      "get": {
+        "operationId": "PaidServicesController_catalogue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      },
+      "post": {
+        "operationId": "PaidServicesController_createCatalogue",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatalogueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/catalogue/{id}": {
+      "patch": {
+        "operationId": "PaidServicesController_updateCatalogue",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCatalogueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests": {
+      "get": {
+        "operationId": "PaidServicesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      },
+      "post": {
+        "operationId": "PaidServicesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}": {
+      "get": {
+        "operationId": "PaidServicesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/eligible-workers": {
+      "get": {
+        "operationId": "PaidServicesController_workers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/assign": {
+      "post": {
+        "operationId": "PaidServicesController_assign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignServiceWorkerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/estimates": {
+      "post": {
+        "operationId": "PaidServicesController_estimate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitEstimateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/estimate-decision": {
+      "post": {
+        "operationId": "PaidServicesController_decision",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideEstimateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/schedule": {
+      "post": {
+        "operationId": "PaidServicesController_schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/start": {
+      "post": {
+        "operationId": "PaidServicesController_start",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/complete": {
+      "post": {
+        "operationId": "PaidServicesController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/progress": {
+      "post": {
+        "operationId": "PaidServicesController_progress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceProgressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/final-cost-review": {
+      "post": {
+        "operationId": "PaidServicesController_finalCost",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewFinalCostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/payment-approval": {
+      "post": {
+        "operationId": "PaidServicesController_paymentApproval",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/payment-report": {
+      "post": {
+        "operationId": "PaidServicesController_report",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportServicePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/payment-verification": {
+      "post": {
+        "operationId": "PaidServicesController_verify",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyServicePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/payment-receipt": {
+      "post": {
+        "operationId": "PaidServicesController_receipt",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/review": {
+      "post": {
+        "operationId": "PaidServicesController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/cancel": {
+      "post": {
+        "operationId": "PaidServicesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/evidence": {
+      "post": {
+        "operationId": "PaidServicesController_upload",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
+    },
+    "/paid-services/requests/{id}/evidence/{evidenceId}": {
+      "get": {
+        "operationId": "PaidServicesController_evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "evidenceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "paid services"
+        ]
+      }
     }
   },
   "info": {
@@ -3357,126 +5880,278 @@
       }
     },
     "schemas": {
-      "LoginDto": {
+      "AmenityDto": {
         "type": "object",
         "properties": {
-          "email": {
-            "type": "string",
-            "example": "arjun.mehta@urbanity.gov"
+          "bookingIntervalMinutes": {
+            "type": "number",
+            "default": 1
           },
-          "password": {
-            "type": "string",
-            "example": "arjun123"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
-      },
-      "CreateUserDto": {
-        "type": "object",
-        "properties": {
+          "turnaroundMinutes": {
+            "type": "number",
+            "default": 0
+          },
+          "allowExtensions": {
+            "type": "boolean",
+            "default": false
+          },
+          "cancellationCutoffMinutes": {
+            "type": "number",
+            "default": 0
+          },
           "name": {
-            "type": "string",
-            "example": "Asha Rao",
-            "maxLength": 100
+            "type": "string"
           },
-          "email": {
-            "type": "string",
-            "example": "asha@example.com",
-            "maxLength": 100
+          "description": {
+            "type": "string"
           },
-          "password": {
-            "type": "string",
-            "example": "a-strong-development-password",
-            "minLength": 8,
-            "maxLength": 128
-          },
-          "phone": {
-            "type": "string",
-            "example": "+91-9876543210",
-            "maxLength": 20
-          },
-          "role": {
+          "status": {
             "type": "string",
             "enum": [
-              "SUPER_ADMIN",
-              "COMMUNITY_ADMIN",
-              "TOWER_REPRESENTATIVE",
-              "RESIDENT",
-              "MAINTENANCE_WORKER"
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "timeZone": {
+            "type": "string",
+            "example": "Asia/Kolkata"
+          },
+          "weekdays": {
+            "example": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              0
             ],
-            "example": "RESIDENT"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
-          "communityId": {
+          "opensAt": {
             "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+            "example": "08:00"
           },
-          "apartmentId": {
+          "closesAt": {
             "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+            "example": "22:00"
           },
-          "towerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          "capacity": {
+            "type": "number"
+          },
+          "exclusive": {
+            "type": "boolean"
+          },
+          "minDurationMinutes": {
+            "type": "number"
+          },
+          "maxDurationMinutes": {
+            "type": "number"
+          },
+          "maxActiveBookings": {
+            "type": "number"
+          },
+          "advanceDays": {
+            "type": "number",
+            "description": "Minimum notice before reservation start, in elapsed 24-hour days. Zero permits same-day reservations. The field name is retained for API compatibility."
+          },
+          "requiresApproval": {
+            "type": "boolean"
+          },
+          "feeMinor": {
+            "type": "number",
+            "description": "Flat booking fee in INR paise"
+          },
+          "depositMinor": {
+            "type": "number",
+            "description": "Refundable deposit in INR paise"
           }
         },
         "required": [
+          "bookingIntervalMinutes",
+          "turnaroundMinutes",
+          "allowExtensions",
+          "cancellationCutoffMinutes",
           "name",
-          "email",
-          "password",
-          "role"
+          "description",
+          "status",
+          "timeZone",
+          "weekdays",
+          "opensAt",
+          "closesAt",
+          "capacity",
+          "exclusive",
+          "minDurationMinutes",
+          "maxDurationMinutes",
+          "maxActiveBookings",
+          "advanceDays",
+          "requiresApproval",
+          "feeMinor",
+          "depositMinor"
         ]
       },
-      "UpdateUserDto": {
+      "BookingWindowDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "example": "Asha Rao",
-            "maxLength": 100
+          "startsAt": {
+            "type": "string"
           },
-          "email": {
-            "type": "string",
-            "example": "asha@example.com",
-            "maxLength": 100
+          "endsAt": {
+            "type": "string"
           },
-          "password": {
-            "type": "string",
-            "example": "a-strong-development-password",
-            "minLength": 8,
-            "maxLength": 128
+          "attendees": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "attendees"
+        ]
+      },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string"
           },
-          "phone": {
-            "type": "string",
-            "example": "+91-9876543210",
-            "maxLength": 20
+          "endsAt": {
+            "type": "string"
           },
-          "role": {
+          "attendees": {
+            "type": "number"
+          },
+          "clientRequestId": {
+            "type": "string"
+          },
+          "expectedFeeMinor": {
+            "type": "number"
+          },
+          "expectedDepositMinor": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "attendees",
+          "expectedFeeMinor",
+          "expectedDepositMinor"
+        ]
+      },
+      "DayAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-20"
+          },
+          "attendees": {
+            "type": "number"
+          },
+          "startsAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "attendees"
+        ]
+      },
+      "MaintenanceBlockDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "ChangeAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-20"
+          },
+          "attendees": {
+            "type": "number"
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "kind": {
             "type": "string",
             "enum": [
-              "SUPER_ADMIN",
-              "COMMUNITY_ADMIN",
-              "TOWER_REPRESENTATIVE",
-              "RESIDENT",
-              "MAINTENANCE_WORKER"
-            ],
-            "example": "RESIDENT"
-          },
-          "communityId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "apartmentId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
-          },
-          "towerId": {
-            "type": "string",
-            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+              "EDIT",
+              "EXTEND"
+            ]
           }
-        }
+        },
+        "required": [
+          "date",
+          "attendees",
+          "kind"
+        ]
+      },
+      "ChangeBookingDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "attendees": {
+            "type": "number"
+          },
+          "clientRequestId": {
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "EDIT",
+              "EXTEND"
+            ]
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "attendees",
+          "clientRequestId",
+          "expectedVersion",
+          "kind"
+        ]
+      },
+      "ReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "CreateCommunityDto": {
         "type": "object",
@@ -3613,6 +6288,9 @@
           },
           "label": {
             "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
           }
         },
         "required": [
@@ -3632,8 +6310,34 @@
           },
           "label": {
             "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
           }
         }
+      },
+      "TransferApartmentOwnershipDto": {
+        "type": "object",
+        "properties": {
+          "expectedOwnerUserId": {
+            "type": "object",
+            "nullable": true
+          },
+          "newOwnerUserId": {
+            "type": "object",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "effectiveDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "effectiveDate"
+        ]
       },
       "AssociateApartmentDto": {
         "type": "object",
@@ -3657,6 +6361,124 @@
           "towerId"
         ]
       },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "residentSituation": {
+            "type": "string",
+            "enum": [
+              "OWNER_OCCUPANT",
+              "TENANT_PENDING"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Rao",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "asha@example.com",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91-9876543210",
+            "maxLength": 20
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
+          },
+          "communityId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "apartmentId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "towerId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "residentSituation": {
+            "type": "string",
+            "enum": [
+              "OWNER_OCCUPANT",
+              "TENANT_PENDING"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Rao",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "asha@example.com",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "example": "a-strong-development-password",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91-9876543210",
+            "maxLength": 20
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "COMMUNITY_ADMIN",
+              "TOWER_REPRESENTATIVE",
+              "RESIDENT",
+              "MAINTENANCE_WORKER"
+            ],
+            "example": "RESIDENT"
+          },
+          "communityId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "apartmentId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          },
+          "towerId": {
+            "type": "string",
+            "example": "7b9f22cf-bbd3-4cc9-8d75-f21f02835b74"
+          }
+        }
+      },
       "RequestUpgradeDto": {
         "type": "object",
         "properties": {
@@ -3670,6 +6492,23 @@
         "required": [
           "contractedTowers",
           "contractedApartments"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "arjun.mehta@urbanity.gov"
+          },
+          "password": {
+            "type": "string",
+            "example": "arjun123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
         ]
       },
       "Role": {
@@ -4443,6 +7282,376 @@
           "outcome",
           "notes"
         ]
+      },
+      "OnboardTenantDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AssignOwnerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RentalReviewDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RentalReasonDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateListingDto": {
+        "type": "object",
+        "properties": {
+          "availableUntil": {
+            "type": "string"
+          },
+          "apartmentId": {
+            "type": "string"
+          },
+          "arrangement": {
+            "type": "string",
+            "enum": [
+              "COMMUNITY"
+            ]
+          },
+          "details": {
+            "type": "string"
+          },
+          "monthlyRent": {
+            "type": "number"
+          },
+          "securityDeposit": {
+            "type": "number"
+          },
+          "availableFrom": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "apartmentId",
+          "arrangement",
+          "monthlyRent",
+          "securityDeposit",
+          "availableFrom"
+        ]
+      },
+      "UpdateListingDto": {
+        "type": "object",
+        "properties": {
+          "availableUntil": {
+            "type": "string"
+          },
+          "monthlyRent": {
+            "type": "number"
+          },
+          "securityDeposit": {
+            "type": "number"
+          },
+          "availableFrom": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "AVAILABLE",
+              "WITHDRAWN"
+            ]
+          }
+        }
+      },
+      "RentEscalationDto": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "PERCENTAGE",
+              "FIXED"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "intervalMonths": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "effectiveDate": {
+            "type": "string",
+            "example": "2027-07-01"
+          },
+          "maxIncreases": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "method",
+          "value",
+          "intervalMonths",
+          "effectiveDate"
+        ]
+      },
+      "CreateLeaseDto": {
+        "type": "object",
+        "properties": {
+          "listingId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "dueDay": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "escalation": {
+            "$ref": "#/components/schemas/RentEscalationDto"
+          }
+        },
+        "required": [
+          "listingId",
+          "tenantId",
+          "startDate",
+          "endDate",
+          "dueDay"
+        ]
+      },
+      "PaymentEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "transactionReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "transactionReference"
+        ]
+      },
+      "PaymentDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "REJECTED"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "DepositAdjustmentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "transactionReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "reason"
+        ]
+      },
+      "DepositEvidenceDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "transactionReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "transactionReference"
+        ]
+      },
+      "DepositDeductionDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "DISPUTED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "DepositDisputeResolutionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "REJECTED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ]
+      },
+      "RentAmendmentDto": {
+        "type": "object",
+        "properties": {
+          "monthlyRent": {
+            "type": "number"
+          },
+          "securityDeposit": {
+            "type": "number"
+          },
+          "dueDay": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "escalation": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RentEscalationDto"
+              }
+            ]
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "effectiveDate",
+          "reason"
+        ]
+      },
+      "AmendmentDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "REJECTED"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "LifecycleDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "DECLINED"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "CreateCatalogueDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateCatalogueDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateServiceRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AssignServiceWorkerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitEstimateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DecideEstimateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ScheduleServiceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "VersionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CompleteServiceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ServiceProgressDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewFinalCostDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReportServicePaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "VerifyServicePaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewServiceDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

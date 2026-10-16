@@ -13,9 +13,29 @@ import {
   MaxLength,
   Min,
   MinLength,
+  IsUUID,
+  ValidateIf,
 } from 'class-validator';
 
 export class AmenityDto {
+  @ApiProperty({ default: 1 })
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  bookingIntervalMinutes: number = 1;
+  @ApiProperty({ default: 0 })
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  turnaroundMinutes: number = 0;
+  @ApiProperty({ default: false })
+  @IsBoolean()
+  allowExtensions: boolean = false;
+  @ApiProperty({ default: 0 })
+  @IsInt()
+  @Min(0)
+  @Max(525600)
+  cancellationCutoffMinutes: number = 0;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(100) name!: string;
   @ApiProperty() @IsString() @MaxLength(2000) description!: string;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] })
@@ -44,7 +64,14 @@ export class AmenityDto {
   @ApiProperty() @IsInt() @Min(1) @Max(1440) minDurationMinutes!: number;
   @ApiProperty() @IsInt() @Min(1) @Max(1440) maxDurationMinutes!: number;
   @ApiProperty() @IsInt() @Min(1) @Max(100) maxActiveBookings!: number;
-  @ApiProperty() @IsInt() @Min(1) @Max(365) advanceDays!: number;
+  @ApiProperty({
+    description:
+      'Minimum notice before reservation start, in elapsed 24-hour days. Zero permits same-day reservations. The field name is retained for API compatibility.',
+  })
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  advanceDays!: number;
   @ApiProperty() @IsBoolean() requiresApproval!: boolean;
   @ApiProperty({ description: 'Flat booking fee in INR paise' })
   @IsInt()
@@ -70,8 +97,36 @@ export class BookingWindowDto {
   @ApiProperty() @IsInt() @Min(1) @Max(10000) attendees!: number;
 }
 export class CreateBookingDto extends BookingWindowDto {
+  @ApiProperty({ required: false })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsUUID('4')
+  clientRequestId?: string;
   @ApiProperty() @IsInt() @Min(0) @Max(100000000) expectedFeeMinor!: number;
   @ApiProperty() @IsInt() @Min(0) @Max(100000000) expectedDepositMinor!: number;
+}
+export class DayAvailabilityDto {
+  @ApiProperty({ example: '2026-10-20' })
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  date!: string;
+  @ApiProperty() @IsInt() @Min(1) @Max(10000) attendees!: number;
+  @ApiProperty({ required: false })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsISO8601({ strict: true })
+  @Matches(/T.*(?:Z|[+-]\d{2}:\d{2})$/)
+  startsAt?: string;
+}
+export class ChangeAvailabilityDto extends DayAvailabilityDto {
+  @ApiProperty({ enum: ['EDIT', 'EXTEND'] })
+  @IsIn(['EDIT', 'EXTEND'])
+  kind!: 'EDIT' | 'EXTEND';
+}
+export class ChangeBookingDto extends BookingWindowDto {
+  @ApiProperty() @IsUUID('4') clientRequestId!: string;
+  @ApiProperty() @IsInt() @Min(1) expectedVersion!: number;
+  @ApiProperty({ enum: ['EDIT', 'EXTEND'] })
+  @IsIn(['EDIT', 'EXTEND'])
+  kind!: 'EDIT' | 'EXTEND';
 }
 export class ReasonDto {
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(500) reason!: string;
