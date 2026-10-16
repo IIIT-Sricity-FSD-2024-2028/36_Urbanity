@@ -66,14 +66,14 @@ export class CommunityService {
   listCommunities() { return this.communityCrud.findAll(); } getCommunity(id: string) { return this.communityCrud.findById(id); }
   listCommunitiesForActor(actor: AuthenticatedUser) { return actor.role === RoleName.SuperAdmin ? this.listCommunities() : [this.requireScopedCommunity(actor)]; }
   getCommunityForActor(actor: AuthenticatedUser, id: string) { const community = this.getCommunity(id); this.assertCommunityAccess(actor, community.id); return community; }
-  createCommunity(dto: CreateCommunityDto) {
+  createCommunity(dto: CreateCommunityDto, registrationApplicationId?: string, registrationCredentialsReady = false) {
     if (this.users.findAll().some((user) => user.email.toLowerCase() === dto.adminEmail.trim().toLowerCase())) throw new BadRequestException('A user with this email already exists');
     const now = timestamp(); let community: Community | undefined; let admin: User | undefined; let subscriptionId: string | undefined;
     try {
       const { adminName, adminEmail, adminPassword, contractedTowers, contractedApartments, ...communityData } = dto;
-      community = this.communityCrud.create({ ...communityData, createdAt: now, updatedAt: now });
-      admin = this.users.create({ name: adminName, email: adminEmail.trim().toLowerCase(), passwordHash: hashSync(adminPassword, 10), role: RoleName.CommunityAdmin, communityId: community.id, createdAt: now });
-      const subscription = this.subscriptions.createPending(community.id, community.name, contractedTowers, contractedApartments); subscriptionId = subscription.id;
+      community = this.communityCrud.create({ ...communityData, ...(registrationApplicationId ? { registrationApplicationId } : {}), createdAt: now, updatedAt: now });
+      admin = this.users.create({ ...(registrationApplicationId ? { registrationApplicationId, accountState: registrationCredentialsReady ? 'AWAITING_ACTIVATION' : 'SETUP_REQUIRED' } : {}), name: adminName, email: adminEmail.trim().toLowerCase(), passwordHash: hashSync(adminPassword, 10), role: RoleName.CommunityAdmin, communityId: community.id, createdAt: now });
+      const subscription = this.subscriptions.createPending(community.id, community.name, contractedTowers, contractedApartments, registrationApplicationId); subscriptionId = subscription.id;
       return { community, admin: this.safeUser(admin), subscription };
     } catch (error) {
       if (subscriptionId) this.subscriptions.delete(subscriptionId);
@@ -85,7 +85,7 @@ export class CommunityService {
   createCommunityForActor(actor: AuthenticatedUser, dto: CreateCommunityDto) { this.requireSuperAdmin(actor); return this.createCommunity(dto); }
   updateCommunity(id: string, dto: UpdateCommunityDto) { return this.communityCrud.update(id, { ...dto, updatedAt: timestamp() }); }
   updateCommunityForActor(actor: AuthenticatedUser, id: string, dto: UpdateCommunityDto) { this.requireSuperAdmin(actor); return this.updateCommunity(id, dto); }
-  deleteCommunity(id: string) { this.ensureNoChildren(this.towerCrud.findAll().some((tower) => tower.communityId === id), 'Community has towers and cannot be deleted'); return this.communityCrud.delete(id); }
+  deleteCommunity(id: string) { if (this.getCommunity(id).registrationApplicationId) throw new ForbiddenException('Registration-linked communities must retain their onboarding records'); this.ensureNoChildren(this.towerCrud.findAll().some((tower) => tower.communityId === id), 'Community has towers and cannot be deleted'); return this.communityCrud.delete(id); }
   deleteCommunityForActor(actor: AuthenticatedUser, id: string) { this.requireSuperAdmin(actor); return this.deleteCommunity(id); }
   listTowers() { return this.towerCrud.findAll(); } getTower(id: string) { return this.towerCrud.findById(id); }
   listTowersForActor(actor: AuthenticatedUser) { return this.listTowers().filter((tower) => this.canAccessCommunity(actor, tower.communityId)); }

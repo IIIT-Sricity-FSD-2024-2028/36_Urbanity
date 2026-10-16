@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Button, LoadingState } from "../../../components/ui/index.js";
 import { NAVIGATION_BY_ROLE } from "../../../constants/navigation.js";
@@ -143,7 +143,7 @@ export function LoginPage() {
               Sign in
             </Button>
           </form>
-          <p className="login-form__footer">Accounts are created by Urbanity administrators.</p>
+          <p className="login-form__footer">Accounts are created by Urbanity administrators. <Link to={ROUTES.REGISTER}>Register your community</Link>.</p>
         </div>
       </section>
     </main>

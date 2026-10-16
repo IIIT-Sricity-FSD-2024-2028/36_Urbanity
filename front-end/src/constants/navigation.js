@@ -13,6 +13,7 @@ function portalNavigation(label, home, items = [{ label: "Overview", to: home, i
 export const NAVIGATION_BY_ROLE = Object.freeze({
   [ROLES.SUPER_ADMIN]: portalNavigation("Super Admin Portal", ROUTES.SUPER_ADMIN, [
     { label: "Platform Dashboard", to: ROUTES.SUPER_ADMIN, icon: "dashboard" },
+    { label: "Registrations", to: ROUTES.SUPER_ADMIN_REGISTRATIONS, icon: "communities" },
     { label: "Communities", to: ROUTES.SUPER_ADMIN_COMMUNITIES, icon: "communities" },
     { label: "Platform Users", to: ROUTES.SUPER_ADMIN_USERS, icon: "users" },
     { label: "Complaints", to: ROUTES.SUPER_ADMIN_COMPLAINTS, icon: "complaints" },

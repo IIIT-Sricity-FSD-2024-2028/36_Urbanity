@@ -5,6 +5,7 @@ export enum SubscriptionStatus { PaymentPending = 'PAYMENT_PENDING', Active = 'A
 export enum PaymentStatus { Pending = 'PENDING', Success = 'SUCCESS' }
 
 export class Subscription {
+  registrationApplicationId?: string;
   @ApiProperty() id!: string;
   @ApiProperty() communityId!: string;
   @ApiProperty() communityName!: string;

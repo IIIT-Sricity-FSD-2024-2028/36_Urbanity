@@ -215,6 +215,8 @@ export class CreateOfficeDto {
 export class UpdateOfficeDto extends PartialType(CreateOfficeDto) {}
 
 export class User {
+  registrationApplicationId?: string;
+  accountState?: 'SETUP_REQUIRED' | 'AWAITING_ACTIVATION' | 'ACTIVE';
   residentSituation?: 'OWNER_OCCUPANT' | 'TENANT_PENDING';
   @ApiProperty({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   id!: string;

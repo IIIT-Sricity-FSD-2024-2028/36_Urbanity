@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compareSync } from 'bcryptjs';
 import { CrudService } from '../../common/crud/crud.service';
@@ -29,7 +34,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.accountState && user.accountState !== 'ACTIVE') {
+      throw new ForbiddenException(
+        user.accountState === 'SETUP_REQUIRED'
+          ? 'Your account setup is incomplete. Return to your community registration status page to finish setup.'
+          : 'Your account has not been enabled yet. Ask the Super Admin to approve your registration or retry approval.',
+      );
+    }
+
     const { passwordHash: _passwordHash, ...authenticatedUser } = user;
+    void _passwordHash;
     return {
       accessToken: this.jwtService.sign({
         sub: user.id,

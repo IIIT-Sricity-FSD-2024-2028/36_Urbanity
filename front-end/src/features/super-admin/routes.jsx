@@ -1,3 +1,4 @@
+import { RegistrationsPage } from "./pages/RegistrationsPage.jsx";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
 import { CommunitiesPage } from "./pages/CommunitiesPage.jsx";
@@ -10,6 +11,7 @@ import "./super-admin.css";
 
 export function SuperAdminRoutes() {
   return <Routes>
+    <Route path="registrations" element={<RegistrationsPage />} />
     <Route index element={<DashboardPage />} />
     <Route path="communities" element={<CommunitiesPage />} />
     <Route path="users" element={<UsersPage />} />

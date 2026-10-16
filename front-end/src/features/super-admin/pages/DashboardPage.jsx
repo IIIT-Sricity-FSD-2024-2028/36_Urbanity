@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../../constants/routes.js";
 import { useCallback } from "react";
 import { Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
 import { MetricCard, MetricIcon, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
@@ -21,7 +23,7 @@ export function DashboardPage() {
   const { data, loading, error, reload } = useAsyncResource(loader);
 
   return <>
-    <PageHeader eyebrow="Platform overview" title="Super Admin dashboard" description="Live hierarchy, people, complaint, and workforce totals from Urbanity." />
+    <PageHeader eyebrow="Platform overview" title="Super Admin dashboard" actions={<Link className="ui-button ui-button--primary" to={ROUTES.SUPER_ADMIN_REGISTRATIONS}>Registration applications</Link>} description="Live hierarchy, people, complaint, and workforce totals from Urbanity." />
     {loading && <LoadingState message="Loading platform summary..." />}
     {error && <ErrorState message={error.message} onRetry={reload} />}
     {data && <>

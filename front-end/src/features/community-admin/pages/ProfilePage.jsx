@@ -23,6 +23,7 @@ export function ProfilePage() {
     setSaving(true);
     try {
       const payload = { name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim() };
+      if (data.registrationApplicationId) delete payload.email;
       if (form.password) payload.password = form.password;
       await communityAdminService.updateUser(user.id, payload);
       await refreshUser();
@@ -78,9 +79,9 @@ export function ProfilePage() {
     >
       <form id="community-admin-profile-form" className="ca-form" onSubmit={submit}>
         <Input label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-        <Input label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
+        <Input label="Email" readOnly={Boolean(data?.registrationApplicationId)} hint={data?.registrationApplicationId ? "Registration email is linked to your approved application." : undefined} type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
         <Input label="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
-        <Input label="New password" hint="Leave blank to keep the current password." type="password" minLength="8" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+        <Input label="New password" hint={data?.registrationApplicationId ? "Leave blank to keep the current password. You can replace your default password here." : "Leave blank to keep the current password."} type="password" autoComplete="new-password" minLength="8" maxLength="128" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
       </form>
     </Modal>
   </>;
