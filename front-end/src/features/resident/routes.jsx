@@ -1,3 +1,5 @@
+import { AmenitiesPage } from "../amenities/pages/AmenitiesPage.jsx";
+import { BookingsPage } from "../amenities/pages/BookingsPage.jsx";
 import { Route, Routes } from "react-router-dom";
 import { EmptyState } from "../../components/ui/index.js";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
@@ -8,7 +10,7 @@ import { ProfilePage } from "./pages/ProfilePage.jsx";
 import "./resident.css";
 
 export function ResidentRoutes() {
-  return <Routes>
+  return <Routes><Route path="amenities" element={<AmenitiesPage />} /><Route path="amenity-bookings" element={<BookingsPage />} />
     <Route index element={<DashboardPage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="complaints/new" element={<CreateComplaintPage />} />

@@ -1,3 +1,4 @@
+import { AmenitiesModule } from './modules/amenities/amenities.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -29,6 +30,7 @@ import { AttachmentsController } from './modules/attachments/attachments.control
 @Module({
   imports: [
     LoggingModule,
+    AmenitiesModule,
     AuthModule,
     RolesModule,
     DepartmentsModule,
