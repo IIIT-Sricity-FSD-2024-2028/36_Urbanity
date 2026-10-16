@@ -6,7 +6,8 @@ import { PageHeader } from "../../../components/data-display/index.js";
 import { ComplaintTable } from "../components/ComplaintTable.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
-import { COMPLAINT_STATUSES, COMPLAINT_TYPES, formatEnum, newestFirst } from "../utils/formatters.js";
+import { COMPLAINT_STATUSES, COMPLAINT_TYPES, RESOLVED_STATUSES, formatEnum, localDateKey, newestFirst } from "../utils/formatters.js";
+import { emergencyFirst } from "../utils/appointments.js";
 import { nextAuthorityAction } from "../utils/workflow.js";
 
 const ACTION_REQUIRED = "ACTION_REQUIRED";
@@ -31,15 +32,15 @@ export function ComplaintsPage() {
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return newestFirst((data || []).filter((complaint) => {
+    return emergencyFirst(newestFirst((data || []).filter((complaint) => {
       if (status === ACTION_REQUIRED ? !nextAuthorityAction(complaint, user) : status && complaint.status !== status) return false;
       if (type && complaint.type !== type) return false;
-      if (fromDate && String(complaint.createdAt || "").slice(0, 10) < fromDate) return false;
+      if (fromDate && localDateKey(complaint.createdAt) < fromDate) return false;
       if (!query) return true;
       const haystack = [complaint.title, complaint.description, complaint.location?.apartmentNumber, complaint.location?.floorLabel]
         .filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(query);
-    }));
+    })), (complaint) => (RESOLVED_STATUSES.has(complaint.status) ? null : complaint));
   }, [data, fromDate, search, status, type, user]);
 
   const hasFilters = Boolean(search || type || fromDate || status);

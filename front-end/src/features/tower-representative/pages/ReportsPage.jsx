@@ -11,6 +11,7 @@ import {
   countBy,
   formatDateTime,
   formatEnum,
+  localDateKey,
   workerReference,
 } from "../utils/formatters.js";
 
@@ -29,7 +30,7 @@ function averageResolutionHours(complaints) {
 }
 
 function monthlyTrend(complaints) {
-  const counts = countBy(complaints, (complaint) => String(complaint.createdAt || "").slice(0, 7));
+  const counts = countBy(complaints, (complaint) => localDateKey(complaint.createdAt).slice(0, 7));
   return Object.fromEntries(
     Object.entries(counts)
       .filter(([month]) => /^\d{4}-\d{2}$/.test(month))
