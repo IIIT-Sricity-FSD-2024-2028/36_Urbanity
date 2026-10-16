@@ -1,0 +1,29 @@
+.amenity-stack {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.amenity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.amenity-stack p {
+  overflow-wrap: anywhere;
+}
+.amenity-stack fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+}
+@media (max-width: 700px) {
+  .amenity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

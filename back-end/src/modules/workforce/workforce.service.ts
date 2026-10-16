@@ -20,6 +20,8 @@ const profiles: WorkerProfile[] = [
 
 @Injectable()
 export class WorkforceService {
+  // ponytail: process-local reservations match current repositories; persist atomically with requests when a database is introduced.
+  private readonly paidServiceReservations = new Map<string, string>();
   private readonly repository = new CrudRepository<WorkerProfile>(profiles);
   private readonly crud = new CrudService(this.repository, 'Worker profile');
   constructor(
@@ -44,6 +46,7 @@ export class WorkforceService {
     return profile;
   }
   assertValidAssignmentTarget(id: string) {
+    if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Worker is reserved for an active paid service');
     const profile = this.findById(id);
     const user = this.users.findById(profile.userId);
     if (user.role !== RoleName.MaintenanceWorker) {
@@ -86,6 +89,7 @@ export class WorkforceService {
     return this.create(dto);
   }
   update(id: string, dto: UpdateWorkerProfileDto) {
+    if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Finish or cancel the worker paid service before changing the profile');
     const current = this.findById(id);
     if (dto.userId && dto.userId !== current.userId) throw new BadRequestException('A worker profile user cannot be changed');
     if (dto.status === WorkerStatus.Busy) throw new BadRequestException('BUSY status is managed by worker assignment operations');
@@ -103,7 +107,19 @@ export class WorkforceService {
   updatePerformance(id: string, rating: number, completedWorkCount: number) {
     return this.crud.update(id, { rating, completedWorkCount, updatedAt: new Date().toISOString() });
   }
-  deactivate(id: string) { return this.crud.update(id, { status: WorkerStatus.Inactive, updatedAt: new Date().toISOString() }); }
+  deactivate(id: string) { if (this.hasPaidServiceReservation(id)) throw new BadRequestException('Worker has an active paid service'); return this.crud.update(id, { status: WorkerStatus.Inactive, updatedAt: new Date().toISOString() }); }
+  hasPaidServiceReservation(id: string) { return this.paidServiceReservations.has(id); }
+  reservePaidService(id: string, requestId: string) {
+    const worker = this.assertValidAssignmentTarget(id);
+    if (worker.status !== WorkerStatus.Available) throw new BadRequestException('Worker is unavailable');
+    this.paidServiceReservations.set(id, requestId);
+    return this.updateSystemStatus(id, WorkerStatus.Busy);
+  }
+  releasePaidService(id: string, requestId: string) {
+    if (this.paidServiceReservations.get(id) !== requestId) throw new BadRequestException('Worker is not reserved for this service');
+    this.paidServiceReservations.delete(id);
+    return this.updateSystemStatus(id, WorkerStatus.Available);
+  }
   deactivateForActor(actor: AuthenticatedUser, id: string) {
     const profile = this.findById(id); this.assertCanAccessProfile(actor, profile); this.subscriptions.assertCommunityActive(profile.communityId);
     return this.deactivate(id);

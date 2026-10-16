@@ -208,7 +208,7 @@ export class ComplaintsService {
     this.assertCanActAsAuthority(actor, complaint);
   }
   private activeAssignment(complaintId: string) { const assignment = this.assignments.find((item) => item.complaintId === complaintId && item.status !== ComplaintAssignmentStatus.Completed); if (!assignment) throw new BadRequestException('Complaint has no active worker assignment'); return assignment; }
-  private hasActiveAssignment(workerId: string) { return this.assignments.some((item) => item.workerId === workerId && item.status !== ComplaintAssignmentStatus.Completed); }
+  hasActiveAssignment(workerId: string) { return this.assignments.some((item) => item.workerId === workerId && item.status !== ComplaintAssignmentStatus.Completed); }
   assertCanViewComplaint(actor: AuthenticatedUser, complaint: CommunityComplaint) {
     const complaintCommunityId = this.assertComplaintCommunity(complaint).communityId;
     if (actor.role === RoleName.SuperAdmin) return;
