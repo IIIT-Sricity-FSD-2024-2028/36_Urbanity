@@ -7,6 +7,7 @@ import { ComplaintsPage } from "./pages/ComplaintsPage.jsx";
 import { CreateComplaintPage } from "./pages/CreateComplaintPage.jsx";
 import { ComplaintDetailsPage } from "./pages/ComplaintDetailsPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
+import { RentalsPage } from "./pages/RentalsPage.jsx";
 import "./resident.css";
 import { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";
 
@@ -18,6 +19,7 @@ export function ResidentRoutes() {
     <Route path="complaints/new" element={<CreateComplaintPage />} />
     <Route path="complaints/:id" element={<ComplaintDetailsPage />} />
     <Route path="profile" element={<ProfilePage />} />
+    <Route path="rentals" element={<RentalsPage />} />
     <Route path="*" element={<EmptyState title="Page not found" message="Choose a Resident page from the navigation." />} />
   </Routes>;
 }

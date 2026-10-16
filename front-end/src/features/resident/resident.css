@@ -17,6 +17,11 @@
 .resident-attachment img { max-height: 320px; width: 100%; object-fit: contain; }
 .resident-attachment p { margin: var(--space-2) 0 0; }
 .resident-file-list { margin: 0; padding-left: var(--space-5); overflow-wrap: anywhere; }
+.resident-rentals__table { margin-top: var(--space-4); min-width: 0; overflow-x: auto; }
+.resident-rentals__table h3 { color: #1d3857; }
+.resident-rentals__heading { margin: 0; color: #1d3857; }
+.resident-rentals__payment { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(12rem, 1fr) auto; align-items: end; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--color-border); }
+@media (max-width: 760px) { .resident-rentals__payment { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) {
   .resident-grid, .resident-metrics, .resident-facts { grid-template-columns: minmax(0, 1fr); }
   .resident-actions > * { width: 100%; }
