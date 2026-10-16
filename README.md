@@ -4,9 +4,9 @@
 
 Apartment communities often manage maintenance issues through calls, chat messages, and disconnected records. This makes it difficult to identify the exact complaint location, route the issue to the responsible authority, assign an eligible maintenance worker, and verify that the work was completed correctly.
 
-The absence of a centralized, transparent, and trackable workflow can lead to delayed repairs, poor coordination between residents and authorities, and limited accountability for maintenance work.
+Additionally, community administration involves managing residents, apartments, rental arrangements, amenity reservations, paid services, and financial records. Without a centralized platform, these activities can become difficult to coordinate, track, and manage securely.
 
-This project aims to build a **multi-community apartment operations platform** that allows Residents to report complaints, enables Community Admins and Tower Representatives to manage and assign work, and ensures accountability through verified proof of work and resident feedback.
+This project aims to build a **multi-community apartment operations platform** that centralizes community registration, apartment management, maintenance operations, rental management, amenity booking, and resident services. It provides role-based access, structured workflows, and transparent tracking for community administrators, residents, and maintenance workers.
 
 ---
 
@@ -25,6 +25,10 @@ This project aims to build a **multi-community apartment operations platform** t
 ### Super Admin
 
 - Manage communities and platform-level users
+- Review community registration applications and approve or reject requests
+- Review applicant and community details before approval
+- Track community registration fees and mock payment records
+- Use the Accept & Send Email action to simulate approval email notifications
 - Monitor cross-community complaints, workforce, dashboards, and reports
 - Maintain platform-wide visibility and administration
 - Manage Community Admin accounts and platform operations
@@ -35,9 +39,15 @@ This project aims to build a **multi-community apartment operations platform** t
 
 - Manage the Community -> Tower -> Floor -> Apartment hierarchy
 - Create and manage Residents, Tower Representatives, and Maintenance Workers
+- Manage community registration activation and community configuration
+- Create and manage community rental listings, tenants, and leases
+- Track community-managed rental obligations and payment statuses
+- Configure amenities, reservation rules, booking fees, and refundable deposits
+- Manage paid services available to residents
 - Review and assign community-level complaints to eligible workers
-- Verify proof of work for Community complaints
-- Monitor community dashboards, workforce availability, and resident feedback
+- Verify proof of work for community complaints
+- Manage workforce availability and monitor worker performance
+- Monitor community dashboards, resident feedback, and operational activity
 
 ---
 
@@ -47,18 +57,26 @@ This project aims to build a **multi-community apartment operations platform** t
 - Review Apartment and Tower complaints before assignment
 - Assign eligible and available Maintenance Workers
 - Verify submitted proof of work and rate worker quality
+- Manage and review maintenance appointments where supported
 - View tower residents, complaint activity, and worker performance
 
 ---
 
 ### Resident
 
+- Access the apartment community associated with their account
 - Raise Apartment, Tower, or Community complaints
 - Upload supporting images for better issue clarity
 - Track the progress of submitted complaints
 - Receive resolution updates after authority verification
 - Rate completed work on speed, quality, and communication
 - Provide optional written feedback after issue resolution
+- View available community rental listings and relevant lease information
+- View rent obligations and payment statuses where applicable
+- Browse paid services and request eligible services
+- Book available amenities and facilities
+- View reservation details, booking charges, and refundable deposits where applicable
+- Track relevant service requests and booking statuses
 
 ---
 
@@ -68,6 +86,8 @@ This project aims to build a **multi-community apartment operations platform** t
 - Access complaint type, exact location, issue details, and required specialization
 - Start assigned work and update work progress
 - Submit proof of work with resolution notes and supporting images
+- Provide work estimates for assigned paid-service requests where supported
+- Update service progress and completion details
 - Track assigned, in-progress, and completed work
 
 ---
@@ -77,15 +97,20 @@ This project aims to build a **multi-community apartment operations platform** t
 - Improve transparency in apartment maintenance management
 - Reduce issue-resolution time through clear routing and assignment
 - Enable accountability at every stage of the complaint lifecycle
+- Simplify community registration and onboarding
+- Centralize apartment ownership, rental listings, leases, and rent tracking
+- Simplify amenity reservations and community resource management
+- Support paid resident services with structured requests and status tracking
 - Improve resident satisfaction through verified resolutions and feedback
 - Maintain secure community, tower, resident, and worker scope boundaries
+- Track registration payments and financial obligations accurately
 - Provide data-driven insights into complaint activity and worker performance
 
 ---
 
 ## Tech Stack (Planned)
 
-- **Frontend:** HTML, CSS, and JavaScript
+- **Frontend:** React, Vite, HTML, CSS, and JavaScript
 - **Backend:** Node.js, NestJS, and TypeScript
 - **Data:** In-memory development repositories; persistent storage is planned
 - **API Documentation:** Swagger / OpenAPI
@@ -105,7 +130,7 @@ Start the backend:
 cd back-end
 npm.cmd install
 npm.cmd run start:dev
-```
+````
 
 The API runs at `http://localhost:3000`.
 
@@ -113,10 +138,11 @@ Start the frontend in the second terminal:
 
 ```powershell
 cd front-end
-npx.cmd serve -l 3001
+npm.cmd install
+npm.cmd run dev
 ```
 
-Open the sign-in page at `http://localhost:3001/Authentication/auth.html`.
+Open the frontend URL displayed by Vite in the terminal.
 
 Development Super Admin credentials:
 
@@ -129,13 +155,16 @@ Password: superadmin-dev
 
 ## Future Enhancements
 
-- Persistent database storage and migrations
-- Real-time notifications for complaint lifecycle events
-- Advanced analytics dashboards and resolution-time reports
-- Configurable escalation and service-level policies
-- Mobile-friendly experience and accessibility improvements
-- Production deployment, monitoring, backups, and audit tooling
+* Persistent database storage and migrations
+* Real payment gateway integration for registration, rentals, and applicable services
+* Real email delivery and automated notifications
+* Real-time notifications for complaint lifecycle events
+* Advanced analytics dashboards and resolution-time reports
+* Configurable escalation and service-level policies
+* Enhanced rental lifecycle and financial management
+* Mobile-friendly experience and accessibility improvements
+* Production deployment, monitoring, backups, and audit tooling
 
 ---
 
-> This project is developed as part of an academic full-stack development course with a focus on real-world apartment-community operations and maintenance management.
+> This project is developed as part of an academic full-stack development course with a focus on real-world apartment-community operations, community administration, maintenance management, and resident services.
