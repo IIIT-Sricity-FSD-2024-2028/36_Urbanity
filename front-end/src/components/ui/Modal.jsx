@@ -11,7 +11,14 @@ export function Modal({
 }) {
   const titleId = useId();
   const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Form updates can create a new onClose callback. Only an open/close
+  // transition should move focus or change the document scroll lock.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -21,7 +28,7 @@ export function Modal({
     dialogRef.current?.focus();
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") onCloseRef.current?.();
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -31,7 +38,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

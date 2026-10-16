@@ -17,6 +17,11 @@ export interface BookingEvent {
   reason: string;
 }
 export interface AmenityBooking {
+  originalDurationMinutes: number;
+  extensionCharges: ExtensionCharge[];
+  version: number;
+  clientRequestId?: string;
+  changes: BookingChange[];
   id: string;
   amenityId: string;
   amenityName: string;
@@ -33,11 +38,34 @@ export interface AmenityBooking {
   currency: 'INR';
   paymentStatus: 'NOT_REQUIRED' | 'PENDING' | 'VOIDED';
   paymentHistory: {
+    chargeId?: string;
     at: string;
     status: 'NOT_REQUIRED' | 'PENDING' | 'VOIDED';
     reason: string;
   }[];
   history: BookingEvent[];
+}
+export interface BookingChange {
+  extensionDurationMinutes: number;
+  extensionFeeMinor: number;
+  id: string;
+  clientRequestId: string;
+  kind: 'EDIT' | 'EXTEND';
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+  startsAt: string;
+  endsAt: string;
+  attendees: number;
+  createdAt: string;
+  decidedAt?: string;
+  reason?: string;
+}
+export interface ExtensionCharge {
+  id: string;
+  changeId: string;
+  amountMinor: number;
+  currency: 'INR';
+  paymentStatus: 'NOT_REQUIRED' | 'PENDING' | 'VOIDED';
+  createdAt: string;
 }
 export interface MaintenanceBlock {
   id: string;

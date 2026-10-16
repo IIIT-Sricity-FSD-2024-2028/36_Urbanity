@@ -26,12 +26,15 @@ export function AmenitiesPage() {
   const resource = useAsyncResource(amenityService.list);
   const mutation = useAmenityMutation();
   const [dialog, setDialog] = useState(null);
+  const [reservationBusy, setReservationBusy] = useState(false);
   const open = (type, amenity) => {
     mutation.clearError();
     setDialog({ type, amenity });
   };
   return (
-    <div className="amenity-stack">
+    <div
+      className={`amenity-stack amenity-page${dialog?.type === "edit" ? " amenity-page--editing" : ""}`}
+    >
       <PageHeader
         title={admin ? "Manage amenities" : "Community amenities"}
         description={
@@ -104,7 +107,7 @@ export function AmenitiesPage() {
                   minutes
                   <br />
                   Up to {a.maxActiveBookings} active bookings per resident •
-                  Book {a.advanceDays} days ahead
+                  Book at least {a.advanceDays} days before
                   <br />
                   {a.requiresApproval
                     ? "Approval required"
@@ -137,6 +140,29 @@ export function AmenitiesPage() {
       )}
       <Modal
         isOpen={Boolean(dialog)}
+        size={dialog?.type === "edit" ? "lg" : "md"}
+        closeOnOverlay={dialog?.type !== "edit"}
+        footer={
+          dialog?.type === "edit" ? (
+            <>
+              <Button
+                variant="secondary"
+                disabled={mutation.busy}
+                onClick={() => setDialog(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="amenity-form"
+                loading={mutation.busy}
+                loadingLabel="Saving..."
+              >
+                {dialog.amenity ? "Save changes" : "Create amenity"}
+              </Button>
+            </>
+          ) : undefined
+        }
         title={
           dialog?.type === "edit"
             ? dialog.amenity
@@ -144,7 +170,9 @@ export function AmenitiesPage() {
               : "Create amenity"
             : `${dialog?.type === "reserve" ? "Reserve" : "Maintenance"} — ${dialog?.amenity?.name || ""}`
         }
-        onClose={mutation.busy ? undefined : () => setDialog(null)}
+        onClose={
+          mutation.busy || reservationBusy ? undefined : () => setDialog(null)
+        }
       >
         {mutation.error && <ErrorState message={mutation.error} />}
         {dialog?.type === "edit" && (
@@ -166,6 +194,7 @@ export function AmenitiesPage() {
         )}
         {dialog?.type === "reserve" && (
           <ReservationForm
+            onBusyChange={setReservationBusy}
             amenity={dialog.amenity}
             onBooked={async () => {
               setDialog(null);

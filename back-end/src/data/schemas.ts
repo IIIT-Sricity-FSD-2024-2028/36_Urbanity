@@ -7,6 +7,7 @@ import {
 import { RoleName } from '../common/enums/roles.enum';
 import {
   IsEmail,
+  IsIn,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -214,6 +215,7 @@ export class CreateOfficeDto {
 export class UpdateOfficeDto extends PartialType(CreateOfficeDto) {}
 
 export class User {
+  residentSituation?: 'OWNER_OCCUPANT' | 'TENANT_PENDING';
   @ApiProperty({ example: '7b9f22cf-bbd3-4cc9-8d75-f21f02835b74' })
   id!: string;
 
@@ -247,6 +249,9 @@ export class User {
 }
 
 export class CreateUserDto {
+  @ApiPropertyOptional({ enum: ['OWNER_OCCUPANT', 'TENANT_PENDING'] })
+  @IsOptional() @IsIn(['OWNER_OCCUPANT', 'TENANT_PENDING'])
+  residentSituation?: 'OWNER_OCCUPANT' | 'TENANT_PENDING';
   @ApiProperty({ example: 'Asha Rao', maxLength: 100 })
   @IsString()
   @IsNotEmpty()

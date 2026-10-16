@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -32,7 +33,7 @@ const config = {
   minDurationMinutes: 30,
   maxDurationMinutes: 120,
   maxActiveBookings: 3,
-  advanceDays: 30,
+  advanceDays: 0,
   requiresApproval: true,
   feeMinor: 5000,
   depositMinor: 10000,
@@ -156,7 +157,6 @@ describe('F05 amenity HTTP contracts', () => {
       slot(21, 23),
       slot(10, 13),
       slot(10, 10),
-      slot(10, 11, 31),
       slot(10, 11, -1),
       { ...slot(), attendees: 11 },
       { ...slot(), attendees: 0 },
@@ -314,5 +314,353 @@ describe('F05 amenity HTTP contracts', () => {
     });
     await book(id, slot(10, 11)).expect(201);
     await book(id, slot(11, 12)).expect(400);
+  });
+  it('returns date-based choices and enforces granularity, buffers, real dates and manager-only rules', async () => {
+    const id = await create({
+      bookingIntervalMinutes: 15,
+      turnaroundMinutes: 15,
+      allowExtensions: true,
+    });
+    const date = slot().startsAt.slice(0, 10);
+    await book(id).expect(201);
+    const day = payload<{
+      starts: { value: string }[];
+      ends: { value: string }[];
+      unavailable: object[];
+    }>(
+      await post(`/amenities/${id}/availability/day`, otherResident, {
+        date,
+        attendees: 2,
+        startsAt: slot(12, 13).startsAt,
+      }).expect(201),
+    );
+    expect(day.starts.some((s) => s.value === slot(11, 12).startsAt)).toBe(
+      false,
+    );
+    expect(day.starts.some((s) => s.value === slot(12, 13).startsAt)).toBe(
+      true,
+    );
+    expect(day.ends.length).toBeGreaterThan(0);
+    expect(JSON.stringify(day.unavailable)).not.toMatch(
+      /residentId|apartmentId|createdBy/,
+    );
+    await post(`/amenities/${id}/availability/day`, residentB, {
+      date,
+      attendees: 2,
+    }).expect(403);
+    await post(`/amenities/${id}/availability/day`, resident, {
+      date: '2027-02-30',
+      attendees: 2,
+    }).expect(400);
+    const offGrid = {
+      ...slot(12, 13),
+      startsAt: new Date(
+        Date.parse(slot(12, 13).startsAt) + 60000,
+      ).toISOString(),
+    };
+    await book(id, offGrid).expect(400);
+    await book(id, slot(11, 12), otherResident).expect(409);
+    await book(id, { startsAt: '2027-02-30T10:00:00Z' }).expect(400);
+    await post('/amenities', admin, {
+      ...config,
+      bookingIntervalMinutes: 0,
+    }).expect(400);
+    await post('/amenities', admin, {
+      ...config,
+      bookingIntervalMinutes: null,
+    }).expect(400);
+    await post('/amenities', admin, {
+      ...config,
+      turnaroundMinutes: -1,
+    }).expect(400);
+    await post('/amenities', admin, {
+      ...config,
+      allowExtensions: 'yes',
+    }).expect(400);
+    await post('/amenities', admin, {
+      ...config,
+      bookingIntervalMinutes: 60,
+      minDurationMinutes: 31,
+      maxDurationMinutes: 45,
+    }).expect(400);
+    await patch(`/amenities/${id}`, resident, {
+      ...config,
+      allowExtensions: true,
+    }).expect(403);
+  });
+  it('quotes a separate extension fee, preserves the deposit and requires scoped approval before charging', async () => {
+    const id = await create({ allowExtensions: true, maxDurationMinutes: 180 });
+    let b = payload<AmenityBooking>(await book(id).expect(201));
+    b = payload<AmenityBooking>(
+      await patch(`/amenity-bookings/${b.id}/approve`, admin, {
+        reason: 'Approved',
+      }).expect(200),
+    );
+    const dto = {
+      ...slot(10, 12),
+      kind: 'EXTEND',
+      expectedVersion: b.version,
+      clientRequestId: randomUUID(),
+    };
+    const originalEnd = b.endsAt;
+    await post(`/amenity-bookings/${b.id}/changes`, otherResident, dto).expect(
+      403,
+    );
+    await post(`/amenity-bookings/${b.id}/changes`, admin, dto).expect(403);
+    await post(`/amenity-bookings/${b.id}/change-availability`, otherResident, {
+      date: slot().startsAt.slice(0, 10),
+      attendees: 2,
+      kind: 'EXTEND',
+    }).expect(403);
+    const quote = payload<{
+      ends: { value: string; additionalFeeMinor: number }[];
+    }>(
+      await post(`/amenity-bookings/${b.id}/change-availability`, resident, {
+        date: slot().startsAt.slice(0, 10),
+        attendees: 2,
+        kind: 'EXTEND',
+      }).expect(201),
+    );
+    expect(quote.ends.some((e) => e.value === slot(10, 12).endsAt)).toBe(true);
+    expect(
+      quote.ends.find((e) => e.value === slot(10, 12).endsAt)
+        ?.additionalFeeMinor,
+    ).toBe(5000);
+    b = payload<AmenityBooking>(
+      await post(`/amenity-bookings/${b.id}/changes`, resident, dto).expect(
+        201,
+      ),
+    );
+    expect(b.endsAt).toBe(originalEnd);
+    expect(b.changes[0].status).toBe('PENDING_APPROVAL');
+    expect(b.paymentHistory).toHaveLength(1);
+    const retry = payload<AmenityBooking>(
+      await post(`/amenity-bookings/${b.id}/changes`, resident, dto).expect(
+        201,
+      ),
+    );
+    expect(retry.changes).toHaveLength(1);
+    await book(id, slot(11, 12), otherResident).expect(409);
+    await post(`/amenities/${id}/blocks`, admin, {
+      startsAt: slot(11, 12).startsAt,
+      endsAt: slot(11, 12).endsAt,
+      reason: 'Maintenance',
+    }).expect(409);
+    const path = `/amenity-bookings/${b.id}/changes/${b.changes[0].id}/approve`;
+    await patch(path, resident, { reason: 'Fake' }).expect(403);
+    await patch(path, adminB, { reason: 'Wrong community' }).expect(403);
+    b = payload<AmenityBooking>(
+      await patch(path, admin, { reason: 'Space available' }).expect(200),
+    );
+    expect(b.endsAt).toBe(slot(10, 12).endsAt);
+    expect(b.feeMinor).toBe(5000);
+    expect(b.depositMinor).toBe(10000);
+    expect(b.extensionCharges).toHaveLength(1);
+    expect(b.extensionCharges[0]).toMatchObject({
+      amountMinor: 5000,
+      paymentStatus: 'PENDING',
+    });
+    expect(b.paymentHistory).toHaveLength(2);
+    expect(
+      payload<AmenityBooking>(
+        await patch(path, admin, { reason: 'Retry' }).expect(200),
+      ).version,
+    ).toBe(b.version);
+  });
+  it('rejects conflicting and stale extensions without losing the original, and supports pending edit rejection', async () => {
+    const id = await create({ allowExtensions: true, maxDurationMinutes: 180 });
+    let b = payload<AmenityBooking>(await book(id).expect(201));
+    b = payload<AmenityBooking>(
+      await patch(`/amenity-bookings/${b.id}/approve`, admin, {
+        reason: 'Approve',
+      }).expect(200),
+    );
+    await book(id, slot(11, 12), otherResident).expect(201);
+    const dto = {
+      ...slot(10, 12),
+      kind: 'EXTEND',
+      expectedVersion: b.version,
+      clientRequestId: randomUUID(),
+    };
+    await post(`/amenity-bookings/${b.id}/changes`, resident, dto).expect(409);
+    await post(`/amenity-bookings/${b.id}/changes`, resident, {
+      ...dto,
+      expectedVersion: 999,
+    }).expect(409);
+    await post(`/amenity-bookings/${b.id}/changes`, resident, {
+      ...dto,
+      attendees: 1,
+    }).expect(400);
+    b = payload<AmenityBooking>(
+      await post(`/amenity-bookings/${b.id}/changes`, resident, {
+        ...dto,
+        ...slot(14, 15),
+        kind: 'EDIT',
+        clientRequestId: randomUUID(),
+      }).expect(201),
+    );
+    expect(b.endsAt).toBe(slot().endsAt);
+    await book(id, slot(14, 15), otherResident).expect(409);
+    b = payload<AmenityBooking>(
+      await patch(
+        `/amenity-bookings/${b.id}/changes/${b.changes[0].id}/reject`,
+        admin,
+        { reason: 'Original time preferred' },
+      ).expect(200),
+    );
+    expect(b.endsAt).toBe(slot().endsAt);
+    await book(id, slot(14, 15), otherResident).expect(201);
+  });
+  it('deduplicates concurrent booking retries and serializes an extension competing with a new booking', async () => {
+    const id = await create({
+      allowExtensions: true,
+      requiresApproval: false,
+      maxDurationMinutes: 180,
+    });
+    const clientRequestId = randomUUID();
+    const retries = await Promise.all([
+      book(id, { clientRequestId }),
+      book(id, { clientRequestId }),
+    ]);
+    expect(retries.map((r) => r.status)).toEqual([201, 201]);
+    const b = payload<AmenityBooking>(retries[0]);
+    expect(payload<AmenityBooking>(retries[1]).id).toBe(b.id);
+    await book(id, { clientRequestId, ...slot(12, 13) }).expect(409);
+    const race = await Promise.all([
+      post(`/amenity-bookings/${b.id}/changes`, resident, {
+        ...slot(10, 12),
+        kind: 'EXTEND',
+        expectedVersion: b.version,
+        clientRequestId: randomUUID(),
+      }),
+      book(id, slot(11, 12), otherResident),
+    ]);
+    expect(race.map((r) => r.status).sort()).toEqual([201, 409]);
+  });
+  it('quotes the proportional fee and creates exactly one pending charge under simultaneous approvals', async () => {
+    const id = await create({
+      feeMinor: 50000,
+      allowExtensions: true,
+      maxDurationMinutes: 360,
+    });
+    let b = payload<AmenityBooking>(
+      await book(id, { ...slot(10, 12), expectedFeeMinor: 50000 }).expect(201),
+    );
+    b = payload<AmenityBooking>(
+      await patch(`/amenity-bookings/${b.id}/approve`, admin, {
+        reason: 'Approve booking',
+      }).expect(200),
+    );
+    expect(b.originalDurationMinutes).toBe(120);
+    const quote = payload<{
+      ends: { value: string; additionalFeeMinor: number }[];
+    }>(
+      await post(`/amenity-bookings/${b.id}/change-availability`, resident, {
+        kind: 'EXTEND',
+        date: b.startsAt.slice(0, 10),
+        attendees: 2,
+      }).expect(201),
+    );
+    expect(
+      quote.ends.find((end) => end.value === slot(10, 13).endsAt)
+        ?.additionalFeeMinor,
+    ).toBe(25000);
+    expect(
+      quote.ends.find(
+        (end) =>
+          end.value ===
+          new Date(Date.parse(slot(10, 12).endsAt) + 30 * 60000).toISOString(),
+      )?.additionalFeeMinor,
+    ).toBe(12500);
+    const dto = {
+      ...slot(10, 13),
+      kind: 'EXTEND',
+      expectedVersion: b.version,
+      clientRequestId: randomUUID(),
+    };
+    await post(`/amenity-bookings/${b.id}/changes`, resident, {
+      ...dto,
+      extensionFeeMinor: 0,
+    }).expect(400);
+    b = payload<AmenityBooking>(
+      await post(`/amenity-bookings/${b.id}/changes`, resident, dto).expect(
+        201,
+      ),
+    );
+    expect(b.extensionCharges).toHaveLength(0);
+    expect(b.changes[0].extensionFeeMinor).toBe(25000);
+    const path = `/amenity-bookings/${b.id}/changes/${b.changes[0].id}/approve`;
+    const approvals = await Promise.all([
+      patch(path, admin, { reason: 'Approve extension' }),
+      patch(path, admin, { reason: 'Retry approval' }),
+    ]);
+    expect(approvals.map((r) => r.status)).toEqual([200, 200]);
+    for (const response of approvals) {
+      const result = payload<AmenityBooking>(response);
+      expect(result.extensionCharges).toHaveLength(1);
+      expect(result.extensionCharges[0]).toMatchObject({
+        amountMinor: 25000,
+        paymentStatus: 'PENDING',
+      });
+      expect(result.feeMinor).toBe(50000);
+      expect(result.depositMinor).toBe(10000);
+      expect(result.paymentStatus).toBe('PENDING');
+      expect(result.paymentHistory.filter((e) => e.chargeId)).toHaveLength(1);
+    }
+    b = payload<AmenityBooking>(
+      await post(`/amenity-bookings/${b.id}/changes`, resident, dto).expect(
+        201,
+      ),
+    );
+    expect(b.extensionCharges).toHaveLength(1);
+    await post(`/amenity-bookings/${b.id}/changes`, resident, {
+      ...dto,
+      kind: 'EDIT',
+      endsAt: slot(10, 14).endsAt,
+      expectedVersion: b.version,
+      clientRequestId: randomUUID(),
+    }).expect(400);
+    b = payload<AmenityBooking>(
+      await patch(`/amenity-bookings/${b.id}/cancel`, resident, {
+        reason: 'Cancel before start',
+      }).expect(200),
+    );
+    expect(b.extensionCharges[0].paymentStatus).toBe('VOIDED');
+    expect(
+      b.paymentHistory.filter((e) => e.chargeId).map((e) => e.status),
+    ).toEqual(['PENDING', 'VOIDED']);
+  });
+
+  it('enforces minimum notice on direct APIs and accepts reservations further in the future', async () => {
+    const created = payload<{ id: string }>(
+      await post('/amenities', admin, { ...config, advanceDays: 7 }).expect(
+        201,
+      ),
+    );
+    const early = slot(10, 11, 1),
+      later = slot(10, 11, 15);
+    const result = payload<{
+      bookingWindow: { minDate: string; earliestStartsAt: string };
+      unavailableReason: { code: string };
+      starts: unknown[];
+    }>(
+      await post(`/amenities/${created.id}/availability/day`, resident, {
+        date: early.startsAt.slice(0, 10),
+        attendees: 2,
+      }).expect(201),
+    );
+    expect(result.starts).toEqual([]);
+    expect(result.unavailableReason.code).toBe('MINIMUM_NOTICE');
+    expect(result.bookingWindow.earliestStartsAt).toBeDefined();
+    await post(`/amenities/${created.id}/bookings`, resident, {
+      ...early,
+      ...price,
+      clientRequestId: randomUUID(),
+    }).expect(400);
+    await post(`/amenities/${created.id}/bookings`, resident, {
+      ...later,
+      ...price,
+      clientRequestId: randomUUID(),
+    }).expect(201);
   });
 });

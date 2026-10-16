@@ -4,12 +4,13 @@ const dataOf = (response) => response?.data;
 const listOf = (response) => dataOf(response) || [];
 
 export const communityAdminService = {
+  async rentalInventory() { return dataOf(await api.get('/rentals/inventory')); },
+  async reviewRentalLease(id,decision,reason) { return dataOf(await api.post(`/rentals/leases/${encodeURIComponent(id)}/review`,{decision,reason})); },
+  async onboardRentalTenant(payload) { return dataOf(await api.post('/rentals/tenant-onboarding',payload)); },
   async listRentalListings() { return listOf(await api.get("/rentals/managed/listings")); },
   async listRentalLeases() { return listOf(await api.get("/rentals/managed/leases")); },
   async createRentalListing(payload) { return dataOf(await api.post("/rentals/listings", payload)); },
   async updateRentalListing(id, payload) { return dataOf(await api.patch(`/rentals/listings/${encodeURIComponent(id)}`, payload)); },
-  async listRentalTenants(listingId) { return listOf(await api.get(`/rentals/managed/listings/${encodeURIComponent(listingId)}/tenants`)); },
-  async createRentalLease(payload) { return dataOf(await api.post("/rentals/leases", payload)); },
   async activateRentalLease(id) { return dataOf(await api.post(`/rentals/managed/leases/${encodeURIComponent(id)}/activate`)); },
   async reviewRentalPayment(id, decision) { return dataOf(await api.post(`/rentals/payments/${encodeURIComponent(id)}/review`, { decision })); },
   async recordRentalRefund(id, payload) { return dataOf(await api.post(`/rentals/payments/${encodeURIComponent(id)}/refunds`, payload)); },

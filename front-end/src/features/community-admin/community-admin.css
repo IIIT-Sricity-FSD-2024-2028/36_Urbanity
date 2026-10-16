@@ -30,5 +30,10 @@
 .ca-notice { margin: 0; color: var(--color-text-secondary); }
 .ca-card-action, .ca-upgrade { margin-top: var(--space-5); }
 .ca-upgrade { padding-top: var(--space-4); border-top: 1px solid var(--color-border-subtle); }
+.ca-rentals, .ca-rentals .ca-stack { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.ca-rentals > *, .ca-rentals .ca-stack > *, .ca-rentals .ca-form > *, .ca-rentals .ui-field { min-width: 0; }
+.ca-rentals .ui-input, .ca-rentals .ui-select, .ca-rentals .ui-textarea { min-width: 0; max-width: 100%; }
+.ca-rentals .ui-card__title, .ca-rentals p { overflow-wrap: anywhere; }
+.ca-rentals__wide { grid-column: 1 / -1; }
 @media (max-width: 900px) { .ca-grid--3 { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .ca-grid--2, .ca-form--grid, .ca-details { grid-template-columns: 1fr; } .ca-user-form__wide { grid-column: auto; } .ca-title-row { flex-direction: column; } }
