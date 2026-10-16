@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator';
 
 class TimestampedEntity {
   @ApiProperty() id!: string;
@@ -56,13 +56,21 @@ export class Apartment extends TimestampedEntity {
   @ApiProperty() floorId!: string;
   @ApiProperty() apartmentNumber!: string;
   @ApiProperty() label!: string;
+  @ApiPropertyOptional() ownerUserId?: string;
 }
 export class CreateApartmentDto {
   @ApiProperty() @IsUUID('4') floorId!: string;
   @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(30) apartmentNumber!: string;
   @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(80) label!: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID('4') ownerUserId?: string;
 }
 export class UpdateApartmentDto extends PartialType(CreateApartmentDto) {}
+export class TransferApartmentOwnershipDto {
+  @ApiPropertyOptional({ nullable: true }) @IsOptional() @IsUUID('4') expectedOwnerUserId?: string | null;
+  @ApiPropertyOptional({ nullable: true }) @IsOptional() @IsUUID('4') newOwnerUserId?: string | null;
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(300) reason!: string;
+  @ApiProperty() @IsDateString() effectiveDate!: string;
+}
 
 export class AssociateApartmentDto { @ApiProperty() @IsUUID('4') apartmentId!: string; }
 export class AssociateTowerDto { @ApiProperty() @IsUUID('4') towerId!: string; }

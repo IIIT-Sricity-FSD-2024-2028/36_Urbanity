@@ -25,6 +25,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ComplaintRouteContextMiddleware } from './common/middleware/complaint-route-context.middleware';
 import { ComplaintsController } from './modules/complaints/complaints.controller';
 import { AttachmentsController } from './modules/attachments/attachments.controller';
+import { RentalsModule } from './modules/rentals/rentals.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AttachmentsController } from './modules/attachments/attachments.control
     AttachmentsModule,
     DashboardModule,
     ReportsModule,
+    RentalsModule,
   ],
   controllers: [AppController],
   providers: [

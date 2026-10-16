@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RoleName } from '../../common/enums/roles.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
-import { AssociateApartmentDto, AssociateTowerDto, CreateApartmentDto, CreateCommunityDto, CreateFloorDto, CreateTowerDto, UpdateApartmentDto, UpdateCommunityDto, UpdateFloorDto, UpdateTowerDto } from './hierarchy.dto';
+import { AssociateApartmentDto, AssociateTowerDto, CreateApartmentDto, CreateCommunityDto, CreateFloorDto, CreateTowerDto, TransferApartmentOwnershipDto, UpdateApartmentDto, UpdateCommunityDto, UpdateFloorDto, UpdateTowerDto } from './hierarchy.dto';
 import { CommunityService } from './community.service';
 
 @UseGuards(RolesGuard)
@@ -38,6 +38,8 @@ export class CommunityController {
   @Get('apartments/:id') apartment(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.getApartmentForActor(actor, id)); }
   @Post('apartments') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) createApartment(@Body() dto: CreateApartmentDto, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.createApartmentForActor(actor, dto)); }
   @Patch('apartments/:id') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) updateApartment(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateApartmentDto, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.updateApartmentForActor(actor, id, dto)); }
+  @Post('apartments/:id/ownership-transfer') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) transferApartmentOwnership(@Param('id', ParseUUIDPipe) id: string, @Body() dto: TransferApartmentOwnershipDto, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.transferApartmentOwnershipForActor(actor, id, dto)); }
+  @Get('apartments/:id/ownership-history') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) apartmentOwnershipHistory(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.apartmentOwnershipHistoryForActor(actor, id)); }
   @Delete('apartments/:id') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) deleteApartment(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.deleteApartmentForActor(actor, id)); }
 
   @Patch('users/:id/resident-apartment') @Roles(RoleName.CommunityAdmin, RoleName.SuperAdmin) associateResident(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AssociateApartmentDto, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.service.associateResident(actor, id, dto)); }
