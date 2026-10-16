@@ -1,0 +1,14 @@
+.paid-services-stack { display: grid; gap: var(--space-5); }
+.paid-services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--space-4); }
+.paid-services-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.paid-services-form { display: grid; gap: var(--space-4); }
+.paid-services-form fieldset { display: grid; gap: var(--space-4); border: 0; padding: 0; margin: 0; min-width: 0; }
+.paid-services-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+.paid-services-facts div { min-width: 0; }
+.paid-services-facts dt { color: var(--color-text-secondary); }
+.paid-services-facts dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.paid-services-prose { white-space: pre-wrap; overflow-wrap: anywhere; }
+.paid-services-muted { color: var(--color-text-secondary); }
+.paid-services-preview { width: 100%; max-height: 28rem; object-fit: contain; }
+.paid-services-history { display: grid; gap: var(--space-3); padding-left: var(--space-5); }
+@media (max-width: 680px) { .paid-services-facts { grid-template-columns: 1fr; } }

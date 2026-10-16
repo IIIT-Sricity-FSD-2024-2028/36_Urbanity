@@ -25,6 +25,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.COMMUNITY_ADMIN, icon: "dashboard" },
       { label: "Complaints", to: ROUTES.COMMUNITY_ADMIN_COMPLAINTS, icon: "complaints" },
+      { label: "Paid Services", to: ROUTES.COMMUNITY_ADMIN_SERVICES, icon: "workforce" },
       { label: "Hierarchy", to: ROUTES.COMMUNITY_ADMIN_HIERARCHY, icon: "hierarchy" },
       { label: "Community Users", to: ROUTES.COMMUNITY_ADMIN_USERS, icon: "users" },
       { label: "Workforce", to: ROUTES.COMMUNITY_ADMIN_WORKFORCE, icon: "workforce" },
@@ -42,6 +43,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.TOWER_REPRESENTATIVE, icon: "dashboard" },
       { label: "Complaints", to: ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS, icon: "complaints" },
+      { label: "Paid Services", to: ROUTES.TOWER_REPRESENTATIVE_SERVICES, icon: "workforce" },
       { label: "Workforce", to: ROUTES.TOWER_REPRESENTATIVE_WORKFORCE, icon: "workforce" },
       { label: "Tower & Residents", to: ROUTES.TOWER_REPRESENTATIVE_RESIDENTS, icon: "communities" },
       { label: "Reports", to: ROUTES.TOWER_REPRESENTATIVE_REPORTS, icon: "reports" },
@@ -55,6 +57,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.RESIDENT, icon: "dashboard" },
       { label: "My complaints", to: ROUTES.RESIDENT_COMPLAINTS, icon: "complaints" },
+      { label: "Paid Services", to: ROUTES.RESIDENT_SERVICES, icon: "workforce" },
       { label: "Create complaint", to: ROUTES.RESIDENT_NEW_COMPLAINT, icon: "create" },
       { label: "Amenities", to: ROUTES.RESIDENT_AMENITIES, icon: "communities" },
       { label: "Amenity bookings", to: ROUTES.RESIDENT_BOOKINGS, icon: "tasks" },
@@ -68,6 +71,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.MAINTENANCE_WORKER, icon: "dashboard" },
       { label: "Assigned Tasks", to: ROUTES.MAINTENANCE_WORKER_TASKS, icon: "tasks" },
+      { label: "Paid Services", to: ROUTES.MAINTENANCE_WORKER_SERVICES, icon: "workforce" },
       { label: "Completed Work", to: ROUTES.MAINTENANCE_WORKER_COMPLETED, icon: "completed" },
       { label: "Profile", to: ROUTES.MAINTENANCE_WORKER_PROFILE, icon: "profile" },
     ],

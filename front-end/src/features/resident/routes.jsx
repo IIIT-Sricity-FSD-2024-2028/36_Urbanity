@@ -8,10 +8,12 @@ import { CreateComplaintPage } from "./pages/CreateComplaintPage.jsx";
 import { ComplaintDetailsPage } from "./pages/ComplaintDetailsPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import "./resident.css";
+import { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";
 
 export function ResidentRoutes() {
   return <Routes><Route path="amenities" element={<AmenitiesPage />} /><Route path="amenity-bookings" element={<BookingsPage />} />
     <Route index element={<DashboardPage />} />
+    <Route path="services" element={<PaidServicesPage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="complaints/new" element={<CreateComplaintPage />} />
     <Route path="complaints/:id" element={<ComplaintDetailsPage />} />
