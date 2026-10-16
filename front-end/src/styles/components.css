@@ -555,6 +555,7 @@
 }
 
 .data-table__scroll {
+  position: relative; /* contains absolutely positioned .sr-only labels so they cannot widen the page */
   width: 100%;
   overflow-x: auto;
   border: 1px solid #edf2f7;

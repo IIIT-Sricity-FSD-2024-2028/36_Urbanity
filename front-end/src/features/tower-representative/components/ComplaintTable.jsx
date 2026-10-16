@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { DataTable, StatusBadge } from "../../../components/data-display/index.js";
+import { Badge } from "../../../components/ui/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { apartmentLabel, formatDate, formatEnum } from "../utils/formatters.js";
 import { nextAuthorityAction } from "../utils/workflow.js";
@@ -10,7 +11,7 @@ export function ComplaintTable({ complaints, user, caption, emptyTitle = "No com
       key: "title",
       header: "Complaint",
       render: (value, row) => (
-        <div className="tr-cell-stack"><strong>{value}</strong></div>
+        <div className="tr-cell-stack"><strong>{value}</strong>{row.isEmergency && <span><Badge variant="danger">Emergency</Badge></span>}</div>
       ),
     },
     { key: "location", header: "Apartment", accessor: (row) => apartmentLabel(row) },

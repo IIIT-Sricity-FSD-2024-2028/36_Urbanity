@@ -26,4 +26,25 @@ export const towerRepresentativeService = {
 
   async listWorkers() { return dataOf(await api.get("/workforce/workers")) || []; },
   async getWorker(id) { return dataOf(await api.get(`/workforce/workers/${id}`)); },
+
+  // Appointments: the backend scopes listings to the representative's tower and
+  // allows mutations only by the complaint's responsible representative.
+  async listAppointments() { return dataOf(await api.get("/appointments")) || []; },
+  async getAppointment(id) { return dataOf(await api.get(`/appointments/${id}`)); },
+  async listTimeSlots() { return dataOf(await api.get("/appointments/time-slots")) || []; },
+  async getWorkerSchedule(workerId, date) {
+    return dataOf(await api.get(`/appointments/workers/${workerId}/schedule`, { params: date ? { date } : {} }));
+  },
+  async confirmAppointment(id, { workerId, scheduledDate, timeSlot }) {
+    return dataOf(await api.patch(`/appointments/${id}/confirm`, { workerId, scheduledDate, timeSlot }));
+  },
+  async decideReschedule(id, { decision, scheduledDate, timeSlot, note }) {
+    return dataOf(await api.patch(`/appointments/${id}/reschedule-decision`, {
+      decision,
+      ...(decision === "APPROVE" ? { scheduledDate, timeSlot } : {}),
+      ...(note ? { note } : {}),
+    }));
+  },
+  async cancelAppointment(id, reason) { return dataOf(await api.patch(`/appointments/${id}/cancel`, { reason })); },
+  async markAppointmentMissed(id, reason) { return dataOf(await api.patch(`/appointments/${id}/missed`, { reason })); },
 };

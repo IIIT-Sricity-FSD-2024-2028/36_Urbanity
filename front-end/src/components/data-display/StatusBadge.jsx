@@ -13,6 +13,12 @@ const STATUS_VARIANTS = {
   BUSY: "warning",
   ON_LEAVE: "neutral",
   INACTIVE: "neutral",
+  REQUESTED: "info",
+  CONFIRMED: "success",
+  RESCHEDULE_REQUESTED: "warning",
+  COMPLETED: "success",
+  CANCELLED: "neutral",
+  MISSED: "danger",
 };
 
 export function StatusBadge({ status, label, ...props }) {

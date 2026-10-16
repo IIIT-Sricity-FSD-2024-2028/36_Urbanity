@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
+import { AppointmentDetailsPage } from "./pages/AppointmentDetailsPage.jsx";
+import { AppointmentsPage } from "./pages/AppointmentsPage.jsx";
 import { ComplaintDetailsPage } from "./pages/ComplaintDetailsPage.jsx";
 import { ComplaintsPage } from "./pages/ComplaintsPage.jsx";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
@@ -16,6 +18,8 @@ export function TowerRepresentativeRoutes() {
     <Route path="services" element={<PaidServicesPage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="complaints/:complaintId" element={<ComplaintDetailsPage />} />
+    <Route path="appointments" element={<AppointmentsPage />} />
+    <Route path="appointments/:appointmentId" element={<AppointmentDetailsPage />} />
     <Route path="workforce" element={<WorkforcePage />} />
     <Route path="residents" element={<ResidentsPage />} />
     <Route path="reports" element={<ReportsPage />} />

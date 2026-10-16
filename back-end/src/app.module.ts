@@ -3,6 +3,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AreasModule } from './modules/areas/areas.module';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -45,6 +46,7 @@ import { PaidServicesModule } from './modules/paid-services/paid-services.module
     SubscriptionModule,
     ComplaintsModule,
     AttachmentsModule,
+    AppointmentsModule,
     DashboardModule,
     ReportsModule,
     RentalsModule,

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import { ComplaintStatus } from '../../common/enums/status.enum';
 import { WorkType } from '../workforce/workforce.dto';
 
@@ -58,6 +58,7 @@ export class CommunityComplaint {
   @ApiPropertyOptional({ type: ResolutionProof }) resolutionProof?: ResolutionProof;
   @ApiPropertyOptional({ type: ResolutionVerification }) resolutionVerification?: ResolutionVerification;
   @ApiPropertyOptional({ type: ComplaintLocationSummary }) location?: ComplaintLocationSummary;
+  @ApiPropertyOptional({ description: 'Resident-declared emergency; prioritised for visits' }) isEmergency?: boolean;
 }
 export class CreateCommunityComplaintDto {
   @ApiProperty({ enum: ComplaintType }) @IsEnum(ComplaintType) type!: ComplaintType;
@@ -67,6 +68,7 @@ export class CreateCommunityComplaintDto {
   @ApiPropertyOptional() @IsOptional() @IsUUID('4') apartmentId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID('4') towerId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID('4') communityId?: string;
+  @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() isEmergency?: boolean;
 }
 export class UpdateCommunityComplaintDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @IsNotEmpty() @MaxLength(200) title?: string;

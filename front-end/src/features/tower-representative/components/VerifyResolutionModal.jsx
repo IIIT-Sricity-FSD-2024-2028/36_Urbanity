@@ -28,6 +28,7 @@ export function VerifyResolutionModal({ complaint, onClose, onVerified }) {
     } catch (requestError) {
       showToast({ type: "error", message: requestError.message || "Unable to verify the resolution." });
       setSubmitting(false);
+      onVerified();
     }
   };
 

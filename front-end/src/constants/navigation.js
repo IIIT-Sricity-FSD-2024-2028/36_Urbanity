@@ -44,6 +44,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.TOWER_REPRESENTATIVE, icon: "dashboard" },
       { label: "Complaints", to: ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS, icon: "complaints" },
+      { label: "Appointments", to: ROUTES.TOWER_REPRESENTATIVE_APPOINTMENTS, icon: "calendar" },
       { label: "Paid Services", to: ROUTES.TOWER_REPRESENTATIVE_SERVICES, icon: "workforce" },
       { label: "Workforce", to: ROUTES.TOWER_REPRESENTATIVE_WORKFORCE, icon: "workforce" },
       { label: "Tower & Residents", to: ROUTES.TOWER_REPRESENTATIVE_RESIDENTS, icon: "communities" },

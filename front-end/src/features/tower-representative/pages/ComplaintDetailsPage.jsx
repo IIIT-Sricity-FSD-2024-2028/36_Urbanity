@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
-import { Button, Card, ConfirmDialog, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
+import { Badge, Button, Card, ConfirmDialog, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
 import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { AssignWorkerModal } from "../components/AssignWorkerModal.jsx";
@@ -9,25 +9,40 @@ import { AttachmentList } from "../components/AttachmentList.jsx";
 import { VerifyResolutionModal } from "../components/VerifyResolutionModal.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
+import { complaintNeedsVisit, formatVisit, isActiveAppointment } from "../utils/appointments.js";
 import { formatDateTime, formatEnum, workerReference } from "../utils/formatters.js";
 import { isResponsibleAuthority, lifecycleGuidance, nextAuthorityAction } from "../utils/workflow.js";
 
 const REVIEW_STATUSES = new Set(["REVIEWED", "CLOSED"]);
+const CLOSE_CANCELLATION_REASON = "Complaint closed; the visit is no longer needed.";
+
+// Active visits the representative may still cancel (the backend refuses once the worker has arrived).
+const cancellableAppointments = (appointments) => appointments.filter((item) => isActiveAppointment(item) && !item.arrivedAt);
 
 const TRANSITIONS = {
   review: {
     title: "Start review",
-    message: "Move this complaint to Under Review? It can then be assigned to an eligible worker.",
+    message: () => "Move this complaint to Under Review? It can then be assigned to an eligible worker.",
     confirmLabel: "Start review",
-    success: "Complaint moved to Under Review.",
+    success: () => "Complaint moved to Under Review.",
     run: (id) => towerRepresentativeService.startReview(id),
   },
   close: {
     title: "Close complaint",
-    message: "Close this complaint? Closing completes its lifecycle and cannot be undone from this portal.",
+    message: (appointments) => (cancellableAppointments(appointments).length
+      ? "Close this complaint? Its active appointment will be cancelled first so the worker's slot is released. Closing cannot be undone from this portal."
+      : "Close this complaint? Closing completes its lifecycle and cannot be undone from this portal."),
     confirmLabel: "Close complaint",
-    success: "Complaint closed.",
-    run: (id) => towerRepresentativeService.closeComplaint(id),
+    success: (appointments) => (cancellableAppointments(appointments).length
+      ? "Complaint closed and its active appointment cancelled."
+      : "Complaint closed."),
+    // Cancel first: if a cancellation fails, the complaint is left open so nothing is half-closed.
+    run: async (id, appointments) => {
+      for (const appointment of cancellableAppointments(appointments)) {
+        await towerRepresentativeService.cancelAppointment(appointment.id, CLOSE_CANCELLATION_REASON);
+      }
+      return towerRepresentativeService.closeComplaint(id);
+    },
   },
 };
 
@@ -42,11 +57,12 @@ export function ComplaintDetailsPage() {
 
   const loader = useCallback(async () => {
     const complaint = await towerRepresentativeService.getComplaint(complaintId);
-    const [attachments, review, worker, resident] = await Promise.allSettled([
+    const [attachments, review, worker, resident, appointments] = await Promise.allSettled([
       towerRepresentativeService.listComplaintAttachments(complaintId),
       REVIEW_STATUSES.has(complaint.status) ? towerRepresentativeService.getComplaintReview(complaintId) : Promise.resolve(null),
       complaint.assignedWorkerId ? towerRepresentativeService.getWorker(complaint.assignedWorkerId) : Promise.resolve(null),
       complaint.residentId ? towerRepresentativeService.getResidentHierarchy(complaint.residentId) : Promise.resolve(null),
+      towerRepresentativeService.listAppointments(),
     ]);
     return {
       complaint,
@@ -55,9 +71,11 @@ export function ComplaintDetailsPage() {
       review: settledValue(review),
       worker: settledValue(worker),
       resident: settledValue(resident),
+      appointments: (settledValue(appointments) || []).filter((item) => item.complaintId === complaintId),
+      appointmentsFailed: appointments.status === "rejected",
     };
   }, [complaintId]);
-  const { data, error, initialLoading, reload } = useTowerResource(loader);
+  const { data, error, initialLoading, loading, reload } = useTowerResource(loader);
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
@@ -66,12 +84,15 @@ export function ComplaintDetailsPage() {
     if (!transition) return;
     setTransitioning(true);
     try {
-      await transition.run(complaintId);
-      showToast({ type: "success", message: transition.success });
+      await transition.run(complaintId, data.appointments);
+      showToast({ type: "success", message: transition.success(data.appointments) });
       setDialog(null);
       await reload();
     } catch (requestError) {
       showToast({ type: "error", message: requestError.message || "Unable to update the complaint." });
+      // The complaint may have changed elsewhere; show its current state.
+      setDialog(null);
+      reload();
     } finally {
       setTransitioning(false);
     }
@@ -104,7 +125,7 @@ export function ComplaintDetailsPage() {
         eyebrow="Tower complaint"
         title={complaint.title}
         description={`${formatEnum(complaint.type)} complaint · ${complaint.location?.towerName || "Tower"} · ${complaint.location?.apartmentNumber || "Apartment unavailable"}`}
-        actions={backLink}
+        actions={<>{backLink}<Button variant="secondary" onClick={reload} loading={loading && Boolean(data)} loadingLabel="Refreshing...">Refresh</Button></>}
       />
 
       <div className="tr-detail-layout">
@@ -112,6 +133,7 @@ export function ComplaintDetailsPage() {
           <Card title="Next step" className="tr-next-step">
             <div className="tr-next-step__body">
               <StatusBadge status={complaint.status} />
+              {complaint.isEmergency && <Badge variant="danger">Emergency</Badge>}
               <p>{lifecycleGuidance(complaint.status)}</p>
             </div>
             {next && (
@@ -210,6 +232,27 @@ export function ComplaintDetailsPage() {
             )}
           </Card>
 
+          <Card title="Appointments">
+            {data.appointmentsFailed && <p className="tr-muted">Appointments could not be loaded. Refresh the page to try again.</p>}
+            {!data.appointmentsFailed && !data.appointments.length && <p className="tr-muted">The resident has not requested a visit for this complaint.</p>}
+            {!complaintNeedsVisit(complaint) && data.appointments.some(isActiveAppointment) && (
+              <p className="tr-inline-error tr-note" role="status">This complaint no longer needs a visit, but an appointment is still active. Open it and cancel it to release the worker's slot.</p>
+            )}
+            {data.appointments.length > 0 && (
+              <ul className="tr-appointment-list">
+                {data.appointments.map((appointment) => (
+                  <li key={appointment.id}>
+                    <span className="tr-cell-stack">
+                      <StatusBadge status={appointment.status} />
+                      <span className="tr-muted">{appointment.scheduledDate ? formatVisit(appointment.scheduledDate, appointment.scheduledTimeSlot) : `Requested ${formatVisit(appointment.requestedDate, appointment.requestedTimeSlot)}`}</span>
+                    </span>
+                    <Link className="tr-inline-link" to={`${ROUTES.TOWER_REPRESENTATIVE_APPOINTMENTS}/${appointment.id}`}>View</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
           <Card title="Status history">
             {history.length ? (
               <ol className="tr-timeline">
@@ -233,7 +276,7 @@ export function ComplaintDetailsPage() {
         onConfirm={runTransition}
         loading={transitioning}
         title={transition?.title}
-        message={transition?.message}
+        message={transition?.message(data.appointments)}
         confirmLabel={transition?.confirmLabel}
         confirmVariant="primary"
       />

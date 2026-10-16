@@ -32,6 +32,9 @@ export function AssignWorkerModal({ complaint, onClose, onAssigned }) {
     } catch (requestError) {
       showToast({ type: "error", message: requestError.message || "Unable to assign the worker." });
       setSubmitting(false);
+      setSelectedId("");
+      reload();
+      onAssigned();
     }
   };
 

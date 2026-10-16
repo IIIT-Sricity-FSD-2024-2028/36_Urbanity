@@ -23,6 +23,7 @@ export const ROUTES = Object.freeze({
   TOWER_REPRESENTATIVE: "/tower-representative",
   TOWER_REPRESENTATIVE_SERVICES: "/tower-representative/services",
   TOWER_REPRESENTATIVE_COMPLAINTS: "/tower-representative/complaints",
+  TOWER_REPRESENTATIVE_APPOINTMENTS: "/tower-representative/appointments",
   TOWER_REPRESENTATIVE_WORKFORCE: "/tower-representative/workforce",
   TOWER_REPRESENTATIVE_RESIDENTS: "/tower-representative/residents",
   TOWER_REPRESENTATIVE_REPORTS: "/tower-representative/reports",
@@ -31,6 +32,7 @@ export const ROUTES = Object.freeze({
   RESIDENT_SERVICES: "/resident/services",
   RESIDENT_COMPLAINTS: "/resident/complaints",
   RESIDENT_NEW_COMPLAINT: "/resident/complaints/new",
+  RESIDENT_APPOINTMENTS: "/resident/appointments",
   RESIDENT_RENTALS: "/resident/rentals",
   RESIDENT_AMENITIES: "/resident/amenities",
   RESIDENT_BOOKINGS: "/resident/amenity-bookings",
@@ -38,6 +40,7 @@ export const ROUTES = Object.freeze({
   MAINTENANCE_WORKER: "/maintenance-worker",
   MAINTENANCE_WORKER_SERVICES: "/maintenance-worker/services",
   MAINTENANCE_WORKER_TASKS: "/maintenance-worker/tasks",
+  MAINTENANCE_WORKER_APPOINTMENTS: "/maintenance-worker/appointments",
   MAINTENANCE_WORKER_COMPLETED: "/maintenance-worker/completed",
   MAINTENANCE_WORKER_PROFILE: "/maintenance-worker/profile",
 });

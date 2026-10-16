@@ -36,6 +36,13 @@ export function formatDateTime(value) {
     : date.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+// Calendar day/month in the viewer's local time zone (ISO timestamps are UTC).
+export function localDateKey(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function formatBytes(size) {
   const bytes = Number(size);
   if (!Number.isFinite(bytes) || bytes <= 0) return "Unknown size";

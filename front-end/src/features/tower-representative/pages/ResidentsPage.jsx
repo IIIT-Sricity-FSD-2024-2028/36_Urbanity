@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Card, ErrorState, LoadingState, Select } from "../../../components/ui/index.js";
+import { Button, Card, ErrorState, LoadingState, Select } from "../../../components/ui/index.js";
 import { DataTable, MetricCard, PageHeader } from "../../../components/data-display/index.js";
 import { useTowerResource } from "../hooks/useTowerResource.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
@@ -37,7 +37,7 @@ async function loadResidents() {
 
 export function ResidentsPage() {
   const loader = useCallback(() => loadResidents(), []);
-  const { data, error, initialLoading, reload } = useTowerResource(loader);
+  const { data, error, initialLoading, loading, reload } = useTowerResource(loader);
   const [floor, setFloor] = useState("");
 
   const floors = useMemo(() => [...new Set((data?.residents || []).map((resident) => resident.floor))], [data]);
@@ -69,6 +69,7 @@ export function ResidentsPage() {
         eyebrow="Tower directory"
         title="Tower & residents"
         description="Your tower association and the residents linked to complaints in your tower."
+        actions={<Button variant="secondary" onClick={reload} loading={loading && Boolean(data)} loadingLabel="Refreshing...">Refresh</Button>}
       />
       {initialLoading && <LoadingState message="Loading tower residents..." />}
       {error && <ErrorState message={error.message} onRetry={reload} />}
