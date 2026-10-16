@@ -15,6 +15,7 @@ const ICON_PATHS = {
   create: <><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></>,
   tasks: <><path d="M9 5h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1" /><path d="M9 3h6v4H9zM8 12h8M8 16h5" /></>,
   completed: <><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M8 14h2m4 0h2m-8 4h2" /></>,
 };
 
 function NavigationIcon({ name }) {

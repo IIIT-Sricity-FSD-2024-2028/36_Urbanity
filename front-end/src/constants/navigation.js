@@ -40,6 +40,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.TOWER_REPRESENTATIVE, icon: "dashboard" },
       { label: "Complaints", to: ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS, icon: "complaints" },
+      { label: "Appointments", to: ROUTES.TOWER_REPRESENTATIVE_APPOINTMENTS, icon: "calendar" },
       { label: "Workforce", to: ROUTES.TOWER_REPRESENTATIVE_WORKFORCE, icon: "workforce" },
       { label: "Tower & Residents", to: ROUTES.TOWER_REPRESENTATIVE_RESIDENTS, icon: "communities" },
       { label: "Reports", to: ROUTES.TOWER_REPRESENTATIVE_REPORTS, icon: "reports" },
@@ -54,6 +55,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
       { label: "Dashboard", to: ROUTES.RESIDENT, icon: "dashboard" },
       { label: "My complaints", to: ROUTES.RESIDENT_COMPLAINTS, icon: "complaints" },
       { label: "Create complaint", to: ROUTES.RESIDENT_NEW_COMPLAINT, icon: "create" },
+      { label: "Appointments", to: ROUTES.RESIDENT_APPOINTMENTS, icon: "calendar" },
       { label: "Profile", to: ROUTES.RESIDENT_PROFILE, icon: "profile" },
     ],
     "Resident Service Portal",
@@ -64,6 +66,7 @@ export const NAVIGATION_BY_ROLE = Object.freeze({
     [
       { label: "Dashboard", to: ROUTES.MAINTENANCE_WORKER, icon: "dashboard" },
       { label: "Assigned Tasks", to: ROUTES.MAINTENANCE_WORKER_TASKS, icon: "tasks" },
+      { label: "Appointments", to: ROUTES.MAINTENANCE_WORKER_APPOINTMENTS, icon: "calendar" },
       { label: "Completed Work", to: ROUTES.MAINTENANCE_WORKER_COMPLETED, icon: "completed" },
       { label: "Profile", to: ROUTES.MAINTENANCE_WORKER_PROFILE, icon: "profile" },
     ],
