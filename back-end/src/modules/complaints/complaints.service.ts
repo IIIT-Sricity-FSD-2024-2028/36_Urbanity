@@ -51,7 +51,7 @@ export class ComplaintsService {
     this.validateRequestedLocation(dto, location);
     const now = new Date().toISOString();
     const authority = this.resolveAuthority(dto.type, location.towerId, location.communityId);
-    return this.crud.create({ residentId: actor.id, type: dto.type, title: dto.title.trim(), description: dto.description.trim(), requiredWorkType: dto.requiredWorkType, ...location, ...authority, status: ComplaintStatus.Submitted, statusHistory: [{ status: ComplaintStatus.Submitted, changedAt: now, changedByRole: 'SYSTEM' }], attachments: [], createdAt: now, updatedAt: now });
+    return this.crud.create({ residentId: actor.id, type: dto.type, title: dto.title.trim(), description: dto.description.trim(), requiredWorkType: dto.requiredWorkType, ...location, ...authority, isEmergency: dto.isEmergency === true, status: ComplaintStatus.Submitted, statusHistory: [{ status: ComplaintStatus.Submitted, changedAt: now, changedByRole: 'SYSTEM' }], attachments: [], createdAt: now, updatedAt: now });
   }
   update(actor: AuthenticatedUser, id: string, dto: UpdateCommunityComplaintDto) {
     const complaint = this.findById(id);
@@ -224,12 +224,24 @@ export class ComplaintsService {
     }
     throw new ForbiddenException('You do not have access to this complaint');
   }
-  private assertCanActAsAuthority(actor: AuthenticatedUser, complaint: CommunityComplaint) {
+  assertCanActAsAuthority(actor: AuthenticatedUser, complaint: CommunityComplaint) {
     const complaintCommunityId = this.assertComplaintCommunity(complaint).communityId;
     if (actor.role === RoleName.SuperAdmin) return;
     if (actor.role === RoleName.CommunityAdmin && complaint.responsibleRole === RoleName.CommunityAdmin && complaint.responsibleUserId === actor.id && this.actorCommunityId(actor) === complaintCommunityId) return;
-    if (actor.role === RoleName.TowerRepresentative && complaint.responsibleRole === RoleName.TowerRepresentative && complaint.responsibleUserId === actor.id) return;
+    if (actor.role === RoleName.TowerRepresentative && complaint.type !== ComplaintType.Community && this.currentTowerAuthority(complaint)?.id === actor.id) return;
     throw new ForbiddenException('Only the responsible authority may perform this action');
+  }
+  /**
+   * Tower authority follows the representative's current tower association: the routed
+   * representative while still assigned to the complaint tower, otherwise the tower's current
+   * representative. A representative moved to another tower keeps no authority here.
+   */
+  private currentTowerAuthority(complaint: CommunityComplaint) {
+    if (complaint.responsibleRole !== RoleName.TowerRepresentative) return undefined;
+    const representsTower = (user?: User) => user?.role === RoleName.TowerRepresentative && user.towerId === complaint.towerId;
+    const users = this.users.findAll();
+    const routed = users.find((user) => user.id === complaint.responsibleUserId);
+    return representsTower(routed) ? routed : users.find(representsTower);
   }
   private authenticatedWorker(actor: AuthenticatedUser) {
     if (actor.role !== RoleName.MaintenanceWorker) throw new ForbiddenException('Only Maintenance Workers have worker profiles');
@@ -256,8 +268,10 @@ export class ComplaintsService {
     const tower = this.community.getTower(complaint.towerId);
     const floor = this.community.getFloor(complaint.floorId);
     const apartment = this.community.getApartment(complaint.apartmentId);
+    const towerAuthority = this.currentTowerAuthority(complaint);
     return {
       ...complaint,
+      ...(towerAuthority ? { responsibleUserId: towerAuthority.id, responsibleUserName: towerAuthority.name } : {}),
       ...(complaint.assignedWorkerId ? { assignedWorkerName: this.workforce.getWorkerName(complaint.assignedWorkerId) } : {}),
       location: {
         communityName: community.name,

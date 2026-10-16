@@ -1311,7 +1311,7 @@ describe('Urbanity API (e2e)', () => {
     const residentTwoToken = tokenFor('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4', 'resident.two@urbanity.local', RoleName.Resident);
     await request(server).post('/complaints').set('Authorization', bearer(RoleName.Resident)).send({ residentId: residentA, type: 'APARTMENT', title: 'Client authority', description: 'Authority must be derived.', responsibleUserId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb8', requiredWorkType: 'PLUMBING' }).expect(400);
 
-    await request(server).patch('/users/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb8/representative-tower').set('Authorization', bearer(admin)).send({ towerId: '20000000-0000-4000-8000-000000000001' }).expect(200);
+    await request(server).patch('/users/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb8/representative-tower').set('Authorization', bearer(admin)).send({ towerId: '20000000-0000-4000-8000-000000000003' }).expect(200);
     await request(server).post('/complaints').set('Authorization', residentTwoToken).send({ type: 'TOWER', title: 'Unrouted tower', description: 'Tower B has no representative.', requiredWorkType: 'LIFT_MAINTENANCE' }).expect(400).expect(({ body }) => expect(body.error.message).toContain('No Tower Representative'));
 
     app.get<CrudService<User, unknown, unknown>>(serviceToken('users')).delete('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');

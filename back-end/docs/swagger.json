@@ -2903,6 +2903,402 @@
         ]
       }
     },
+    "/appointments/time-slots": {
+      "get": {
+        "operationId": "AppointmentsController_timeSlots",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/workers/{workerId}/schedule": {
+      "get": {
+        "operationId": "AppointmentsController_workerSchedule",
+        "parameters": [
+          {
+            "name": "workerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-10-20",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments": {
+      "get": {
+        "operationId": "AppointmentsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      },
+      "post": {
+        "operationId": "AppointmentsController_request",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}": {
+      "get": {
+        "operationId": "AppointmentsController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/reschedule": {
+      "patch": {
+        "operationId": "AppointmentsController_requestReschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestRescheduleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/cancel": {
+      "patch": {
+        "operationId": "AppointmentsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAppointmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/confirm": {
+      "patch": {
+        "operationId": "AppointmentsController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmAppointmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/reschedule-decision": {
+      "patch": {
+        "operationId": "AppointmentsController_decideReschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/missed": {
+      "patch": {
+        "operationId": "AppointmentsController_markMissed",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkMissedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/arrival": {
+      "patch": {
+        "operationId": "AppointmentsController_recordArrival",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordArrivalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
+    "/appointments/{id}/outcome": {
+      "patch": {
+        "operationId": "AppointmentsController_recordOutcome",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordOutcomeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "appointments"
+        ]
+      }
+    },
     "/dashboard/summary": {
       "get": {
         "operationId": "DashboardController_getSummary",
@@ -3759,6 +4155,10 @@
           },
           "communityId": {
             "type": "string"
+          },
+          "isEmergency": {
+            "type": "boolean",
+            "default": false
           }
         },
         "required": [
@@ -3876,6 +4276,172 @@
           "speedRating",
           "qualityRating",
           "communicationRating"
+        ]
+      },
+      "CreateAppointmentDto": {
+        "type": "object",
+        "properties": {
+          "complaintId": {
+            "type": "string"
+          },
+          "preferredDate": {
+            "type": "string",
+            "example": "2026-10-20"
+          },
+          "timeSlot": {
+            "type": "string",
+            "enum": [
+              "09:00-11:00",
+              "11:00-13:00",
+              "14:00-16:00",
+              "16:00-18:00"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complaintId",
+          "preferredDate",
+          "timeSlot"
+        ]
+      },
+      "RequestRescheduleDto": {
+        "type": "object",
+        "properties": {
+          "preferredDate": {
+            "type": "string",
+            "example": "2026-10-21"
+          },
+          "timeSlot": {
+            "type": "string",
+            "enum": [
+              "09:00-11:00",
+              "11:00-13:00",
+              "14:00-16:00",
+              "16:00-18:00"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "preferredDate",
+          "timeSlot",
+          "reason"
+        ]
+      },
+      "CancelAppointmentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ConfirmAppointmentDto": {
+        "type": "object",
+        "properties": {
+          "workerId": {
+            "type": "string"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "description": "Defaults to the resident preferred date"
+          },
+          "timeSlot": {
+            "type": "string",
+            "enum": [
+              "09:00-11:00",
+              "11:00-13:00",
+              "14:00-16:00",
+              "16:00-18:00"
+            ],
+            "description": "Defaults to the resident preferred slot"
+          }
+        },
+        "required": [
+          "workerId"
+        ]
+      },
+      "RescheduleDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "DECLINE"
+            ]
+          },
+          "scheduledDate": {
+            "type": "string",
+            "description": "Defaults to the resident proposed date when approving"
+          },
+          "timeSlot": {
+            "type": "string",
+            "enum": [
+              "09:00-11:00",
+              "11:00-13:00",
+              "14:00-16:00",
+              "16:00-18:00"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "MarkMissedDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "RecordArrivalDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RecordOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "MISSED"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "followUpRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "attachmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "outcome",
+          "notes"
         ]
       }
     }

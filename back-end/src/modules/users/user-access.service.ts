@@ -52,6 +52,7 @@ export class UserAccessService {
     if (user.role === RoleName.TowerRepresentative) {
       if (!has('towerId') || has('communityId') || has('apartmentId')) throw new BadRequestException('TOWER_REPRESENTATIVE accounts use only a tower association');
       this.community.getTower(user.towerId);
+      this.community.assertTowerHasNoOtherRepresentative(user.towerId, user.id);
     }
     if (user.role === RoleName.Resident) {
       if (!has('apartmentId') || has('communityId') || has('towerId')) throw new BadRequestException('RESIDENT accounts use only an apartment association');
