@@ -8,10 +8,12 @@ import { ReportsPage } from "./pages/ReportsPage.jsx";
 import { ResidentsPage } from "./pages/ResidentsPage.jsx";
 import { WorkforcePage } from "./pages/WorkforcePage.jsx";
 import "./tower-representative.css";
+import { PaidServicesPage } from "../paid-services/pages/PaidServicesPage.jsx";
 
 export function TowerRepresentativeRoutes() {
   return <Routes>
     <Route index element={<DashboardPage />} />
+    <Route path="services" element={<PaidServicesPage />} />
     <Route path="complaints" element={<ComplaintsPage />} />
     <Route path="complaints/:complaintId" element={<ComplaintDetailsPage />} />
     <Route path="workforce" element={<WorkforcePage />} />

@@ -1,3 +1,4 @@
+import { AmenitiesModule } from './modules/amenities/amenities.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -26,10 +27,12 @@ import { ComplaintRouteContextMiddleware } from './common/middleware/complaint-r
 import { ComplaintsController } from './modules/complaints/complaints.controller';
 import { AttachmentsController } from './modules/attachments/attachments.controller';
 import { RentalsModule } from './modules/rentals/rentals.module';
+import { PaidServicesModule } from './modules/paid-services/paid-services.module';
 
 @Module({
   imports: [
     LoggingModule,
+    AmenitiesModule,
     AuthModule,
     RolesModule,
     DepartmentsModule,
@@ -45,6 +48,7 @@ import { RentalsModule } from './modules/rentals/rentals.module';
     DashboardModule,
     ReportsModule,
     RentalsModule,
+    PaidServicesModule,
   ],
   controllers: [AppController],
   providers: [
