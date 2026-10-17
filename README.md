@@ -1,5 +1,115 @@
 # Urbanity - Multi-Community Apartment Operations Platform
 
+## Run a fresh clone or submission ZIP (Windows PowerShell)
+
+Prerequisites: Node.js **22.12 or newer** (Node 22 LTS recommended), npm 10 or
+newer, and internet access for the first dependency installation. Verify with
+`node --version` and `npm.cmd --version`. No database or external services are
+required. Use the two directories from the same checkout.
+
+In terminal 1, from the repository root:
+
+```powershell
+cd back-end
+npm.cmd ci
+npm.cmd run start:dev
+```
+
+In terminal 2, from the repository root:
+
+```powershell
+cd front-end
+npm.cmd ci
+npm.cmd run dev
+```
+
+Open **http://localhost:5173/login**. The API is **http://localhost:3000** and
+Swagger is **http://localhost:3000/api/docs**. Wait for Nest to report successful
+startup before signing in. Stop each server with Ctrl+C.
+
+Development login: **superadmin@urbanity.local** / **superadmin-dev**, leading
+to `/super-admin`. The backend seeds this account and the other development
+roles into in-memory repositories on every startup and verifies passwords with
+bcrypt. Data changes and uploaded-file metadata reset when the backend restarts;
+this submission is a development demo, not persistent production storage.
+
+### Optional environment configuration
+
+No `.env` files are needed for the defaults. If you need custom values, copy the
+tracked templates from the repository root, then edit those local files:
+
+```powershell
+Copy-Item back-end/.env.example back-end/.env
+Copy-Item front-end/.env.example front-end/.env
+```
+
+Backend startup loads `back-end/.env`; existing shell environment values take
+precedence. `PORT` defaults to 3000, `CORS_ORIGIN` is a comma-separated origin
+allowlist, and `JWT_EXPIRES_IN` defaults to `1h`. Development has a built-in JWT
+secret; production requires a unique `JWT_SECRET`. The seeded public demo
+accounts and in-memory storage are unsuitable for production deployment.
+
+The frontend defaults to `VITE_API_URL=/api`. Vite proxies `/api/auth/login` to
+`http://localhost:3000/auth/login`, stripping only the proxy prefix. Nest has
+**no global API prefix**; `/api/docs` is the documentation path only. To change
+the backend port, set backend `PORT` and frontend `API_PROXY_TARGET` to matching
+values. Alternatively set `VITE_API_URL=http://localhost:3000` (without `/api`)
+for direct requests, and allow the frontend origin in backend `CORS_ORIGIN`.
+`VITE_*` values are public and included at build time; never put secrets there.
+Restart servers after changing configuration, and rebuild after changing
+frontend build-time values.
+
+### Verification and troubleshooting
+
+```powershell
+cd back-end
+npm.cmd run build
+npm.cmd test -- --runInBand
+npm.cmd run test:e2e -- --runInBand
+cd ../front-end
+npm.cmd test
+npm.cmd run build
+npm.cmd run test:browser
+npm.cmd run preview
+```
+
+The optional browser integration test requires Microsoft Edge (or `CHROMIUM_PATH`
+pointing to Chromium). It starts isolated servers and a disposable browser profile.
+
+Preview is at http://localhost:4173 and uses the same API proxy; keep the backend
+running. Deployed static hosting must provide an equivalent `/api` reverse proxy
+or build with an explicit backend origin and configure its CORS allowlist.
+
+- **404 at sign-in:** inspect the browser Network tab. With defaults, the request
+  must be `POST http://localhost:5173/api/auth/login`; Nest receives
+  `POST /auth/login`. A stale `VITE_API_URL` or a frontend from another checkout
+  can cause a mismatch. Missing/blank frontend configuration uses `/api`.
+- **Cannot connect / proxy error:** start the backend, check its terminal output
+  and http://localhost:3000/api/docs, and confirm `API_PROXY_TARGET` matches its
+  port. A 401 means invalid credentials, not a connectivity error.
+- **Port in use:** Vite fails clearly instead of choosing another port. Stop the
+  conflicting process, or use `npm.cmd run dev -- --port 5174` and add
+  `http://localhost:5174` to backend `CORS_ORIGIN` if using direct API requests.
+  Change backend `PORT` and proxy target together if port 3000 is occupied.
+- **Unexpected environment:** remove stale local `.env` overrides or correct
+  shell variables (`PORT`, `CORS_ORIGIN`, `JWT_SECRET`, `VITE_API_URL`,
+  `API_PROXY_TARGET`). Restart both processes. An invalid `PORT` fails at startup.
+- **Installation:** use `npm.cmd ci` with the included lockfiles, including dev
+  dependencies; do not copy `node_modules` between computers. Do not use
+  `npm audit fix --force`; audit findings are separate from routing/authentication.
+
+Create a source-only submission from a tested commit:
+
+```powershell
+git archive --format=zip --prefix=Urbanity/ --output=Urbanity-submission.zip HEAD
+```
+
+Extract it, open PowerShell in `Urbanity`, and repeat the two-terminal workflow.
+The ZIP contains tracked templates and lockfiles; local `.env`, dependencies,
+logs, uploads, and build output are not required.
+
+---
+
 ## Problem Statement
 
 Apartment communities often manage maintenance issues through calls, chat messages, and disconnected records. This makes it difficult to identify the exact complaint location, route the issue to the responsible authority, assign an eligible maintenance worker, and verify that the work was completed correctly.

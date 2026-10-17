@@ -1,3 +1,10 @@
+import { existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
+
+// Read before evaluating configuration, including when imported by AuthModule.
+// Existing process environment variables take precedence over the optional file.
+if (existsSync('.env')) loadEnvFile('.env');
+
 const jwtSecret =
   process.env.JWT_SECRET ??
   (process.env.NODE_ENV === 'production'
@@ -14,8 +21,13 @@ const corsOrigins = (process.env.CORS_ORIGIN ??
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const port = Number(process.env.PORT ?? 3000);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error('PORT must be an integer between 1 and 65535');
+}
+
 export const appConfig = {
-  port: Number(process.env.PORT ?? 3000),
+  port,
   cors: {
     origin: corsOrigins,
     allowedHeaders: ['Content-Type', 'Authorization'],
