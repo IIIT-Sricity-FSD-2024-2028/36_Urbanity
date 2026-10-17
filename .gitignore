@@ -33,3 +33,7 @@ Thumbs.db
 tmp/
 temp/
 .eslintcache
+
+# Local submission verification artifacts
+/.verification/
+/Urbanity-submission.zip

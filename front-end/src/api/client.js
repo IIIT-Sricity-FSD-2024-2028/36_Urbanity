@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE_URL = String(import.meta.env.VITE_API_URL || "").replace(
+export const API_BASE_URL = String(import.meta.env.VITE_API_URL?.trim() || "/api").replace(
   /\/+$/,
   "",
 );
@@ -108,13 +108,20 @@ function normalizeError(error) {
 
   if (!error.response) {
     return new ApiError(
-      "Unable to reach the Urbanity service. Please try again.",
+      "Unable to reach the Urbanity service. Check that the backend is running and VITE_API_URL is correct, then restart Vite.",
       0,
       null,
     );
   }
 
   const { status, data } = error.response;
+  if (status === 404) {
+    return new ApiError(
+      `${errorMessage(data, status)} Check VITE_API_URL and the backend route (login uses POST /auth/login).`,
+      status,
+      data,
+    );
+  }
   return new ApiError(errorMessage(data, status), status, data);
 }
 
