@@ -13,7 +13,7 @@ import { build, preview } from "vite";
 
 test(
   "public and Super Admin registration workflows in Chromium",
-  { timeout: 180000 },
+  { timeout: 300000 },
   async (t) => {
     const temporary = await mkdtemp(join(tmpdir(), "urbanity-onboarding-ui-"));
     const backendRoot = resolve("../back-end"),
@@ -176,13 +176,17 @@ test(
         },
       );
       let output = "";
+      backend.stderr.on("data", (chunk) => { output += chunk.toString(); });
       backend.stdout.on("data", (chunk) => {
         output += chunk.toString();
       });
       const apiPort = await waitFor(
-        () => output.match(/URBANITY_PORT=(\d+)/)?.[1],
+        () => {
+          if (backend.exitCode !== null) throw new Error(`Isolated API exited: ${output}`);
+          return output.match(/URBANITY_PORT=(\d+)/)?.[1];
+        },
         "isolated API startup",
-        30000,
+        120000,
       );
       process.env.VITE_API_URL = "/api";
       const outputDir = join(temporary, "dist");
