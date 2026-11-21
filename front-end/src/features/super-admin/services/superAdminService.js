@@ -6,11 +6,11 @@ export const superAdminService = {
   async getDashboard() { return dataOf(await api.get("/dashboard/summary")); },
   async getReport() { return dataOf(await api.get("/reports/overview")); },
 
-  async listCommunities() { return dataOf(await api.get("/communities")) || []; },
+  async listCommunities(signal) { return dataOf(await api.get("/communities", { signal })) || []; },
   async listSubscriptions() { return dataOf(await api.get("/subscriptions")) || []; },
   async createCommunity(payload) { return dataOf(await api.post("/communities", payload)); },
-  async updateCommunity(id, payload) { return dataOf(await api.patch(`/communities/${id}`, payload)); },
-  async deleteCommunity(id) { return dataOf(await api.delete(`/communities/${id}`)); },
+  async updateCommunity(id, payload, signal) { return dataOf(await api.patch(`/communities/${id}`, payload, { signal })); },
+  async deleteCommunity(id, signal) { return dataOf(await api.delete(`/communities/${id}`, { signal })); },
 
   async listUsers() { return dataOf(await api.get("/users")) || []; },
   async getUser(id) { return dataOf(await api.get(`/users/${id}`)); },

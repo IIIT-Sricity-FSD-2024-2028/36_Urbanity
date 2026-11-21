@@ -1,4 +1,4 @@
-import api from "../api/client.js";
+import api, { getSessionRevision } from "../api/client.js";
 
 let currentUserRequest = null;
 
@@ -14,13 +14,16 @@ export function login(email, password) {
 }
 
 export async function getCurrentUser() {
-  const request = currentUserRequest ?? api.get("/auth/me");
-  currentUserRequest = request;
+  const revision = getSessionRevision();
+  const pending = currentUserRequest?.revision === revision
+    ? currentUserRequest
+    : { revision, request: api.get("/auth/me") };
+  currentUserRequest = pending;
 
   try {
-    return await request;
+    return await pending.request;
   } finally {
-    if (currentUserRequest === request) {
+    if (currentUserRequest === pending) {
       currentUserRequest = null;
     }
   }

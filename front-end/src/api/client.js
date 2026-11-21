@@ -16,6 +16,22 @@ const LEGACY_SESSION_KEYS = [
 ];
 
 let unauthorizedHandler = null;
+let sessionRevision = 0;
+const sessionListeners = new Set();
+
+export function getSessionRevision() {
+  return sessionRevision;
+}
+
+export function subscribeSessionChanges(listener) {
+  sessionListeners.add(listener);
+  return () => sessionListeners.delete(listener);
+}
+
+function notifySessionChange() {
+  sessionRevision += 1;
+  sessionListeners.forEach((listener) => listener());
+}
 
 export class ApiError extends Error {
   constructor(message, status, response) {
@@ -59,8 +75,12 @@ export function saveSession(accessToken, user) {
   }
 
   const safeUser = { id: user.id, email: user.email, role: user.role };
+  const previousUser = getStoredUser();
+  const changed = getAccessToken() !== accessToken ||
+    previousUser?.id !== safeUser.id || previousUser?.role !== safeUser.role;
   storage.setItem(ACCESS_TOKEN_KEY, accessToken);
   storage.setItem(CURRENT_USER_KEY, JSON.stringify(safeUser));
+  if (changed) notifySessionChange();
   return safeUser;
 }
 
@@ -71,6 +91,7 @@ export function clearSession() {
   storage.removeItem(ACCESS_TOKEN_KEY);
   storage.removeItem(CURRENT_USER_KEY);
   LEGACY_SESSION_KEYS.forEach((key) => storage.removeItem(key));
+  notifySessionChange();
 }
 
 export function setUnauthorizedHandler(handler) {
@@ -129,6 +150,7 @@ export const api = axios.create({
   baseURL: API_BASE_URL || undefined,
 });
 
+// Capture the revision and bearer token together when the request is made.
 api.interceptors.request.use((config) => {
   if (config.responseType === "arrayBuffer") {
     config.responseType = "arraybuffer";
@@ -139,6 +161,7 @@ api.interceptors.request.use((config) => {
   }
 
   if (config.authenticated !== false) {
+    config.sessionRevision = getSessionRevision();
     const accessToken = getAccessToken();
     const hasAuthorization =
       typeof config.headers?.has === "function"
@@ -160,7 +183,7 @@ api.interceptors.request.use((config) => {
   }
 
   return config;
-});
+}, (error) => { throw error; }, { synchronous: true });
 
 api.interceptors.response.use(
   (response) => response.data,
@@ -168,7 +191,7 @@ api.interceptors.response.use(
     const normalizedError = normalizeError(error);
     const config = error.config || {};
 
-    if (normalizedError.status === 401 && config.authenticated !== false) {
+    if (normalizedError.status === 401 && config.sessionRevision === getSessionRevision()) {
       clearSession();
 
       const shouldHandleUnauthorized =
