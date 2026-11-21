@@ -8,6 +8,7 @@ import {
 import {
   clearSession,
   getAccessToken,
+  getSessionRevision,
   getStoredUser,
   saveSession,
   setUnauthorizedHandler,
@@ -25,6 +26,7 @@ function getInitialSession() {
   return {
     token,
     user: token ? getStoredUser() : null,
+    revision: getSessionRevision(),
   };
 }
 
@@ -32,11 +34,15 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(getInitialSession);
   const [loading, setLoading] = useState(true);
 
-  const clearAuthentication = useCallback(() => {
-    clearSession();
-    setSession({ token: null, user: null });
+  const markSignedOut = useCallback(() => {
+    setSession({ token: null, user: null, revision: getSessionRevision() });
     setLoading(false);
   }, []);
+
+  const clearAuthentication = useCallback(() => {
+    clearSession();
+    markSignedOut();
+  }, [markSignedOut]);
 
   const refreshUser = useCallback(async () => {
     const token = getAccessToken();
@@ -46,18 +52,22 @@ export function AuthProvider({ children }) {
       return null;
     }
 
+    const revision = getSessionRevision();
     const response = await getCurrentUser();
+    if (revision !== getSessionRevision()) return null;
     const user = saveSession(token, response?.data);
-    setSession({ token, user });
+    setSession({ token, user, revision: getSessionRevision() });
     return user;
   }, [clearAuthentication]);
 
   const login = useCallback(async (email, password) => {
+    const revision = getSessionRevision();
     const response = await requestLogin(email, password);
+    if (revision !== getSessionRevision()) throw new Error("This sign-in is no longer active.");
     const token = response?.data?.accessToken;
     const user = saveSession(token, response?.data?.user);
 
-    setSession({ token, user });
+    setSession({ token, user, revision: getSessionRevision() });
     return response;
   }, []);
 
@@ -70,7 +80,7 @@ export function AuthProvider({ children }) {
 
     const handleUnauthorized = () => {
       if (active) {
-        clearAuthentication();
+        markSignedOut();
       }
     };
 
@@ -86,10 +96,8 @@ export function AuthProvider({ children }) {
 
       try {
         await refreshUser();
-      } catch (error) {
-        if (active && error?.status === 401) {
-          clearAuthentication();
-        }
+      } catch {
+        // The Axios interceptor clears an expired current session.
       } finally {
         if (active) {
           setLoading(false);
@@ -103,12 +111,13 @@ export function AuthProvider({ children }) {
       active = false;
       setUnauthorizedHandler(null);
     };
-  }, [clearAuthentication, refreshUser]);
+  }, [clearAuthentication, markSignedOut, refreshUser]);
 
   const value = useMemo(
     () => ({
       user: session.user,
       token: session.token,
+      sessionRevision: session.revision,
       authenticated: Boolean(session.token && session.user),
       loading,
       login,

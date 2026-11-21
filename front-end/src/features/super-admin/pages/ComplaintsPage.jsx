@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card, ErrorState, LoadingState, Modal, useToast } from "../../../components/ui/index.js";
 import { DataTable, PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
+import { useSuperAdminCommunityDirectory } from "../services/superAdminCommunitiesApi.js";
 import { superAdminService } from "../services/superAdminService.js";
 import { entityName, formatDate, formatEnum } from "../utils/formatters.js";
 
@@ -35,18 +36,26 @@ function ComplaintDetails({ complaintId, communities, onClose }) {
 }
 
 export function ComplaintsPage() {
-  const loader = useCallback(async () => { const [complaints, communities] = await Promise.all([superAdminService.listComplaints(), superAdminService.listCommunities()]); return { complaints, communities }; }, []);
-  const { data, loading, error, reload } = useAsyncResource(loader); const [selected, setSelected] = useState(null);
+  const directory = useSuperAdminCommunityDirectory();
+  const communities = directory.currentData;
+  const complaints = useAsyncResource(superAdminService.listComplaints);
+  const error = directory.error || complaints.error;
+  const loading = directory.isFetching || complaints.loading;
+  const retry = () => {
+    if (directory.isError) directory.refetch();
+    if (complaints.error) complaints.reload();
+  };
+  const [selected, setSelected] = useState(null);
   const columns = useMemo(() => [
-    { key: "title", header: "Complaint" }, { key: "communityId", header: "Community", render: (value) => entityName(data.communities, value) },
+    { key: "title", header: "Complaint" }, { key: "communityId", header: "Community", render: (value) => entityName(communities, value) },
     { key: "type", header: "Type", render: formatEnum }, { key: "status", header: "Status", render: (value) => <StatusBadge status={value} /> },
     { key: "requiredWorkType", header: "Work type", render: formatEnum }, { key: "responsibleUserName", header: "Responsible authority", render: (value) => value || "Not assigned" },
     { key: "createdAt", header: "Created", render: formatDate }, { key: "action", header: "", render: (_, row) => <Button variant="secondary" onClick={() => setSelected(row.id)}>View details</Button> },
-  ], [data]);
+  ], [communities]);
   return <>
     <PageHeader eyebrow="Oversight" title="Complaints" description="Global read-only visibility into complaints and their backend-authorized lifecycle." />
-    {loading && <LoadingState message="Loading complaints..." />}{error && <ErrorState message={error.message} onRetry={reload} />}
-    {data && <Card flush><DataTable rows={data.complaints} columns={columns} caption="All complaints" emptyTitle="No complaints" emptyMessage="No complaints have been submitted." /></Card>}
-    {selected && <ComplaintDetails complaintId={selected} communities={data.communities} onClose={() => setSelected(null)} />}
+    {loading && <LoadingState message="Loading complaints..." />}{error && <ErrorState message={error.message} onRetry={retry} />}
+    {communities && complaints.data && !error && <Card flush><DataTable rows={complaints.data} columns={columns} caption="All complaints" emptyTitle="No complaints" emptyMessage="No complaints have been submitted." /></Card>}
+    {selected && communities && <ComplaintDetails complaintId={selected} communities={communities} onClose={() => setSelected(null)} />}
   </>;
 }
