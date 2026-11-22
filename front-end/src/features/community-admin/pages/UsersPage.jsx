@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { useAuth } from "../../../auth/useAuth.js";
 import {
   Button,
@@ -13,8 +14,8 @@ import {
 } from "../../../components/ui/index.js";
 import { DataTable, PageHeader, StatusBadge } from "../../../components/data-display/index.js";
 import { ROLES } from "../../../constants/roles.js";
-import { useCommunityResource } from "../hooks/useCommunityResource.js";
-import { communityAdminService } from "../services/communityAdminService.js";
+import { useCommunityDirectory } from "../hooks/useCommunityDirectory.js";
+import { createCommunityUser, mutateCommunityDirectory, saveCommunityUser } from "../services/communityDirectoryApi.js";
 import { entityName, formatEnum } from "../utils.js";
 
 const roles = [ROLES.TOWER_REPRESENTATIVE, ROLES.MAINTENANCE_WORKER, ROLES.RESIDENT];
@@ -85,24 +86,10 @@ function buildUserPayload(form, editing) {
   return payload;
 }
 
-async function createMaintenanceWorker(userPayload, specialization) {
-  const createdUser = await communityAdminService.createUser(userPayload);
-
-  try {
-    await communityAdminService.createWorker({ userId: createdUser.id, specialization });
-  } catch (profileError) {
-    try {
-      const workers = await communityAdminService.listWorkers();
-      if (workers.some((worker) => worker.userId === createdUser.id)) return;
-      await communityAdminService.deleteUser(createdUser.id);
-    } catch {
-      throw new Error("The worker account was created, but its profile could not be confirmed. Refresh the user and workforce lists before trying again.");
-    }
-    throw new Error(`${profileError.message} The incomplete worker account was removed.`);
-  }
-}
-
-function UserModal({ user, data, onClose, onSaved }) {
+function UserModal({ user, data, onClose }) {
+  const dispatch = useAppDispatch();
+  const { user: currentUser, refreshUser } = useAuth();
+  const submitting = useRef(false);
   const { showToast } = useToast();
   const [form, setForm] = useState(() => initialForm(user, data));
   const [errors, setErrors] = useState({});
@@ -137,36 +124,34 @@ function UserModal({ user, data, onClose, onSaved }) {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (submitting.current) return;
     const nextErrors = validateForm(form, editing);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
+    submitting.current = true;
     setSaving(true);
     try {
       const payload = buildUserPayload(form, editing);
       if (editing) {
-        await communityAdminService.updateUser(user.id, payload);
-        if (user.role === ROLES.RESIDENT && form.apartmentId !== user.apartmentId) await communityAdminService.associateResident(user.id, form.apartmentId);
-        if (user.role === ROLES.TOWER_REPRESENTATIVE && form.towerId !== user.towerId) await communityAdminService.associateRepresentative(user.id, form.towerId);
-      } else if (form.role === ROLES.MAINTENANCE_WORKER) {
-        await createMaintenanceWorker(payload, form.specialization);
+        await saveCommunityUser({ user, payload, apartmentId: form.apartmentId, towerId: form.towerId }, dispatch, { currentUserId: currentUser.id, refreshUser });
       } else {
-        await communityAdminService.createUser(payload);
+        await createCommunityUser(payload, form.specialization, dispatch);
       }
 
       showToast({ type: "success", message: editing ? "User updated." : "User created." });
-      await onSaved();
       onClose();
     } catch (error) {
       showToast({ type: "error", message: error.message });
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   };
 
-  return <Modal isOpen onClose={onClose} title={editing ? "Edit community user" : "Create community user"} size="lg" footer={<><Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" form="community-user-form" loading={saving}>Save</Button></>}>
+  return <Modal isOpen onClose={saving ? undefined : onClose} title={editing ? "Edit community user" : "Create community user"} size="lg" footer={<><Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" form="community-user-form" loading={saving}>Save</Button></>}>
     <form id="community-user-form" className="ca-form ca-form--grid ca-user-form" onSubmit={submit} noValidate>
       {!editing && <div className="ca-user-form__wide ca-user-form__intro"><p>Choose the account role first. The required assignment fields will update automatically.</p></div>}
       {!editing && <div className="ca-user-form__wide">{!editing && form.role === ROLES.RESIDENT && <Select label="Resident relationship" value={form.residentSituation} onChange={(event) => setForm((current) => ({...current,residentSituation:event.target.value}))}><option value="OWNER_OCCUPANT">Owner-occupant (record ownership)</option><option value="TENANT_PENDING">Prospective tenant (no occupancy until active lease)</option></Select>}
@@ -192,13 +177,11 @@ function UserModal({ user, data, onClose, onSaved }) {
 }
 
 export function UsersPage() {
-  const { user: currentUser, refreshUser } = useAuth();
+  const { user: currentUser } = useAuth();
+  const dispatch = useAppDispatch();
+  const deletingRef = useRef(false);
   const { showToast } = useToast();
-  const loader = useCallback(async () => {
-    const [users, towers, floors, apartments] = await Promise.all([communityAdminService.listUsers(), communityAdminService.listTowers(), communityAdminService.listFloors(), communityAdminService.listApartments()]);
-    return { users, towers, floors, apartments };
-  }, []);
-  const { data, loading, error, reload } = useCommunityResource(loader);
+  const { data, loading, error, reload } = useCommunityDirectory(["users", "towers", "floors", "apartments"]);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(null);
   const [removing, setRemoving] = useState(null);
@@ -212,26 +195,27 @@ export function UsersPage() {
     { key: "actions", header: "Actions", render: (_, row) => <div className="ca-actions"><Button variant="secondary" onClick={() => setEditing(row)}>Edit</Button><Button variant="danger" disabled={row.id === currentUser.id} onClick={() => setRemoving(row)}>Delete</Button></div> },
   ], [currentUser.id, data]);
 
-  const afterSave = async () => { await reload(); if (editing?.id === currentUser.id) await refreshUser(); };
   const remove = async () => {
+    if (deletingRef.current || !removing) return;
+    deletingRef.current = true;
     setDeleting(true);
     try {
-      await communityAdminService.deleteUser(removing.id);
+      await mutateCommunityDirectory(dispatch, "deleteCommunityAdminUser", removing.id);
       showToast({ type: "success", message: "User deleted." });
       setRemoving(null);
-      await reload();
     } catch (error) {
       showToast({ type: "error", message: error.message });
     } finally {
+      deletingRef.current = false;
       setDeleting(false);
     }
   };
 
   return <>
-    <PageHeader eyebrow="People and associations" title="Community users" description="Manage residents, tower representatives, and maintenance-worker accounts within your community." actions={<Button onClick={() => setCreating(true)}>Create user</Button>} />
+    <PageHeader eyebrow="People and associations" title="Community users" description="Manage residents, tower representatives, and maintenance-worker accounts within your community." actions={<Button onClick={() => setCreating(true)} disabled={!data}>Create user</Button>} />
     {loading && <LoadingState message="Loading community users..." />}{error && <ErrorState message={error.message} onRetry={reload} />}
     {data && <Card flush><DataTable rows={data.users} columns={columns} emptyTitle="No community users" caption="Community users" /></Card>}
-    {creating && <UserModal data={data} onClose={() => setCreating(false)} onSaved={reload} />}{editing && <UserModal key={editing.id} user={editing} data={data} onClose={() => setEditing(null)} onSaved={afterSave} />}
+    {creating && data && <UserModal data={data} onClose={() => setCreating(false)} />}{editing && data && <UserModal key={editing.id} user={data.users.find((user) => user.id === editing.id) || editing} data={data} onClose={() => setEditing(null)} />}
     <ConfirmDialog isOpen={Boolean(removing)} onClose={() => setRemoving(null)} onConfirm={remove} loading={deleting} title="Delete user" message={`Delete ${removing?.name || "this user"}?`} confirmLabel="Delete" />
   </>;
 }
