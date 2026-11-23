@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Button, Card, ErrorState, Input, LoadingState, Select } from "../../../components/ui/index.js";
 import { PageHeader } from "../../../components/data-display/index.js";
-import { useWorkerResource } from "../hooks/useWorkerResource.js";
-import { maintenanceWorkerService as service } from "../services/maintenanceWorkerService.js";
+import { useWorkerTaskList } from "../services/workerTasksApi.js";
 import { COMPLETED_STATUSES, formatLabel, matchesTask } from "../utils/workflow.js";
 import { TaskTable } from "./TaskTable.jsx";
 
 export function TaskList({ completed = false }) {
-  const { data, loading, error, reload } = useWorkerResource(service.getTasks);
+  const { currentData: data, isLoading, isFetching, error, refetch: reload } = useWorkerTaskList();
+  const loading = isLoading || isFetching;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const available = (data || []).filter((task) => !completed || COMPLETED_STATUSES.includes(task.status));
@@ -18,8 +18,8 @@ export function TaskList({ completed = false }) {
       description={completed ? "Submitted work, including tasks awaiting authority verification. Open a task to view its proof." : "Your assigned complaints. Search by task, work type, or location."}
       actions={<Button variant="secondary" onClick={reload} loading={loading}>Refresh</Button>} />
     {loading && <LoadingState message="Loading assigned work..." />}
-    {error && <ErrorState message={error.message} onRetry={reload} />}
-    {data && !error && <Card title={`${tasks.length} tasks`}>
+    {error && <ErrorState message={error.message || "Unable to load assigned tasks."} onRetry={reload} />}
+    {data && <Card title={`${tasks.length} tasks`}>
       <div className="mw-filters">
         <Input label="Search tasks" type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
         <Select label="Status" value={status} onChange={(event) => setStatus(event.target.value)}>
