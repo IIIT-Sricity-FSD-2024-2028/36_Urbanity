@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import { Button, Card, ErrorState, Input, Textarea } from "../../../components/ui/index.js";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
+import { useAuth } from "../../../auth/useAuth.js";
 import { useWorkerMutation } from "../hooks/useWorkerMutation.js";
-import { maintenanceWorkerService as service } from "../services/maintenanceWorkerService.js";
+import { uploadWorkerProof, useResolveMaintenanceWorkerTaskMutation } from "../services/workerTasksApi.js";
 import { IMAGE_TYPES, validateProofFile } from "../utils/workflow.js";
 
-export function ResolutionForm({ taskId, attachments, disabled, reload }) {
+export function ResolutionForm({ taskId, attachments, disabled }) {
   const [problemFound, setProblemFound] = useState("");
   const [resolutionSummary, setResolutionSummary] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
@@ -12,6 +14,9 @@ export function ResolutionForm({ taskId, attachments, disabled, reload }) {
   const [validation, setValidation] = useState("");
   const fileInput = useRef(null);
   const mutation = useWorkerMutation();
+  const dispatch = useAppDispatch();
+  const { sessionRevision } = useAuth();
+  const [resolveTask] = useResolveMaintenanceWorkerTaskMutation();
   const proof = attachments.filter((item) => item.purpose === "RESOLUTION_PROOF" && item.uploadedByRole === "MAINTENANCE_WORKER");
   const proofIds = selectedIds.filter((id) => proof.some((item) => item.id === id));
   const busy = disabled || mutation.pending;
@@ -27,11 +32,10 @@ export function ResolutionForm({ taskId, attachments, disabled, reload }) {
     setValidation(error);
     if (busy || error) return;
     let uploaded;
-    mutation.run(async () => { uploaded = await service.uploadProof(taskId, file); }, "Proof image uploaded.", async () => {
+    mutation.run(async () => { uploaded = await uploadWorkerProof(dispatch, taskId, file); }, "Proof image uploaded.", async () => {
       setSelectedIds((current) => [...new Set([...current, uploaded.id])]);
       setFile(null);
       if (fileInput.current) fileInput.current.value = "";
-      await reload();
     });
   }
 
@@ -43,8 +47,8 @@ export function ResolutionForm({ taskId, attachments, disabled, reload }) {
       return;
     }
     setValidation("");
-    mutation.run(() => service.resolveWork(taskId, { problemFound, resolutionSummary, proofAttachmentIds: proofIds }),
-      "Work submitted for authority verification.", reload);
+    mutation.run(() => resolveTask({ id: taskId, sessionRevision, problemFound, resolutionSummary, proofAttachmentIds: proofIds }).unwrap(),
+      "Work submitted for authority verification.");
   }
 
   return <Card title="Submit resolution proof">

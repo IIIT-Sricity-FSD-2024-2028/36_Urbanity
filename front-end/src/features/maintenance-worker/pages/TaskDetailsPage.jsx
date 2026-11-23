@@ -1,33 +1,35 @@
-import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button, Card, EmptyState, ErrorState, LoadingState } from "../../../components/ui/index.js";
 import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
-import { useWorkerResource } from "../hooks/useWorkerResource.js";
 import { useWorkerMutation } from "../hooks/useWorkerMutation.js";
-import { maintenanceWorkerService as service } from "../services/maintenanceWorkerService.js";
+import { useAuth } from "../../../auth/useAuth.js";
+import { useGetMaintenanceWorkerTaskAttachmentsQuery, useGetMaintenanceWorkerTaskQuery, useGetMaintenanceWorkerProfileQuery, useStartMaintenanceWorkerTaskMutation } from "../services/workerTasksApi.js";
 import { formatDate, formatLabel, locationLabel } from "../utils/workflow.js";
 import { AttachmentGallery } from "../components/AttachmentGallery.jsx";
 import { ResolutionForm } from "../components/ResolutionForm.jsx";
 
 function TaskDetails({ id }) {
-  const loader = useCallback(async (signal) => {
-    const [task, profile, attachments] = await Promise.all([
-      service.getTask(id, signal), service.getProfile(signal), service.getAttachments(id, signal),
-    ]);
-    if (!task || !profile) throw new Error("Task details are unavailable.");
-    return { task, profile, attachments };
-  }, [id]);
-  const { data, loading, error, reload } = useWorkerResource(loader);
+  const { sessionRevision } = useAuth();
+  const taskQuery = useGetMaintenanceWorkerTaskQuery({ id, sessionRevision }, { refetchOnMountOrArgChange: true });
+  const profileQuery = useGetMaintenanceWorkerProfileQuery(sessionRevision);
+  const attachmentQuery = useGetMaintenanceWorkerTaskAttachmentsQuery({ id, sessionRevision }, { refetchOnMountOrArgChange: true });
+  const task = taskQuery.currentData;
+  const profile = profileQuery.currentData;
+  const attachments = attachmentQuery.currentData;
   const mutation = useWorkerMutation();
-  const task = data?.task;
-  const assignedToMe = task && task.assignedWorkerId === data.profile.id && task.communityId === data.profile.communityId;
+  const [startTask] = useStartMaintenanceWorkerTaskMutation();
+  const loading = taskQuery.isLoading || profileQuery.isLoading || attachmentQuery.isLoading;
+  const reload = () => Promise.all([taskQuery.refetch(), profileQuery.refetch(), attachmentQuery.refetch()]);
+  const error = taskQuery.error || profileQuery.error || attachmentQuery.error;
+  const assignedToMe = task && profile && task.assignedWorkerId === profile.id && task.communityId === profile.communityId;
   const disabled = loading || Boolean(error) || mutation.pending;
   return <>
     <PageHeader eyebrow="Assigned work" title={task?.title || "Task details"}
       actions={<><Link className="ui-button ui-button--secondary" to={ROUTES.MAINTENANCE_WORKER_TASKS}>Back to assigned tasks</Link><Button variant="secondary" onClick={reload} disabled={mutation.pending} loading={loading}>Refresh</Button></>} />
     {loading && <LoadingState message="Loading task details..." />}
-    {error && <ErrorState message={error.message} onRetry={reload} />}
+    {error && <ErrorState message={error.message || "Task details are unavailable."} onRetry={reload} />}
+    {!loading && !error && !task && <EmptyState title="Task not found" description="This complaint is unavailable or is not assigned to your account." />}
     {task && <div className="mw-stack">
       <Card title="Complaint details" actions={<StatusBadge status={task.status} />}>
         <p className="mw-description">{task.description || "No description provided."}</p>
@@ -41,7 +43,7 @@ function TaskDetails({ id }) {
           <div><dt>Last updated</dt><dd>{formatDate(task.updatedAt)}</dd></div>
         </dl>
         {assignedToMe && task.status === "ASSIGNED" && <div className="mw-actions">
-          <Button loading={mutation.pending} disabled={disabled} onClick={() => mutation.run(() => service.startWork(id), "Work started.", reload)}>Start work</Button>
+          <Button loading={mutation.pending} disabled={disabled} onClick={() => mutation.run(() => startTask({ id, sessionRevision }).unwrap(), "Work started.")}>Start work</Button>
         </div>}
         {mutation.error && <ErrorState message={mutation.error} />}
       </Card>
@@ -59,10 +61,10 @@ function TaskDetails({ id }) {
         {task.resolutionVerification && <div><dt>Verified</dt><dd>{formatDate(task.resolutionVerification.verifiedAt)}</dd></div>}
       </dl>
         <h3 className="mw-actions">Submitted proof images</h3>
-        <AttachmentGallery taskId={id} attachments={data.attachments.filter((item) => task.resolutionProof.attachmentIds?.includes(item.id))} />
+        <AttachmentGallery taskId={id} attachments={(attachments || []).filter((item) => task.resolutionProof.attachmentIds?.includes(item.id))} />
       </Card>}
-      <Card title="Complaint and work images"><AttachmentGallery taskId={id} attachments={data.attachments} /></Card>
-      {assignedToMe && task.status === "IN_PROGRESS" && <ResolutionForm taskId={id} attachments={data.attachments} disabled={disabled} reload={reload} />}
+      <Card title="Complaint and work images"><AttachmentGallery taskId={id} attachments={attachments || []} /></Card>
+      {assignedToMe && task.status === "IN_PROGRESS" && <ResolutionForm taskId={id} attachments={attachments || []} disabled={disabled} />}
     </div>}
   </>;
 }
