@@ -1,11 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Button, Card, ErrorState, Input, LoadingState } from "../../../components/ui/index.js";
 import { MetricCard, PageHeader } from "../../../components/data-display/index.js";
 import { AppointmentTable } from "../components/AppointmentTable.jsx";
-import { useTowerResource } from "../hooks/useTowerResource.js";
-import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
+import { useTowerAppointments } from "../services/towerAppointmentsApi.js";
 import { APPOINTMENT_VIEWS, appointmentView, emergencyFirst, visitSortKey } from "../utils/appointments.js";
 import { apartmentLabel } from "../utils/formatters.js";
 
@@ -24,8 +23,8 @@ export function AppointmentsPage() {
   const viewParam = searchParams.get("view");
   const view = APPOINTMENT_VIEWS.some((item) => item.value === viewParam) ? viewParam : "PENDING";
 
-  const loader = useCallback(() => towerRepresentativeService.listAppointments(), []);
-  const { data, error, initialLoading, loading, reload } = useTowerResource(loader);
+  // Shared with the dashboard and complaint pages through the RTK Query cache.
+  const { data, error, initialLoading, loading, reload } = useTowerAppointments();
 
   const counts = useMemo(() => (data || []).reduce((totals, item) => {
     const key = appointmentView(item);

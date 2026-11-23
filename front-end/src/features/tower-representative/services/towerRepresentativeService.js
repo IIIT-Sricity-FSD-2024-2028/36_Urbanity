@@ -29,22 +29,23 @@ export const towerRepresentativeService = {
 
   // Appointments: the backend scopes listings to the representative's tower and
   // allows mutations only by the complaint's responsible representative.
-  async listAppointments() { return dataOf(await api.get("/appointments")) || []; },
-  async getAppointment(id) { return dataOf(await api.get(`/appointments/${id}`)); },
-  async listTimeSlots() { return dataOf(await api.get("/appointments/time-slots")) || []; },
-  async getWorkerSchedule(workerId, date) {
-    return dataOf(await api.get(`/appointments/workers/${workerId}/schedule`, { params: date ? { date } : {} }));
+  // `signal` is optional and only lets RTK Query cancel superseded requests.
+  async listAppointments(signal) { return dataOf(await api.get("/appointments", { signal })) || []; },
+  async getAppointment(id, signal) { return dataOf(await api.get(`/appointments/${id}`, { signal })); },
+  async listTimeSlots(signal) { return dataOf(await api.get("/appointments/time-slots", { signal })) || []; },
+  async getWorkerSchedule(workerId, date, signal) {
+    return dataOf(await api.get(`/appointments/workers/${workerId}/schedule`, { params: date ? { date } : {}, signal }));
   },
-  async confirmAppointment(id, { workerId, scheduledDate, timeSlot }) {
-    return dataOf(await api.patch(`/appointments/${id}/confirm`, { workerId, scheduledDate, timeSlot }));
+  async confirmAppointment(id, { workerId, scheduledDate, timeSlot }, signal) {
+    return dataOf(await api.patch(`/appointments/${id}/confirm`, { workerId, scheduledDate, timeSlot }, { signal }));
   },
-  async decideReschedule(id, { decision, scheduledDate, timeSlot, note }) {
+  async decideReschedule(id, { decision, scheduledDate, timeSlot, note }, signal) {
     return dataOf(await api.patch(`/appointments/${id}/reschedule-decision`, {
       decision,
       ...(decision === "APPROVE" ? { scheduledDate, timeSlot } : {}),
       ...(note ? { note } : {}),
-    }));
+    }, { signal }));
   },
-  async cancelAppointment(id, reason) { return dataOf(await api.patch(`/appointments/${id}/cancel`, { reason })); },
-  async markAppointmentMissed(id, reason) { return dataOf(await api.patch(`/appointments/${id}/missed`, { reason })); },
+  async cancelAppointment(id, reason, signal) { return dataOf(await api.patch(`/appointments/${id}/cancel`, { reason }, { signal })); },
+  async markAppointmentMissed(id, reason, signal) { return dataOf(await api.patch(`/appointments/${id}/missed`, { reason }, { signal })); },
 };

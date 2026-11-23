@@ -1,8 +1,7 @@
-import { useCallback } from "react";
+import { useMemo } from "react";
 import { Input, Select } from "../../../components/ui/index.js";
 import { MAX_BOOKING_HORIZON_DAYS } from "../../../constants/appointments.js";
-import { useTowerResource } from "../hooks/useTowerResource.js";
-import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
+import { useTowerWorkerSchedule } from "../services/towerAppointmentsApi.js";
 import { isSlotPast, localToday } from "../utils/appointments.js";
 
 function maxBookingDate() {
@@ -13,13 +12,14 @@ function maxBookingDate() {
 
 // Loads the worker's confirmed bookings for the chosen date so the representative can
 // see conflicts before submitting. The backend re-validates conflicts on confirmation.
+// The cache is keyed by worker and date, so revisiting a date reuses its entry
+// and a slow response for an earlier date cannot overwrite the selected one.
 export function useWorkerBookings(workerId, date, ignoreAppointmentId) {
-  const loader = useCallback(async () => {
-    if (!workerId || !date) return null;
-    const schedule = await towerRepresentativeService.getWorkerSchedule(workerId, date);
-    return (schedule?.bookedSlots || []).filter((slot) => slot.appointmentId !== ignoreAppointmentId);
-  }, [workerId, date, ignoreAppointmentId]);
-  return useTowerResource(loader);
+  const schedule = useTowerWorkerSchedule(workerId, date);
+  const data = useMemo(() => (schedule.data
+    ? (schedule.data.bookedSlots || []).filter((slot) => slot.appointmentId !== ignoreAppointmentId)
+    : null), [schedule.data, ignoreAppointmentId]);
+  return { ...schedule, data };
 }
 
 export function SlotPicker({ slots, date, timeSlot, onDateChange, onSlotChange, bookings, disabled, idPrefix, emergency = false }) {
