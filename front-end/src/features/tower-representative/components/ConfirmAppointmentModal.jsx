@@ -2,8 +2,10 @@ import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Button, EmptyState, ErrorState, LoadingState, Modal, useToast } from "../../../components/ui/index.js";
 import { RatingStars, StatusBadge } from "../../../components/data-display/index.js";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { useTowerResource } from "../hooks/useTowerResource.js";
+import { appointmentWriteContext, mutateTowerAppointment, useTowerTimeSlots } from "../services/towerAppointmentsApi.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
 import { complaintNeedsVisit, formatVisit, isSlotPast } from "../utils/appointments.js";
 import { formatEnum, workerReference } from "../utils/formatters.js";
@@ -11,21 +13,28 @@ import { SlotPicker, useWorkerBookings } from "./SlotPicker.jsx";
 
 // Worker choices reuse the complaint assignment rules: an already-assigned complaint keeps its
 // worker; an UNDER_REVIEW complaint offers the backend's eligible workers and is assigned on confirm.
+// Appointment, list, complaint-embedding and schedule caches refresh through RTK Query tags;
+// `onConfirmed` is an optional hook for any other data the caller shows.
 export function ConfirmAppointmentModal({ appointment, onClose, onConfirmed }) {
   const { showToast } = useToast();
+  const dispatch = useAppDispatch();
   const complaint = appointment.complaint;
-  const loader = useCallback(async () => {
-    const [slots, workers] = await Promise.all([
-      towerRepresentativeService.listTimeSlots(),
-      complaint.assignedWorkerId
-        ? towerRepresentativeService.getWorker(complaint.assignedWorkerId).then((worker) => [worker])
-        : complaint.status === "UNDER_REVIEW"
-          ? towerRepresentativeService.listEligibleWorkers(complaint.id)
-          : Promise.resolve([]),
-    ]);
-    return { slots, workers };
-  }, [complaint.assignedWorkerId, complaint.id, complaint.status]);
-  const { data, error, initialLoading, reload } = useTowerResource(loader);
+  const timeSlots = useTowerTimeSlots();
+  // Worker choices are complaint-scoped assignment data and stay outside the appointment cache.
+  const workerLoader = useCallback(() => (complaint.assignedWorkerId
+    ? towerRepresentativeService.getWorker(complaint.assignedWorkerId).then((worker) => [worker])
+    : complaint.status === "UNDER_REVIEW"
+      ? towerRepresentativeService.listEligibleWorkers(complaint.id)
+      : Promise.resolve([])), [complaint.assignedWorkerId, complaint.id, complaint.status]);
+  const workerOptions = useTowerResource(workerLoader);
+  const data = timeSlots.data && workerOptions.data ? { slots: timeSlots.data, workers: workerOptions.data } : null;
+  const error = timeSlots.error || workerOptions.error;
+  const initialLoading = !data && !error;
+  // Retry only the read that failed.
+  const reload = () => {
+    if (timeSlots.error) timeSlots.reload();
+    if (workerOptions.error) workerOptions.reload();
+  };
   const [workerId, setWorkerId] = useState(complaint.assignedWorkerId || "");
   const [date, setDate] = useState(appointment.requestedDate);
   const [timeSlot, setTimeSlot] = useState(appointment.requestedTimeSlot);
@@ -41,20 +50,22 @@ export function ConfirmAppointmentModal({ appointment, onClose, onConfirmed }) {
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!workerId || !date || !timeSlot || conflict || slotPast || closedComplaint) return;
+    if (submitting || !workerId || !date || !timeSlot || conflict || slotPast || closedComplaint) return;
     setSubmitting(true);
     try {
-      await towerRepresentativeService.confirmAppointment(appointment.id, { workerId, scheduledDate: date, timeSlot });
+      await mutateTowerAppointment(dispatch, "confirmTowerRepresentativeAppointment", {
+        ...appointmentWriteContext(appointment), workerId, scheduledDate: date, timeSlot,
+      });
       showToast({ type: "success", message: complaint.assignedWorkerId ? "Appointment confirmed." : "Appointment confirmed and worker assigned to the complaint." });
       setSubmitting(false);
       onClose();
-      await onConfirmed();
+      await onConfirmed?.();
     } catch (requestError) {
+      // The failed write also refreshes the appointment (it may have changed meanwhile, e.g. cancelled
+      // by the resident) and this worker's schedule for the chosen date.
       showToast({ type: "error", message: requestError.message || "Unable to confirm the appointment." });
       setSubmitting(false);
-      bookings.reload();
-      // The appointment may have changed meanwhile (e.g. cancelled by the resident); refresh the page data.
-      onConfirmed();
+      onConfirmed?.();
     }
   };
 

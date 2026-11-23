@@ -8,6 +8,7 @@ import { nextAppointmentAction } from "../components/AppointmentTable.jsx";
 import { Breakdown } from "../components/Breakdown.jsx";
 import { ComplaintTable } from "../components/ComplaintTable.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
+import { useTowerAppointments } from "../services/towerAppointmentsApi.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
 import { COMPLAINT_STATUSES, RESOLVED_STATUSES, WORKER_STATUSES, countBy, newestFirst } from "../utils/formatters.js";
 import { formatVisit } from "../utils/appointments.js";
@@ -23,24 +24,25 @@ export function DashboardPage() {
       towerRepresentativeService.listComplaints(),
     ]);
     // Secondary panels degrade independently instead of failing the whole dashboard.
-    const [workers, appointments] = await Promise.allSettled([
-      towerRepresentativeService.listWorkers(),
-      towerRepresentativeService.listAppointments(),
-    ]);
+    const [workers] = await Promise.allSettled([towerRepresentativeService.listWorkers()]);
     return {
       hierarchy,
       complaints,
       workers: settledValue(workers) || [],
       workersFailed: workers.status === "rejected",
-      appointments: settledValue(appointments) || [],
-      appointmentsFailed: appointments.status === "rejected",
     };
   }, []);
   const { data, error, initialLoading, reload } = useTowerResource(loader);
+  // Appointments come from the shared RTK Query cache and fail independently of the dashboard.
+  const appointmentsQuery = useTowerAppointments();
+  const appointmentsFailed = Boolean(appointmentsQuery.error);
+  const appointmentsLoading = appointmentsQuery.initialLoading;
+  const appointments = appointmentsQuery.data;
 
   const summary = useMemo(() => {
     if (!data) return null;
-    const { complaints, workers, appointments } = data;
+    const { complaints, workers } = data;
+    const loadedAppointments = appointments || [];
     const complaintActions = complaints.filter((complaint) => nextAuthorityAction(complaint, user)).map((complaint) => ({
       key: `complaint-${complaint.id}`,
       title: complaint.title,
@@ -50,7 +52,7 @@ export function DashboardPage() {
       at: complaint.createdAt,
       emergency: Boolean(complaint.isEmergency),
     }));
-    const appointmentActions = appointments.filter((appointment) => nextAppointmentAction(appointment, user)).map((appointment) => ({
+    const appointmentActions = loadedAppointments.filter((appointment) => nextAppointmentAction(appointment, user)).map((appointment) => ({
       key: `appointment-${appointment.id}`,
       title: appointment.complaint?.title || "Appointment",
       detail: `Visit · ${appointment.scheduledDate ? formatVisit(appointment.scheduledDate, appointment.scheduledTimeSlot) : formatVisit(appointment.requestedDate, appointment.requestedTimeSlot)}`,
@@ -66,12 +68,12 @@ export function DashboardPage() {
       resolved,
       open: complaints.length - resolved,
       actionQueue: [...complaintActions, ...appointmentActions].sort((a, b) => Number(b.emergency) - Number(a.emergency) || new Date(b.at || 0) - new Date(a.at || 0)),
-      pendingAppointments: appointments.filter((appointment) => appointment.status === "REQUESTED" || appointment.status === "RESCHEDULE_REQUESTED").length,
-      upcomingAppointments: appointments.filter((appointment) => appointment.status === "CONFIRMED").length,
+      pendingAppointments: loadedAppointments.filter((appointment) => appointment.status === "REQUESTED" || appointment.status === "RESCHEDULE_REQUESTED").length,
+      upcomingAppointments: loadedAppointments.filter((appointment) => appointment.status === "CONFIRMED").length,
       recent: newestFirst(complaints).slice(0, 6),
       workersByStatus: countBy(workers, (worker) => worker.status),
     };
-  }, [data, user]);
+  }, [appointments, data, user]);
 
   const firstName = data?.hierarchy?.user?.name?.split(" ")[0];
   const tower = data?.hierarchy?.tower;
@@ -86,7 +88,7 @@ export function DashboardPage() {
         actions={<Link className="ui-button ui-button--primary tr-link-button" to={ROUTES.TOWER_REPRESENTATIVE_COMPLAINTS}>Review complaints</Link>}
       />
       {initialLoading && <LoadingState message="Loading tower dashboard..." />}
-      {error && <ErrorState message={error.message} onRetry={reload} />}
+      {error && <ErrorState message={error.message} onRetry={() => { reload(); if (appointmentsFailed) appointmentsQuery.reload(); }} />}
       {data && summary && (
         <>
           <div className="tr-metrics portal-metrics">
@@ -96,7 +98,7 @@ export function DashboardPage() {
             <MetricCard icon={<MetricIcon name="progress" />} label="Work in progress" value={(summary.byStatus.ASSIGNED || 0) + (summary.byStatus.IN_PROGRESS || 0)} hint={`${summary.byStatus.ASSIGNED || 0} assigned · ${summary.byStatus.IN_PROGRESS || 0} in progress`} />
             <MetricCard icon={<MetricIcon name="verification" />} label="Awaiting verification" value={summary.byStatus.PENDING_VERIFICATION || 0} hint="Worker proof submitted" />
             <MetricCard icon={<MetricIcon name="resolved" />} label="Resolved" value={summary.resolved} hint="Resolved, reviewed, or closed" />
-            <MetricCard icon={<MetricIcon name="review" />} label="Appointment requests" value={data.appointmentsFailed ? "—" : summary.pendingAppointments} hint={data.appointmentsFailed ? "Appointments unavailable" : `${summary.upcomingAppointments} confirmed visits`} />
+            <MetricCard icon={<MetricIcon name="review" />} label="Appointment requests" value={appointmentsFailed || appointmentsLoading ? "—" : summary.pendingAppointments} hint={appointmentsFailed ? "Appointments unavailable" : appointmentsLoading ? "Loading appointments..." : `${summary.upcomingAppointments} confirmed visits`} />
           </div>
 
           <div className="tr-grid tr-grid--2">

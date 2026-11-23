@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Badge, Button, Card, ErrorState, LoadingState } from "../../../components/ui/index.js";
 import { PageHeader, StatusBadge } from "../../../components/data-display/index.js";
@@ -9,6 +10,7 @@ import { AppointmentReasonModal } from "../components/AppointmentReasonModal.jsx
 import { ConfirmAppointmentModal } from "../components/ConfirmAppointmentModal.jsx";
 import { RescheduleDecisionModal } from "../components/RescheduleDecisionModal.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
+import { appointmentWriteContext, mutateTowerAppointment, useTowerAppointment } from "../services/towerAppointmentsApi.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
 import { complaintNeedsVisit, formatVisit, hasSlotStarted, isActiveAppointment } from "../utils/appointments.js";
 import { formatDateTime, formatEnum } from "../utils/formatters.js";
@@ -22,19 +24,23 @@ const GUIDANCE = Object.freeze({
   MISSED: "This visit was missed. The resident can request a new appointment if work is still required.",
 });
 
-const settledValue = (result) => (result.status === "fulfilled" ? result.value : null);
-
 export function AppointmentDetailsPage() {
   const { appointmentId } = useParams();
   const { user } = useAuth();
+  const dispatch = useAppDispatch();
   const [dialog, setDialog] = useState(null);
 
-  const loader = useCallback(async () => {
-    const appointment = await towerRepresentativeService.getAppointment(appointmentId);
-    const [resident] = await Promise.allSettled([towerRepresentativeService.getResidentHierarchy(appointment.residentId)]);
-    return { appointment, resident: settledValue(resident) };
-  }, [appointmentId]);
-  const { data, error, initialLoading, loading, reload } = useTowerResource(loader);
+  // The appointment (with its embedded complaint) comes from the RTK Query cache; writes refresh it by tag.
+  const appointmentQuery = useTowerAppointment(appointmentId);
+  const residentId = appointmentQuery.data?.residentId;
+  // Resident details are optional: a failure leaves the rest of the page usable.
+  const residentLoader = useCallback(() => (residentId
+    ? towerRepresentativeService.getResidentHierarchy(residentId).catch(() => null)
+    : Promise.resolve(null)), [residentId]);
+  const residentResource = useTowerResource(residentLoader);
+  const data = appointmentQuery.data ? { appointment: appointmentQuery.data, resident: residentResource.data } : null;
+  const { error, initialLoading, loading } = appointmentQuery;
+  const reload = () => Promise.all([appointmentQuery.reload(), residentResource.reload()]);
   const closeDialog = useCallback(() => setDialog(null), []);
 
   const backLink = <Link className="ui-button ui-button--secondary tr-link-button" to={ROUTES.TOWER_REPRESENTATIVE_APPOINTMENTS}>Back to appointments</Link>;
@@ -161,8 +167,8 @@ export function AppointmentDetailsPage() {
         </aside>
       </div>
 
-      {dialog === "confirm" && <ConfirmAppointmentModal appointment={appointment} onClose={closeDialog} onConfirmed={reload} />}
-      {dialog === "reschedule" && <RescheduleDecisionModal appointment={appointment} onClose={closeDialog} onDecided={reload} />}
+      {dialog === "confirm" && <ConfirmAppointmentModal appointment={appointment} onClose={closeDialog} />}
+      {dialog === "reschedule" && <RescheduleDecisionModal appointment={appointment} onClose={closeDialog} />}
       {dialog === "cancel" && (
         <AppointmentReasonModal
           title="Cancel appointment"
@@ -171,9 +177,8 @@ export function AppointmentDetailsPage() {
           confirmLabel="Cancel appointment"
           loadingLabel="Cancelling..."
           success="Appointment cancelled."
-          onSubmit={(reason) => towerRepresentativeService.cancelAppointment(appointment.id, reason)}
+          onSubmit={(reason) => mutateTowerAppointment(dispatch, "cancelTowerRepresentativeAppointment", { ...appointmentWriteContext(appointment), reason })}
           onClose={closeDialog}
-          onDone={reload}
         />
       )}
       {dialog === "missed" && (
@@ -185,9 +190,8 @@ export function AppointmentDetailsPage() {
           loadingLabel="Saving..."
           success="Visit marked as missed."
           confirmVariant="primary"
-          onSubmit={(reason) => towerRepresentativeService.markAppointmentMissed(appointment.id, reason)}
+          onSubmit={(reason) => mutateTowerAppointment(dispatch, "markTowerRepresentativeAppointmentMissed", { ...appointmentWriteContext(appointment), reason })}
           onClose={closeDialog}
-          onDone={reload}
         />
       )}
     </>

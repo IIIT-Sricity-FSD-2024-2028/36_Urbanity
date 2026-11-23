@@ -10,18 +10,18 @@ export function AppointmentReasonModal({ title, intro, label, confirmLabel, load
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!reason.trim()) return;
+    if (submitting || !reason.trim()) return;
     setSubmitting(true);
     try {
       await onSubmit(reason.trim());
       showToast({ type: "success", message: success });
       setSubmitting(false);
       onClose();
-      await onDone();
+      await onDone?.();
     } catch (requestError) {
       showToast({ type: "error", message: requestError.message || "Unable to update the appointment." });
       setSubmitting(false);
-      onDone();
+      onDone?.();
     }
   };
 

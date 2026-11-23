@@ -1,16 +1,16 @@
 import { useCallback, useState } from "react";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { Button, ErrorState, LoadingState, Modal, Textarea, useToast } from "../../../components/ui/index.js";
-import { useTowerResource } from "../hooks/useTowerResource.js";
-import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
+import { appointmentWriteContext, mutateTowerAppointment, useTowerTimeSlots } from "../services/towerAppointmentsApi.js";
 import { complaintNeedsVisit, formatVisit, isSlotPast } from "../utils/appointments.js";
 import { formatEnum } from "../utils/formatters.js";
 import { SlotPicker, useWorkerBookings } from "./SlotPicker.jsx";
 
 export function RescheduleDecisionModal({ appointment, onClose, onDecided }) {
   const { showToast } = useToast();
+  const dispatch = useAppDispatch();
   const request = appointment.rescheduleRequest;
-  const loader = useCallback(() => towerRepresentativeService.listTimeSlots(), []);
-  const { data: slots, error, initialLoading, reload } = useTowerResource(loader);
+  const { data: slots, error, initialLoading, reload } = useTowerTimeSlots();
   const [date, setDate] = useState(request?.proposedDate || "");
   const [timeSlot, setTimeSlot] = useState(request?.proposedTimeSlot || "");
   const [note, setNote] = useState("");
@@ -25,19 +25,28 @@ export function RescheduleDecisionModal({ appointment, onClose, onDecided }) {
   const handleClose = useCallback(() => { if (!busy) onClose(); }, [busy, onClose]);
 
   const decide = async (decision) => {
+    if (busy) return;
     if (decision === "APPROVE" && (!date || !timeSlot || conflict || slotPast || closedComplaint)) return;
     setPending(decision);
     try {
-      await towerRepresentativeService.decideReschedule(appointment.id, { decision, scheduledDate: date, timeSlot, note: note.trim() });
+      // previousDate lets an approval refresh both the vacated and the newly booked schedule dates.
+      await mutateTowerAppointment(dispatch, "decideTowerRepresentativeReschedule", {
+        ...appointmentWriteContext(appointment),
+        previousDate: appointment.scheduledDate,
+        decision,
+        scheduledDate: date,
+        timeSlot,
+        note: note.trim(),
+      });
       showToast({ type: "success", message: decision === "APPROVE" ? "Reschedule approved." : "Reschedule declined. The original visit stays confirmed." });
       setPending(null);
       onClose();
-      await onDecided();
+      await onDecided?.();
     } catch (requestError) {
+      // The failed write also refreshes the appointment and the affected schedule dates.
       showToast({ type: "error", message: requestError.message || "Unable to process the reschedule request." });
       setPending(null);
-      bookings.reload();
-      onDecided();
+      onDecided?.();
     }
   };
 

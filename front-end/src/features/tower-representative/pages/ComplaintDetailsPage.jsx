@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Badge, Button, Card, ConfirmDialog, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
 import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
@@ -8,16 +9,13 @@ import { AssignWorkerModal } from "../components/AssignWorkerModal.jsx";
 import { AttachmentList } from "../components/AttachmentList.jsx";
 import { VerifyResolutionModal } from "../components/VerifyResolutionModal.jsx";
 import { useTowerResource } from "../hooks/useTowerResource.js";
+import { cancellableAppointments, closeTowerComplaint, refreshComplaintAppointments, useTowerAppointments } from "../services/towerAppointmentsApi.js";
 import { towerRepresentativeService } from "../services/towerRepresentativeService.js";
 import { complaintNeedsVisit, formatVisit, isActiveAppointment } from "../utils/appointments.js";
 import { formatDateTime, formatEnum, workerReference } from "../utils/formatters.js";
 import { isResponsibleAuthority, lifecycleGuidance, nextAuthorityAction } from "../utils/workflow.js";
 
 const REVIEW_STATUSES = new Set(["REVIEWED", "CLOSED"]);
-const CLOSE_CANCELLATION_REASON = "Complaint closed; the visit is no longer needed.";
-
-// Active visits the representative may still cancel (the backend refuses once the worker has arrived).
-const cancellableAppointments = (appointments) => appointments.filter((item) => isActiveAppointment(item) && !item.arrivedAt);
 
 const TRANSITIONS = {
   review: {
@@ -29,20 +27,18 @@ const TRANSITIONS = {
   },
   close: {
     title: "Close complaint",
-    message: (appointments) => (cancellableAppointments(appointments).length
-      ? "Close this complaint? Its active appointment will be cancelled first so the worker's slot is released. Closing cannot be undone from this portal."
-      : "Close this complaint? Closing completes its lifecycle and cannot be undone from this portal."),
+    // `appointments` is null until the list has loaded; closure re-checks the backend either way.
+    message: (appointments) => (!appointments
+      ? "Close this complaint? Any active appointment will be cancelled first so the worker's slot is released. Closing cannot be undone from this portal."
+      : cancellableAppointments(appointments).length
+        ? "Close this complaint? Its active appointment will be cancelled first so the worker's slot is released. Closing cannot be undone from this portal."
+        : "Close this complaint? Closing completes its lifecycle and cannot be undone from this portal."),
     confirmLabel: "Close complaint",
-    success: (appointments) => (cancellableAppointments(appointments).length
+    success: (result) => (result?.cancelledAppointments
       ? "Complaint closed and its active appointment cancelled."
       : "Complaint closed."),
-    // Cancel first: if a cancellation fails, the complaint is left open so nothing is half-closed.
-    run: async (id, appointments) => {
-      for (const appointment of cancellableAppointments(appointments)) {
-        await towerRepresentativeService.cancelAppointment(appointment.id, CLOSE_CANCELLATION_REASON);
-      }
-      return towerRepresentativeService.closeComplaint(id);
-    },
+    // Fetches the current appointments, cancels the active ones, and closes only if every cancellation succeeded.
+    run: (id, dispatch) => closeTowerComplaint(dispatch, id),
   },
 };
 
@@ -52,17 +48,19 @@ export function ComplaintDetailsPage() {
   const { complaintId } = useParams();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const dispatch = useAppDispatch();
   const [dialog, setDialog] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
+  // Blocks a second submission before the loading state re-renders the dialog.
+  const transitionRef = useRef(false);
 
   const loader = useCallback(async () => {
     const complaint = await towerRepresentativeService.getComplaint(complaintId);
-    const [attachments, review, worker, resident, appointments] = await Promise.allSettled([
+    const [attachments, review, worker, resident] = await Promise.allSettled([
       towerRepresentativeService.listComplaintAttachments(complaintId),
       REVIEW_STATUSES.has(complaint.status) ? towerRepresentativeService.getComplaintReview(complaintId) : Promise.resolve(null),
       complaint.assignedWorkerId ? towerRepresentativeService.getWorker(complaint.assignedWorkerId) : Promise.resolve(null),
       complaint.residentId ? towerRepresentativeService.getResidentHierarchy(complaint.residentId) : Promise.resolve(null),
-      towerRepresentativeService.listAppointments(),
     ]);
     return {
       complaint,
@@ -71,21 +69,37 @@ export function ComplaintDetailsPage() {
       review: settledValue(review),
       worker: settledValue(worker),
       resident: settledValue(resident),
-      appointments: (settledValue(appointments) || []).filter((item) => item.complaintId === complaintId),
-      appointmentsFailed: appointments.status === "rejected",
     };
   }, [complaintId]);
-  const { data, error, initialLoading, loading, reload } = useTowerResource(loader);
+  const { data, error, initialLoading, loading, reload: reloadComplaint } = useTowerResource(loader);
+  // The complaint's visits come from the shared appointment cache and fail independently of the complaint.
+  const appointmentsQuery = useTowerAppointments();
+  const appointmentsFailed = Boolean(appointmentsQuery.error);
+  const appointmentsLoading = appointmentsQuery.initialLoading;
+  const appointments = useMemo(
+    () => (appointmentsQuery.data || []).filter((item) => item.complaintId === complaintId),
+    [appointmentsQuery.data, complaintId],
+  );
+  // Complaint transitions change the complaint embedded in its cached appointments.
+  const reload = useCallback(() => {
+    refreshComplaintAppointments(dispatch, complaintId);
+    return reloadComplaint();
+  }, [complaintId, dispatch, reloadComplaint]);
+  const refreshPage = () => {
+    if (appointmentsFailed) appointmentsQuery.reload();
+    return reload();
+  };
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
   const runTransition = async () => {
     const transition = TRANSITIONS[dialog];
-    if (!transition) return;
+    if (!transition || transitionRef.current) return;
+    transitionRef.current = true;
     setTransitioning(true);
     try {
-      await transition.run(complaintId, data.appointments);
-      showToast({ type: "success", message: transition.success(data.appointments) });
+      const result = await transition.run(complaintId, dispatch);
+      showToast({ type: "success", message: transition.success(result) });
       setDialog(null);
       await reload();
     } catch (requestError) {
@@ -94,6 +108,7 @@ export function ComplaintDetailsPage() {
       setDialog(null);
       reload();
     } finally {
+      transitionRef.current = false;
       setTransitioning(false);
     }
   };
@@ -105,7 +120,7 @@ export function ComplaintDetailsPage() {
     return (
       <>
         <PageHeader eyebrow="Complaint" title="Complaint unavailable" actions={backLink} />
-        <Card><ErrorState message={error?.message || "Unable to load this complaint."} onRetry={reload} /></Card>
+        <Card><ErrorState message={error?.message || "Unable to load this complaint."} onRetry={refreshPage} /></Card>
       </>
     );
   }
@@ -125,7 +140,7 @@ export function ComplaintDetailsPage() {
         eyebrow="Tower complaint"
         title={complaint.title}
         description={`${formatEnum(complaint.type)} complaint · ${complaint.location?.towerName || "Tower"} · ${complaint.location?.apartmentNumber || "Apartment unavailable"}`}
-        actions={<>{backLink}<Button variant="secondary" onClick={reload} loading={loading && Boolean(data)} loadingLabel="Refreshing...">Refresh</Button></>}
+        actions={<>{backLink}<Button variant="secondary" onClick={refreshPage} loading={loading && Boolean(data)} loadingLabel="Refreshing...">Refresh</Button></>}
       />
 
       <div className="tr-detail-layout">
@@ -233,14 +248,15 @@ export function ComplaintDetailsPage() {
           </Card>
 
           <Card title="Appointments">
-            {data.appointmentsFailed && <p className="tr-muted">Appointments could not be loaded. Refresh the page to try again.</p>}
-            {!data.appointmentsFailed && !data.appointments.length && <p className="tr-muted">The resident has not requested a visit for this complaint.</p>}
-            {!complaintNeedsVisit(complaint) && data.appointments.some(isActiveAppointment) && (
+            {appointmentsFailed && <p className="tr-muted">Appointments could not be loaded. Refresh the page to try again.</p>}
+            {appointmentsLoading && <p className="tr-muted">Loading appointments...</p>}
+            {!appointmentsFailed && !appointmentsLoading && !appointments.length && <p className="tr-muted">The resident has not requested a visit for this complaint.</p>}
+            {!complaintNeedsVisit(complaint) && appointments.some(isActiveAppointment) && (
               <p className="tr-inline-error tr-note" role="status">This complaint no longer needs a visit, but an appointment is still active. Open it and cancel it to release the worker's slot.</p>
             )}
-            {data.appointments.length > 0 && (
+            {appointments.length > 0 && (
               <ul className="tr-appointment-list">
-                {data.appointments.map((appointment) => (
+                {appointments.map((appointment) => (
                   <li key={appointment.id}>
                     <span className="tr-cell-stack">
                       <StatusBadge status={appointment.status} />
@@ -276,7 +292,7 @@ export function ComplaintDetailsPage() {
         onConfirm={runTransition}
         loading={transitioning}
         title={transition?.title}
-        message={transition?.message(data.appointments)}
+        message={transition?.message(appointmentsQuery.data ? appointments : null)}
         confirmLabel={transition?.confirmLabel}
         confirmVariant="primary"
       />
