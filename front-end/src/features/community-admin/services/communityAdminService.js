@@ -4,23 +4,6 @@ const dataOf = (response) => response?.data;
 const listOf = (response) => dataOf(response) || [];
 
 export const communityAdminService = {
-  async rentalInventory() { return dataOf(await api.get('/rentals/inventory')); },
-  async reviewRentalLease(id,decision,reason) { return dataOf(await api.post(`/rentals/leases/${encodeURIComponent(id)}/review`,{decision,reason})); },
-  async onboardRentalTenant(payload) { return dataOf(await api.post('/rentals/tenant-onboarding',payload)); },
-  async listRentalListings() { return listOf(await api.get("/rentals/managed/listings")); },
-  async listRentalLeases() { return listOf(await api.get("/rentals/managed/leases")); },
-  async createRentalListing(payload) { return dataOf(await api.post("/rentals/listings", payload)); },
-  async updateRentalListing(id, payload) { return dataOf(await api.patch(`/rentals/listings/${encodeURIComponent(id)}`, payload)); },
-  async activateRentalLease(id) { return dataOf(await api.post(`/rentals/managed/leases/${encodeURIComponent(id)}/activate`)); },
-  async reviewRentalPayment(id, decision) { return dataOf(await api.post(`/rentals/payments/${encodeURIComponent(id)}/review`, { decision })); },
-  async recordRentalRefund(id, payload) { return dataOf(await api.post(`/rentals/payments/${encodeURIComponent(id)}/refunds`, payload)); },
-  async decideRentalRequest(id, decision) { return dataOf(await api.post(`/rentals/requests/${encodeURIComponent(id)}/decision`, { decision })); },
-  async proposeRentAmendment(leaseId, payload) { return dataOf(await api.post(`/rentals/leases/${encodeURIComponent(leaseId)}/amendments`, payload)); },
-  async withdrawRentAmendment(id) { return dataOf(await api.post(`/rentals/amendments/${encodeURIComponent(id)}/withdraw`)); },
-  async reviewRentalDeposit(id, decision) { return dataOf(await api.post(`/rentals/deposits/${encodeURIComponent(id)}/review`, { decision })); },
-  async resolveDepositDispute(id, decision, reason) { return dataOf(await api.post(`/rentals/deposits/${encodeURIComponent(id)}/dispute-resolution`, { decision, reason })); },
-  async createDepositDeduction(leaseId, payload) { return dataOf(await api.post(`/rentals/leases/${encodeURIComponent(leaseId)}/deposit/deductions`, payload)); },
-  async createDepositRefund(leaseId, payload) { return dataOf(await api.post(`/rentals/leases/${encodeURIComponent(leaseId)}/deposit/refunds`, payload)); },
   async getDashboard() { return dataOf(await api.get("/dashboard/summary")); },
   async getReport() { return dataOf(await api.get("/reports/overview")); },
   async getSubscription() { return dataOf(await api.get("/subscriptions/me")); },

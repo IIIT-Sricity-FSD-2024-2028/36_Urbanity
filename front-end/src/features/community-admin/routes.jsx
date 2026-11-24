@@ -11,7 +11,6 @@ import { ReportsPage } from "./pages/ReportsPage.jsx";
 import { SubscriptionPage } from "./pages/SubscriptionPage.jsx";
 import { UsersPage } from "./pages/UsersPage.jsx";
 import { WorkforcePage } from "./pages/WorkforcePage.jsx";
-import { RentalsPage } from "./pages/RentalsPage.jsx";
 import "./community-admin.css";
 
 export function CommunityAdminRoutes() {
@@ -24,7 +23,6 @@ export function CommunityAdminRoutes() {
     <Route path="workforce" element={<WorkforcePage />} />
     <Route path="subscription" element={<SubscriptionPage />} />
     <Route path="reports" element={<ReportsPage />} />
-    <Route path="rentals" element={<RentalsPage />} />
     <Route path="amenities" element={<AmenitiesPage />} />
     <Route path="amenity-bookings" element={<BookingsPage />} />
     <Route path="profile" element={<ProfilePage />} />

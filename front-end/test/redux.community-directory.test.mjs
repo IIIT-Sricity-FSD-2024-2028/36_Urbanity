@@ -457,7 +457,7 @@ test("Community Admin pages share reads, preserve forms, reconcile partial write
     await waitText("Enter the user's full name.");
     assert.equal(await evaluate("directoryTest.writes.length"), 0);
     await fill("Role", "RESIDENT"); await fill("Full name", "New Resident"); await fill("Email", "new@example.test"); await fill("Password", "browser-private-password");
-    await fill("Resident relationship", "TENANT_PENDING"); await fill("Tower", "t"); await fill("Floor", "f"); await fill("Apartment", "a");
+    await fill("Tower", "t"); await fill("Floor", "f"); await fill("Apartment", "a");
     await evaluate("document.querySelector('#community-user-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));document.querySelector('#community-user-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await waitText("User created.");
     assert.equal(await evaluate("directoryTest.writes.filter(w => w.url === '/users').length"), 1);

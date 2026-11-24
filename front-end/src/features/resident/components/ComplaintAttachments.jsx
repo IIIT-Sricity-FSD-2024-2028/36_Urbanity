@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAppDispatch } from "../../../app/reduxHooks.js";
+import { useAuth } from "../../../auth/useAuth.js";
 import { Button, Card, EmptyState, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
-import { useResidentResource } from "../hooks/useResidentResource.js";
 import { residentService } from "../services/residentService.js";
+import { uploadResidentComplaintAttachments, useResidentComplaintAttachments } from "../services/residentComplaintsApi.js";
 import { dateTime, IMAGE_TYPES, validateImages } from "../utils.js";
 import { AttachmentPicker } from "./AttachmentPicker.jsx";
 
@@ -37,8 +39,9 @@ function ProtectedImage({ complaintId, attachment }) {
 }
 
 export function ComplaintAttachments({ complaintId, onUploaded }) {
-  const loader = useCallback(() => residentService.listAttachments(complaintId), [complaintId]);
-  const { data, loading, error, reload } = useResidentResource(loader);
+  const { data, loading, error, reload } = useResidentComplaintAttachments(complaintId);
+  const dispatch = useAppDispatch();
+  const { sessionRevision } = useAuth();
   const [files, setFiles] = useState([]);
   const [fileError, setFileError] = useState("");
   const [failures, setFailures] = useState([]);
@@ -56,7 +59,7 @@ export function ComplaintAttachments({ complaintId, onUploaded }) {
     lock.current = true;
     setUploading(true);
     try {
-      const results = await Promise.allSettled(files.map((file) => residentService.uploadAttachment(complaintId, file)));
+      const results = await uploadResidentComplaintAttachments(dispatch, complaintId, files, sessionRevision);
       const failedFiles = files.filter((_, index) => results[index].status === "rejected");
       const messages = results.flatMap((result, index) => result.status === "rejected" ? [`${files[index].name}: ${result.reason.message}`] : []);
       setFailures(messages);
@@ -65,7 +68,6 @@ export function ComplaintAttachments({ complaintId, onUploaded }) {
       const succeeded = files.length - failedFiles.length;
       if (succeeded) {
         showToast({ type: "success", message: `${succeeded} image${succeeded === 1 ? "" : "s"} uploaded.` });
-        await reload();
         onUploaded();
       }
       if (messages.length) showToast({ type: "error", message: "Some images could not be uploaded. Retry the remaining files below." });

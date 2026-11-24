@@ -560,9 +560,9 @@ test(
           assert.equal(await evaluate("location.pathname"), "/community-admin");
           assert.equal(
             await evaluate(
-              "[...document.querySelectorAll('a')].filter(a=>['Rentals','Paid Services','Amenities'].includes(a.textContent.trim())).length",
+              "[...document.querySelectorAll('a')].filter(a=>['Paid Services','Amenities'].includes(a.textContent.trim())).length",
             ),
-            3,
+            2,
           );
         },
       );
