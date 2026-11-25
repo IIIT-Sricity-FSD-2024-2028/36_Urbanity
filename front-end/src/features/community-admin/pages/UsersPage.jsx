@@ -34,7 +34,6 @@ function initialForm(user, data) {
     towerId: user?.towerId || floor?.towerId || "",
     floorId: floor?.id || "",
     apartmentId: user?.apartmentId || "",
-    residentSituation: "OWNER_OCCUPANT",
     specialization: "",
   };
 }
@@ -82,7 +81,12 @@ function buildUserPayload(form, editing) {
 
   payload.role = form.role;
   if (form.role === ROLES.TOWER_REPRESENTATIVE) payload.towerId = form.towerId;
-  if (form.role === ROLES.RESIDENT) {payload.apartmentId = form.apartmentId;payload.residentSituation=form.residentSituation;}
+  if (form.role === ROLES.RESIDENT) {
+    payload.apartmentId = form.apartmentId;
+    // Keep the existing default owner assignment without exposing the removed
+    // occupancy selection from the Community Admin UI.
+    payload.residentSituation = "OWNER_OCCUPANT";
+  }
   return payload;
 }
 
@@ -154,7 +158,7 @@ function UserModal({ user, data, onClose }) {
   return <Modal isOpen onClose={saving ? undefined : onClose} title={editing ? "Edit community user" : "Create community user"} size="lg" footer={<><Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" form="community-user-form" loading={saving}>Save</Button></>}>
     <form id="community-user-form" className="ca-form ca-form--grid ca-user-form" onSubmit={submit} noValidate>
       {!editing && <div className="ca-user-form__wide ca-user-form__intro"><p>Choose the account role first. The required assignment fields will update automatically.</p></div>}
-      {!editing && <div className="ca-user-form__wide">{!editing && form.role === ROLES.RESIDENT && <Select label="Resident relationship" value={form.residentSituation} onChange={(event) => setForm((current) => ({...current,residentSituation:event.target.value}))}><option value="OWNER_OCCUPANT">Owner-occupant (record ownership)</option><option value="TENANT_PENDING">Prospective tenant (no occupancy until active lease)</option></Select>}
+      {!editing && <div className="ca-user-form__wide">
         <Select label="Role" value={form.role} onChange={changeRole} error={errors.role} required><option value="">Select role</option>{roles.map((role) => <option key={role} value={role}>{formatEnum(role)}</option>)}</Select></div>}
       <div className="ca-user-form__wide ca-user-form__section"><strong>Account details</strong><span>Contact information and sign-in credentials.</span></div>
       <Input label="Full name" value={form.name} onChange={update("name")} maxLength="100" error={errors.name} required />

@@ -1,17 +1,19 @@
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "../../../auth/useAuth.js";
 import { Button, Card, EmptyState, ErrorState, LoadingState, StarRatingInput, Textarea, useToast } from "../../../components/ui/index.js";
 import { RatingStars } from "../../../components/data-display/index.js";
-import { useResidentResource } from "../hooks/useResidentResource.js";
-import { residentService } from "../services/residentService.js";
+import {
+  useResidentComplaintReview,
+  useSubmitResidentComplaintReviewMutation,
+} from "../services/residentComplaintsApi.js";
 import { dateTime } from "../utils.js";
 
 const ratings = [["speedRating", "Speed"], ["qualityRating", "Quality"], ["communicationRating", "Communication"]];
 
 export function ComplaintReview({ complaint, onReviewed }) {
-  const { user } = useAuth();
-  const loader = useCallback(() => residentService.getReview(complaint.id), [complaint.id]);
-  const { data, loading, error, reload } = useResidentResource(loader);
+  const { user, sessionRevision } = useAuth();
+  const { data, loading, error, reload } = useResidentComplaintReview(complaint.id);
+  const [submitReview] = useSubmitResidentComplaintReviewMutation();
   const [values, setValues] = useState({ speedRating: "", qualityRating: "", communicationRating: "", feedback: "" });
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +35,7 @@ export function ComplaintReview({ complaint, onReviewed }) {
     lock.current = true;
     setSubmitting(true);
     try {
-      await residentService.submitReview(complaint.id, payload);
+      await submitReview({ id: complaint.id, payload, sessionRevision }).unwrap();
       setSubmitted(true);
       showToast({ type: "success", message: "Thank you. Your review was submitted." });
       await reload();

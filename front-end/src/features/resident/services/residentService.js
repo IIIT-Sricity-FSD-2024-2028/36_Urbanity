@@ -1,51 +1,39 @@
 import api from "../../../api/client.js";
 
 const complaintPath = (id) => `/complaints/${encodeURIComponent(id)}`;
+const dataOf = (response) => response?.data;
 
 export const residentService = {
-  async getRentals() {
-    const [mine, leases, inventory] = await Promise.all([api.get("/rentals/me"), api.get("/rentals/managed/leases"), api.get("/rentals/inventory")]);
-    return { ...mine.data, inventory:inventory.data, managedLeases:leases.data };
+  async getHierarchy(signal) {
+    return dataOf(await api.get("/users/me/hierarchy", { signal }));
   },
-  async acceptRentalLease(id) { return (await api.post(`/rentals/me/leases/${encodeURIComponent(id)}/accept`)).data; },
-  async reviewRentalRefund(id, decision) { return (await api.post(`/rentals/refunds/${encodeURIComponent(id)}/review`, { decision })).data; },
-  async withdrawRentalRequest(id) { return (await api.post(`/rentals/requests/${encodeURIComponent(id)}/withdraw`)).data; },
-  async decideRentAmendment(id, decision) { return (await api.post(`/rentals/amendments/${encodeURIComponent(id)}/decision`, { decision })).data; },
-  async submitDepositEvidence(leaseId, payload) { return (await api.post(`/rentals/me/leases/${encodeURIComponent(leaseId)}/deposit/evidence`, payload)).data; },
-  async reviewDeposit(id, decision) { return (await api.post(`/rentals/deposits/${encodeURIComponent(id)}/review`, { decision })).data; },
-  async decideDepositDeduction(id, decision, reason) { return (await api.post(`/rentals/deposits/${encodeURIComponent(id)}/decision`, { decision, ...(reason ? { reason } : {}) })).data; },
-  async submitPaymentEvidence(leaseId, obligationId, payload) { return (await api.post(`/rentals/me/leases/${encodeURIComponent(leaseId)}/obligations/${encodeURIComponent(obligationId)}/payment-evidence`, payload)).data; },
-  async requestLeaseChange(leaseId, type, terms) { return (await api.post(`/rentals/me/leases/${encodeURIComponent(leaseId)}/requests/${encodeURIComponent(type)}`, terms)).data; },
-  async getHierarchy() {
-    return (await api.get("/users/me/hierarchy")).data;
+  async listComplaints(signal) {
+    return dataOf(await api.get("/complaints", { signal }));
   },
-  async listComplaints() {
-    return (await api.get("/complaints")).data;
+  async getComplaint(id, signal) {
+    return dataOf(await api.get(complaintPath(id), { signal }));
   },
-  async getComplaint(id) {
-    return (await api.get(complaintPath(id))).data;
-  },
-  async createComplaint({ type, title, description, requiredWorkType }) {
+  async createComplaint({ type, title, description, requiredWorkType }, signal) {
     // Identity, location and responsibility are derived by the backend.
-    return (await api.post("/complaints", { type, title, description, requiredWorkType })).data;
+    return dataOf(await api.post("/complaints", { type, title, description, requiredWorkType }, { signal }));
   },
-  async getReview(id) {
+  async getReview(id, signal) {
     try {
-      return (await api.get(`${complaintPath(id)}/review`)).data;
+      return dataOf(await api.get(`${complaintPath(id)}/review`, { signal }));
     } catch (error) {
       // The service uses this specific 400 response for an absent review.
       if (error.status === 400 && error.message === "Complaint review was not found") return null;
       throw error;
     }
   },
-  async submitReview(id, { speedRating, qualityRating, communicationRating, feedback }) {
-    return (await api.post(`${complaintPath(id)}/review`, {
+  async submitReview(id, { speedRating, qualityRating, communicationRating, feedback }, signal) {
+    return dataOf(await api.post(`${complaintPath(id)}/review`, {
       speedRating, qualityRating, communicationRating,
       ...(feedback ? { feedback } : {}),
-    })).data;
+    }, { signal }));
   },
-  async listAttachments(id) {
-    return (await api.get(`${complaintPath(id)}/attachments`)).data;
+  async listAttachments(id, signal) {
+    return dataOf(await api.get(`${complaintPath(id)}/attachments`, { signal }));
   },
   async uploadAttachment(id, file) {
     const body = new FormData();

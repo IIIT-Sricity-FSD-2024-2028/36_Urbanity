@@ -36,7 +36,6 @@ const heroCards = [
   ["building", "Community Management", "#3B9EFF"],
   ["users", "Paid Services", "#4CAF50"],
   ["clock", "Amenity Bookings", "#FF9800"],
-  ["shield", "Rental Management", "#9C27B0"],
 ];
 
 const features = [
@@ -44,7 +43,6 @@ const features = [
   ["check", "Maintenance & Complaints", "Report concerns, assign community workers and verify completed work.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
   ["clock", "Amenity Bookings", "Check availability, reserve facilities and manage community booking rules.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
   ["users", "Paid Services", "Request services from existing community maintenance workers and track progress.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
-  ["building", "Rental Management", "Manage listings, leases, rent evidence and tenant onboarding in one place.", "#E91E63", "rgba(233, 30, 99, 0.08)"],
   ["shield", "Clear Oversight", "Keep community administration separate from platform management with scoped access.", "#00BCD4", "rgba(0, 188, 212, 0.08)"],
 ];
 
@@ -67,7 +65,6 @@ const residentFeatures = [
   "Upload photos and follow complaint progress",
   "Request paid services from community workers",
   "Check amenity availability and reserve facilities",
-  "Access supported rental and tenancy workflows",
   "Review completed service work",
 ];
 
@@ -76,7 +73,6 @@ const operationsFeatures = [
   "Manage residents, representatives and workers",
   "Assign maintenance work and verify completion",
   "Manage amenity rules, closures and bookings",
-  "Oversee community rentals and paid services",
   "View community reports and operational summaries",
 ];
 
@@ -216,7 +212,7 @@ export function LandingPage() {
       <div className="landing-footer__cta"><div className="landing-container"><h2>Ready to Simplify Community Operations?</h2><p>Register your community to begin review. Access starts after approval, verified payment and account setup.</p><Link className="landing-btn landing-btn--white landing-btn--large" to={ROUTES.REGISTER}>Register Your Community <span aria-hidden="true">→</span></Link></div></div>
       <div className="landing-footer__main"><div className="landing-container">
         <div className="landing-footer__grid">
-          <div className="landing-footer__about"><h3>Urbanity</h3><p>Community administration, maintenance, rentals, paid services and amenity bookings in one place.</p><div className="landing-footer__social"><Link to={ROUTES.HOME} aria-label="Urbanity home"><Icon name="building" /></Link><Link to={ROUTES.REGISTER} aria-label="Register your community"><Icon name="users" /></Link><Link to={ROUTES.LOGIN} aria-label="Portal login"><Icon name="shield" /></Link></div></div>
+          <div className="landing-footer__about"><h3>Urbanity</h3><p>Community administration, maintenance, paid services and amenity bookings in one place.</p><div className="landing-footer__social"><Link to={ROUTES.HOME} aria-label="Urbanity home"><Icon name="building" /></Link><Link to={ROUTES.REGISTER} aria-label="Register your community"><Icon name="users" /></Link><Link to={ROUTES.LOGIN} aria-label="Portal login"><Icon name="shield" /></Link></div></div>
           <div className="landing-footer__section"><h4>Quick Links</h4><ul><li>{sectionLink("#about", "About")}</li><li>{sectionLink("#features", "Features")}</li><li>{sectionLink("#how-it-works", "How It Works")}</li><li><Link to={ROUTES.REGISTER}>Register Your Community</Link></li></ul></div>
           <div className="landing-footer__section"><h4>Get Started</h4><ul><li><Link to={ROUTES.REGISTER}>Community Registration</Link></li><li><Link to={ROUTES.LOGIN}>Portal Login</Link></li><li>{sectionLink("#how-it-works", "Onboarding Process")}</li><li>{sectionLink("#benefits", "Platform Benefits")}</li></ul></div>
           <div className="landing-footer__section"><h4>Need Help?</h4><ul className="landing-footer__contact"><li><Icon name="users" /><span>Residents: contact your community administrator.</span></li><li><Icon name="mail" /><span>Applicants: retain your registration reference and contact the platform administrator.</span></li><li><Icon name="shield" /><span>No passwords or invitations are emailed automatically.</span></li></ul></div>
