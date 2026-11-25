@@ -74,6 +74,12 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
+  "overrides": {
+    "glob@10.x || 13.x": "14.0.6",
+    "test-exclude@7.0.2": {
+      "minimatch": "11.0.9"
+    }
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",

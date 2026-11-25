@@ -72,6 +72,7 @@ describe('RentalsService', () => {
     email: 'admin-b@test.local',
   } as any;
   users.set(otherAdmin.id, { ...otherAdmin, communityId: otherCommunityId });
+  const leaseFixtureTime = new Date('2026-10-31T12:00:00.000Z');
   const listingDto = {
     apartmentId,
     arrangement: 'COMMUNITY' as const,
@@ -97,6 +98,7 @@ describe('RentalsService', () => {
   };
 
   beforeEach(() => {
+    jest.useFakeTimers({ now: leaseFixtureTime });
     community.getApartment.mockImplementation((id: string) => ({
       id,
       floorId: id.endsWith('003') ? `${floorId}-b` : floorId,
@@ -104,6 +106,8 @@ describe('RentalsService', () => {
     }));
     service = new RentalsService(community, userService);
   });
+
+  afterEach(() => jest.useRealTimers());
 
   it('disables private listing creation for owners and admins', () => {
     expect(() =>
@@ -265,33 +269,29 @@ describe('RentalsService', () => {
     service.acceptLease(tenant, lease.id);
     service.reviewLease(admin, lease.id, 'APPROVED', 'Approved lease');
     service.activateLease(admin, lease.id);
-    jest.useFakeTimers().setSystemTime(new Date('2027-08-10T12:00:00.000Z'));
-    try {
-      const result = service.myLease(tenant, lease.id);
-      expect(
-        result.obligations.find(
-          (item: any) => item.billingPeriod === '2026-06',
-        )!.amountDue,
-      ).toBe(15000);
-      expect(
-        result.obligations.find(
-          (item: any) => item.billingPeriod === '2027-07',
-        )!.amountDue,
-      ).toBe(15750);
-      expect(result.currentMonthlyRent).toBe(15750);
-      expect(result.nextRentIncrease).toEqual({
-        date: '2028-07-01',
-        amount: 16537.5,
-      });
-      expect(
-        service
-          .myLease(tenant, lease.id)
-          .obligations.find((item: any) => item.billingPeriod === '2026-06')!
-          .amountDue,
-      ).toBe(15000);
-    } finally {
-      jest.useRealTimers();
-    }
+    jest.setSystemTime(new Date('2027-08-10T12:00:00.000Z'));
+    const result = service.myLease(tenant, lease.id);
+    expect(
+      result.obligations.find(
+        (item: any) => item.billingPeriod === '2026-06',
+      )!.amountDue,
+    ).toBe(15000);
+    expect(
+      result.obligations.find(
+        (item: any) => item.billingPeriod === '2027-07',
+      )!.amountDue,
+    ).toBe(15750);
+    expect(result.currentMonthlyRent).toBe(15750);
+    expect(result.nextRentIncrease).toEqual({
+      date: '2028-07-01',
+      amount: 16537.5,
+    });
+    expect(
+      service
+        .myLease(tenant, lease.id)
+        .obligations.find((item: any) => item.billingPeriod === '2026-06')!
+        .amountDue,
+    ).toBe(15000);
   });
 
   it('supports a fixed rent increase, leaves rent unchanged without an accepted clause, and rejects invalid escalation terms', () => {
@@ -344,30 +344,26 @@ describe('RentalsService', () => {
     service.acceptLease(tenant, lease.id);
     service.reviewLease(admin, lease.id, 'APPROVED', 'Approved lease');
     service.activateLease(admin, lease.id);
-    jest.useFakeTimers().setSystemTime(new Date('2027-02-02T12:00:00.000Z'));
-    try {
-      const result = service.myLease(tenant, lease.id);
-      expect(
-        result.obligations.find(
-          (item: any) => item.billingPeriod === '2026-12',
-        )!.amountDue,
-      ).toBe(15000);
-      expect(
-        result.obligations.find(
-          (item: any) => item.billingPeriod === '2027-01',
-        )!.amountDue,
-      ).toBe(15500);
-    } finally {
-      jest.useRealTimers();
-    }
+    jest.setSystemTime(new Date('2027-02-02T12:00:00.000Z'));
+    const result = service.myLease(tenant, lease.id);
+    expect(
+      result.obligations.find(
+        (item: any) => item.billingPeriod === '2026-12',
+      )!.amountDue,
+    ).toBe(15000);
+    expect(
+      result.obligations.find(
+        (item: any) => item.billingPeriod === '2027-01',
+      )!.amountDue,
+    ).toBe(15500);
   });
 
   it('exposes upcoming expiry and due information and expires a lease proposal past its end boundary', () => {
     const today = new Date();
     const start = new Date(today);
-    start.setMonth(start.getMonth() - 2);
+    start.setUTCMonth(start.getUTCMonth() - 2);
     const end = new Date(today);
-    end.setDate(end.getDate() + 30);
+    end.setUTCDate(end.getUTCDate() + 30);
     const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
     const listing = service.createListing(admin, {
       ...listingDto,
@@ -589,27 +585,24 @@ describe('RentalsService', () => {
         amountDue: item.amountDue,
       })),
     ).toEqual(before);
-    jest.useFakeTimers().setSystemTime(new Date('2027-02-10T12:00:00.000Z'));
-    try {
-      const current = service.myLease(tenant, lease.id);
-      expect(current.currentMonthlyRent).toBe(18000);
-      expect(
-        current.amendments.find((item: any) => item.id === amendment.id)!
-          .status,
-      ).toBe('APPLIED');
-      expect(
-        current.obligations.find(
-          (item: any) => item.billingPeriod === '2027-01',
-        )!.amountDue,
-      ).toBe(18000);
-      expect(
-        current.obligations.find(
-          (item: any) => item.billingPeriod === '2026-09',
-        )!.amountDue,
-      ).toBe(15000);
-    } finally {
-      jest.useRealTimers();
-    }
+    jest.setSystemTime(new Date('2027-02-10T12:00:00.000Z'));
+    const current = service.myLease(tenant, lease.id);
+    expect(current.currentMonthlyRent).toBe(18000);
+    expect(
+      current.amendments.find((item: any) => item.id === amendment.id)!
+        .status,
+    ).toBe('APPLIED');
+    expect(
+      current.obligations.find(
+        (item: any) => item.billingPeriod === '2027-01',
+      )!.amountDue,
+    ).toBe(18000);
+    expect(
+      current.obligations.find(
+        (item: any) => item.billingPeriod === '2026-09',
+      )!.amountDue,
+    ).toBe(15000);
+    jest.setSystemTime(leaseFixtureTime);
     expect(() =>
       service.decideAmendment(tenant, amendment.id, 'ACCEPTED'),
     ).toThrow(/already been decided/);
