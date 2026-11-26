@@ -19,9 +19,11 @@ test(
     const backendRoot = resolve("../back-end"),
       password = randomBytes(18).toString("base64url");
     const email = "browser-test-admin@example.test";
+    const applicantPassword = randomBytes(18).toString("base64url");
     let backend, browser, vite, socket;
     const pending = new Map();
     const loadedDocuments = new Set();
+    let balanceRequests = 0;
     let nextId = 0,
       sessionId;
     const bootstrap = `
@@ -32,11 +34,22 @@ test(
     const {serviceToken}=require('./src/data/urbanity.resources');
     const {hashSync}=require('bcryptjs');
     const {RegistrationService}=require('./src/modules/registrations/registration.service');
+    const {SubscriptionService}=require('./src/modules/subscriptions/subscription.service');
+    const {ConflictException}=require('@nestjs/common');
     (async()=>{
       const module=await Test.createTestingModule({imports:[AppModule]}).overrideProvider(LOG_DIRECTORY).useValue(process.env.TEST_LOG_DIRECTORY).compile();
       const app=module.createNestApplication({logger:false});app.useGlobalPipes(validationPipe);
-      app.get(serviceToken('users')).create({name:'Browser Test Administrator',email:process.env.TEST_ADMIN_EMAIL,passwordHash:hashSync(process.env.TEST_ADMIN_PASSWORD,10),role:'SUPER_ADMIN',createdAt:new Date().toISOString()});
+      const users=app.get(serviceToken('users'));
+      const passwordHash=hashSync(process.env.TEST_ADMIN_PASSWORD,10);
+      users.create({name:'Browser Test Administrator',email:process.env.TEST_ADMIN_EMAIL,passwordHash,role:'SUPER_ADMIN',createdAt:new Date().toISOString()});
+      const seededAdmin=users.findAll().find(user=>user.email==='community.admin@urbanity.local');
+      app.get(SubscriptionService).createPending(seededAdmin.communityId,'Pending browser fixture',3,12);
+      for(const address of ['resident@urbanity.local','maintenance.worker@urbanity.local','tower.representative@urbanity.local']){
+        const user=users.findAll().find(item=>item.email===address);
+        users.update(user.id,{passwordHash});
+      }
       const registration=app.get(RegistrationService);const record=registration.recordApprovalNotification.bind(registration);let failNotification=true;registration.recordApprovalNotification=(...args)=>{if(failNotification){failNotification=false;throw new Error('Test-only simulated notification failure')}return record(...args)};
+      const payBalance=registration.payPlatformBalance.bind(registration);let failBalance=true;registration.payPlatformBalance=(...args)=>{if(failBalance){failBalance=false;throw new ConflictException('Test-only simulated payment failure')}return payBalance(...args)};
       await app.listen(0,'127.0.0.1');console.log('URBANITY_PORT='+app.getHttpServer().address().port);
     })().catch(()=>{console.error('Isolated API startup failed');process.exit(1)});
   `;
@@ -247,6 +260,8 @@ test(
       });
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
+        if (message.method === "Network.requestWillBeSent" && message.params.request.method === "POST" &&
+          message.params.request.url.endsWith("/platform-payments/mock-balance")) balanceRequests++;
         if (
           message.method === "Page.lifecycleEvent" &&
           message.params.name === "DOMContentLoaded"
@@ -273,6 +288,7 @@ test(
       await command("Page.enable");
       await command("Page.setLifecycleEventsEnabled", { enabled: true });
       await command("Runtime.enable");
+      await command("Network.enable");
       await command("Emulation.setDeviceMetricsOverride", {
         width: 1280,
         height: 1000,
@@ -292,19 +308,41 @@ test(
             true,
           );
           await snapshot("landing-restored-desktop.png");
-          for (const width of [820, 390]) {
+          for (const width of [1440, 1024, 820, 768, 390, 320, 390]) {
             await command("Emulation.setDeviceMetricsOverride", {
               width,
               height: 844,
               deviceScaleFactor: 1,
               mobile: false,
             });
-            assert.equal(
-              await evaluate(
-                "document.documentElement.scrollWidth <= innerWidth + 1",
-              ),
-              true,
-            );
+            const landing = await evaluate(`(() => {
+              const hero = [...document.querySelectorAll(".landing-hero-card")];
+              const features = [...document.querySelectorAll("#features .landing-feature-card")];
+              const heroText = document.querySelector(".landing-hero__text").getBoundingClientRect();
+              const heroBox = document.querySelector(".landing-hero").getBoundingClientRect();
+              const featureBoxes = features.map(card => card.getBoundingClientRect());
+              const withinWidth = card => {
+                const box = card.getBoundingClientRect();
+                return box.width > 0 && box.left >= 0 && box.right <= innerWidth + 1 && card.scrollWidth <= card.clientWidth + 1;
+              };
+              return {
+                heroCount: hero.length, featureCount: features.length,
+                columns: new Set(featureBoxes.map(box => Math.round(box.x))).size,
+                rows: new Set(featureBoxes.map(box => Math.round(box.y))).size,
+                cardsFit: [...hero, ...features].every(withinWidth),
+                heroFits: hero.every(card => {
+                  const box = card.getBoundingClientRect();
+                  return box.top >= heroBox.top && box.bottom <= heroBox.bottom &&
+                    (box.left >= heroText.right || box.top >= heroText.bottom);
+                }),
+                pageFits: document.documentElement.scrollWidth <= innerWidth + 1,
+              };
+            })()`);
+            const columns = width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+            assert.deepEqual(landing, {
+              heroCount: 4, featureCount: 6, columns, rows: 6 / columns,
+              cardsFit: true, heroFits: true, pageFits: true,
+            }, `Landing layout at ${width}px`);
           }
           await click("Toggle navigation");
           assert.equal(
@@ -504,14 +542,14 @@ test(
             "Application accepted, but the simulated email could not be recorded.",
           );
           assert.equal(
-            await content("Application accepted and email sent successfully."),
+            await content("Application accepted and simulated email recorded successfully."),
             false,
           );
           await click("Retry Accept & Send Email");
           await waitText("Retry simulated approval email?");
           await click("Confirm decision");
-          await waitText("Application accepted and email sent successfully.");
-          await waitText("active");
+          await waitText("Application accepted and simulated email recorded successfully.");
+          await waitText("awaiting account setup");
           await evaluate(
             "[...document.querySelectorAll('summary')].find(el=>el.textContent.startsWith('Application history')).click()",
           );
@@ -520,30 +558,59 @@ test(
         },
       );
       await t.test(
-        "default credentials and remaining mock payment",
+        "private password setup and remaining mock payment",
         async () => {
           await navigate(`/register/${reference}`);
-          await waitText("created with the default password");
-          assert.equal(await content("Start secure password setup"), false);
+          await waitText("Set up your Community Admin password");
           const adminSession = await evaluate(
             "sessionStorage.getItem('accessToken')",
           );
           const adminUser = await evaluate(
             "sessionStorage.getItem('currentUser')",
           );
+          await click("Start secure password setup");
+          await fill("New password", applicantPassword);
+          await fill("Confirm password", applicantPassword);
+          await click("Set password");
+          await waitText("Your Community Admin password is ready");
+          assert.equal(await content("Start secure password setup"), false);
           await clearLogin();
-          await login("browser-applicant@example.test", "1234567890");
-          await waitText("Community dashboard");
-          await evaluate(
-            `sessionStorage.setItem('accessToken', ${JSON.stringify(adminSession)}); sessionStorage.setItem('currentUser', ${JSON.stringify(adminUser)})`,
-          );
-          await navigate(`/register/${reference}`);
+          await login("browser-applicant@example.test", applicantPassword);
+          await waitText("Payment required");
+          assert.equal(await evaluate("location.pathname"), "/platform-payment");
+          assert.equal(await content("1,760"), true);
+          await waitText("Initial payment ·");
+          await click("Log out");
+          await waitText("Sign in");
+          await login("browser-applicant@example.test", applicantPassword);
+          await waitText("Payment required");
+          await navigate("/community-admin/complaints");
+          await waitText("Payment required");
+          assert.equal(await evaluate("location.pathname"), "/platform-payment");
           await waitText("Pay Remaining Amount");
           await click("Pay Remaining Amount");
           await waitText("Confirm mock payment");
           await click("Confirm Mock Payment");
+          await waitText("Test-only simulated payment failure");
+          await click("Cancel");
+          assert.equal(await content("Continue to dashboard"), false);
+          await navigate("/community-admin/reports");
+          await waitText("Payment required");
+          assert.equal(await evaluate("location.pathname"), "/platform-payment");
+          await click("Pay Remaining Amount");
+          await waitText("Confirm mock payment");
+          await evaluate(`(() => { const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Confirm Mock Payment'); button.click(); button.click(); })()`);
           await waitText("Mock payment successful");
-          await waitText("mock / remaining / verified");
+          await waitText("Payment receipt");
+          await waitText("Fully paid");
+          await waitText("Remaining payment ·");
+          assert.equal(balanceRequests, 2);
+          assert.equal(await evaluate("document.querySelectorAll('.registration-history li').length"), 2);
+          await click("Continue to dashboard");
+          await waitText("Community dashboard");
+          await evaluate(
+            `sessionStorage.setItem('accessToken', ${JSON.stringify(adminSession)}); sessionStorage.setItem('currentUser', ${JSON.stringify(adminUser)})`,
+          );
         },
       );
       await t.test(
@@ -555,7 +622,7 @@ test(
           await waitText("active");
           assert.equal(await content("Activate community"), false);
           await clearLogin();
-          await login("browser-applicant@example.test", "1234567890");
+          await login("browser-applicant@example.test", applicantPassword);
           await waitText("Community dashboard");
           assert.equal(await evaluate("location.pathname"), "/community-admin");
           assert.equal(
@@ -567,7 +634,7 @@ test(
         },
       );
       await t.test(
-        "Community Admin changes the default password in Profile",
+        "Community Admin changes their password in Profile",
         async () => {
           await click("Profile");
           await waitText("Your community identity");
@@ -577,7 +644,7 @@ test(
           await click("Save changes");
           await waitText("Profile updated.");
           await clearLogin();
-          await login("browser-applicant@example.test", "1234567890");
+          await login("browser-applicant@example.test", applicantPassword);
           await waitText("Invalid credentials");
           await fill("Password", password);
           await click("Sign in");
@@ -635,6 +702,24 @@ test(
           await waitText("rejected");
         },
       );
+      await t.test("unpaid communities restrict the other community portals", async () => {
+        await clearLogin();
+        for (const [address, path] of [
+          ["resident@urbanity.local", "/resident/complaints"],
+          ["maintenance.worker@urbanity.local", "/maintenance-worker/tasks"],
+          ["tower.representative@urbanity.local", "/tower-representative/complaints"],
+        ]) {
+          await login(address, password);
+          await waitText("Contact your Community Admin");
+          assert.equal(await evaluate("location.pathname"), "/platform-payment");
+          await navigate(path);
+          await waitText("Contact your Community Admin");
+          assert.equal(await evaluate("location.pathname"), "/platform-payment");
+          assert.equal(await content("Pay Remaining Amount"), false);
+          await click("Log out");
+          await waitText("Sign in");
+        }
+      });
       console.log(`Browser screenshots: ${temporary}`);
     } finally {
       if (socket?.readyState === WebSocket.OPEN) {

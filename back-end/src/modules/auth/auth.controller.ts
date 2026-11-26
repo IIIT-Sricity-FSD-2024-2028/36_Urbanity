@@ -15,11 +15,12 @@ import { AuthenticationResult } from './interfaces/auth.interface';
 import type { AuthenticatedUser } from './interfaces/auth.interface';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { AllowPaymentPending, PlatformAccessService } from './platform-access.guard';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, private readonly access: PlatformAccessService) {}
 
   @Post('login')
   @Public()
@@ -28,13 +29,19 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'JWT access token issued successfully.' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
   login(@Body() loginDto: LoginDto): ApiResponse<AuthenticationResult> {
-    return apiResponse(this.authService.login(loginDto));
+    const result = this.authService.login(loginDto);
+    return apiResponse({ ...result, user: this.withPaymentAccess(result.user) });
   }
 
   @Get('me')
+  @AllowPaymentPending()
   @ApiBearerAuth('bearerAuth')
   @ApiOperation({ summary: 'Get the authenticated user context' })
   me(@CurrentUser() user: AuthenticatedUser): ApiResponse<AuthenticatedUser> {
-    return apiResponse(user);
+    return apiResponse(this.withPaymentAccess(user));
+  }
+
+  private withPaymentAccess<T extends AuthenticatedUser>(user: T): T {
+    return this.access.requiresPayment(user) ? { ...user, platformPaymentRequired: true } : user;
   }
 }

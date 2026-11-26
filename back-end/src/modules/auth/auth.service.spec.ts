@@ -5,7 +5,7 @@ import { CrudRepository } from '../../common/crud/crud.repository';
 import { CrudService } from '../../common/crud/crud.service';
 import { RoleName } from '../../common/enums/roles.enum';
 import { User } from '../../data/schemas';
-import { DEFAULT_COMMUNITY_ADMIN_PASSWORD } from '../registrations/registration.constants';
+const applicantPassword = 'Individual-auth-fixture-password';
 import { AuthService } from './auth.service';
 
 describe('Authentication of registration accounts', () => {
@@ -24,17 +24,17 @@ describe('Authentication of registration accounts', () => {
       communityId: 'community',
       registrationApplicationId: 'registration',
       accountState: 'AWAITING_ACTIVATION',
-      passwordHash: hashSync(DEFAULT_COMMUNITY_ADMIN_PASSWORD, 4),
+      passwordHash: hashSync(applicantPassword, 4),
       createdAt: new Date().toISOString(),
     });
   });
   it('explains pending activation only after checking the correct password and issues no token', () => {
     const sign = jest.spyOn(jwt, 'sign');
     expect(() =>
-      auth.login({ email, password: DEFAULT_COMMUNITY_ADMIN_PASSWORD }),
+      auth.login({ email, password: applicantPassword }),
     ).toThrow(ForbiddenException);
     expect(() =>
-      auth.login({ email, password: DEFAULT_COMMUNITY_ADMIN_PASSWORD }),
+      auth.login({ email, password: applicantPassword }),
     ).toThrow(/retry approval/);
     expect(sign).not.toHaveBeenCalled();
   });
@@ -43,18 +43,18 @@ describe('Authentication of registration accounts', () => {
       { email, password: 'wrong-password' },
       {
         email: 'missing@example.test',
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       },
     ]) {
       expect(() => auth.login(credentials)).toThrow(UnauthorizedException);
       expect(() => auth.login(credentials)).toThrow('Invalid credentials');
     }
   });
-  it('allows the default password after activation without returning its hash', () => {
+  it('allows the configured password after sign-in is enabled without returning its hash', () => {
     users.update(users.findAll()[0].id, { accountState: 'ACTIVE' });
     const result = auth.login({
       email,
-      password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+      password: applicantPassword,
     });
     expect(result.user.email).toBe(email);
     expect(result.user).not.toHaveProperty('passwordHash');

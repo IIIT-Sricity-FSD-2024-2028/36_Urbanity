@@ -4,6 +4,9 @@ import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-d
 import { ROUTES } from "../../../constants/routes.js";
 import { useWorkerMutation } from "../hooks/useWorkerMutation.js";
 import { useAuth } from "../../../auth/useAuth.js";
+import { ROLES } from "../../../constants/roles.js";
+import { ComplaintEstimatePanel } from "../../complaint-estimates/components/ComplaintEstimatePanel.jsx";
+import { useComplaintEstimate } from "../../complaint-estimates/services/complaintEstimatesApi.js";
 import { useGetMaintenanceWorkerTaskAttachmentsQuery, useGetMaintenanceWorkerTaskQuery, useGetMaintenanceWorkerProfileQuery, useStartMaintenanceWorkerTaskMutation } from "../services/workerTasksApi.js";
 import { formatDate, formatLabel, locationLabel } from "../utils/workflow.js";
 import { AttachmentGallery } from "../components/AttachmentGallery.jsx";
@@ -15,12 +18,14 @@ function TaskDetails({ id }) {
   const profileQuery = useGetMaintenanceWorkerProfileQuery(sessionRevision);
   const attachmentQuery = useGetMaintenanceWorkerTaskAttachmentsQuery({ id, sessionRevision }, { refetchOnMountOrArgChange: true });
   const task = taskQuery.currentData;
+  const estimateQuery = useComplaintEstimate(task && task.type !== "COMMUNITY" ? id : undefined, ROLES.MAINTENANCE_WORKER);
   const profile = profileQuery.currentData;
   const attachments = attachmentQuery.currentData;
   const mutation = useWorkerMutation();
   const [startTask] = useStartMaintenanceWorkerTaskMutation();
   const loading = taskQuery.isLoading || profileQuery.isLoading || attachmentQuery.isLoading;
-  const reload = () => Promise.all([taskQuery.refetch(), profileQuery.refetch(), attachmentQuery.refetch()]);
+  const reload = () => Promise.all([taskQuery.refetch(), profileQuery.refetch(), attachmentQuery.refetch(),
+    ...(!estimateQuery.isUninitialized ? [estimateQuery.refetch()] : [])]);
   const error = taskQuery.error || profileQuery.error || attachmentQuery.error;
   const assignedToMe = task && profile && task.assignedWorkerId === profile.id && task.communityId === profile.communityId;
   const disabled = loading || Boolean(error) || mutation.pending;
@@ -43,7 +48,9 @@ function TaskDetails({ id }) {
           <div><dt>Last updated</dt><dd>{formatDate(task.updatedAt)}</dd></div>
         </dl>
         {assignedToMe && task.status === "ASSIGNED" && <div className="mw-actions">
-          <Button loading={mutation.pending} disabled={disabled} onClick={() => mutation.run(() => startTask({ id, sessionRevision }).unwrap(), "Work started.")}>Start work</Button>
+          <Button loading={mutation.pending} disabled={disabled || (task.type !== "COMMUNITY" && (estimateQuery.isError || !estimateQuery.currentData?.canStartWork))}
+            onClick={() => mutation.run(() => startTask({ id, sessionRevision }).unwrap(), "Work started.")}>Start work</Button>
+          {task.type !== "COMMUNITY" && !estimateQuery.currentData?.canStartWork && <p>Repair can start after the approved estimate is paid.</p>}
         </div>}
         {mutation.error && <ErrorState message={mutation.error} />}
       </Card>
@@ -64,6 +71,7 @@ function TaskDetails({ id }) {
         <AttachmentGallery taskId={id} attachments={(attachments || []).filter((item) => task.resolutionProof.attachmentIds?.includes(item.id))} />
       </Card>}
       <Card title="Complaint and work images"><AttachmentGallery taskId={id} attachments={attachments || []} /></Card>
+      {assignedToMe && <ComplaintEstimatePanel id={id} role={ROLES.MAINTENANCE_WORKER} />}
       {assignedToMe && task.status === "IN_PROGRESS" && <ResolutionForm taskId={id} attachments={attachments || []} disabled={disabled} />}
     </div>}
   </>;

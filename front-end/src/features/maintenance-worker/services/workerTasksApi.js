@@ -2,6 +2,7 @@ import { getSessionRevision } from "../../../api/client.js";
 import { runServiceQuery, urbanityApi } from "../../../api/urbanityApi.js";
 import { useAuth } from "../../../auth/useAuth.js";
 import { ROLES } from "../../../constants/roles.js";
+import { complaintEstimateTag } from "../../complaint-estimates/services/complaintEstimatesApi.js";
 import { maintenanceWorkerService as service } from "./maintenanceWorkerService.js";
 
 export const workerTaskTags = Object.freeze({
@@ -41,14 +42,14 @@ export const workerTasksApi = urbanityApi
       startMaintenanceWorkerTask: build.mutation({
         queryFn: ({ id, sessionRevision }, { signal }) =>
           runServiceQuery(signal, () => service.startWork(id), sessionRevision),
-        invalidatesTags: (_result, error, { id }) => error ? [] : [taskTag(), taskTag(id)],
+        invalidatesTags: (_result, error, { id }) => error ? [] : [taskTag(), taskTag(id), complaintEstimateTag(id)],
       }),
       resolveMaintenanceWorkerTask: build.mutation({
         queryFn: ({ id, sessionRevision, problemFound, resolutionSummary, proofAttachmentIds }, { signal }) =>
           runServiceQuery(signal, () => service.resolveWork(id, {
             problemFound, resolutionSummary, proofAttachmentIds,
           }), sessionRevision),
-        invalidatesTags: (_result, error, { id }) => error ? [] : [taskTag(), taskTag(id)],
+        invalidatesTags: (_result, error, { id }) => error ? [] : [taskTag(), taskTag(id), complaintEstimateTag(id)],
       }),
     }),
   });

@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
+import { ROLES } from "../../../constants/roles.js";
+import { ComplaintEstimatePanel } from "../../complaint-estimates/components/ComplaintEstimatePanel.jsx";
 import {
   Button,
   Card,
@@ -117,6 +119,7 @@ function ComplaintDetails({ id }) {
               ))}
             </dl>
           </Card>
+          <ComplaintEstimatePanel id={id} role={ROLES.RESIDENT} />
           <Card title="Status history">
             {complaint.statusHistory?.length ? (
               <ol className="resident-history">

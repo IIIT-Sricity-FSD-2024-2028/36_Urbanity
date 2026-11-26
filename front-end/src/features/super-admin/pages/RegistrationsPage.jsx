@@ -109,7 +109,7 @@ export function RegistrationsPage() {
       <PageHeader
         eyebrow="Platform onboarding"
         title="Community registrations"
-        description="Review applications and evaluation payments, approve and enable Community Admin login with a simulated email."
+        description="Review applications and mock payments, and approve applicants so they can set up Community Admin sign-in."
         actions={
           <Button variant="secondary" disabled={busy} onClick={resource.reload}>
             Refresh
@@ -156,18 +156,8 @@ export function RegistrationsPage() {
                 <Input
                   label="Initial payment (%)"
                   type="number"
-                  min={1}
-                  max={100}
-                  step={1}
-                  required
                   value={pricing.initialPercent || ""}
-                  disabled={busy}
-                  onChange={(e) =>
-                    setPricingDraft({
-                      ...pricing,
-                      initialPercent: e.target.value,
-                    })
-                  }
+                  readOnly
                 />
                 <Select
                   label="Public registration"
@@ -379,7 +369,7 @@ export function RegistrationsPage() {
                   : a.decision === "PENDING"
                     ? "Available after approval"
                     : "Awaiting applicant setup"}{" "}
-                / Activation: {a.activatedAt ? "Active" : "Not activated"}
+                / Sign-in: {a.activatedAt ? "Enabled" : "Awaiting account setup"}
               </p>
               {a.decision === "REJECTED" && (
                 <p>
@@ -425,7 +415,7 @@ export function RegistrationsPage() {
                           onClick={() =>
                             openConfirm(
                               "Accept & Send Email?",
-                              "Approve this application and record an evaluation email simulation. No real email or credentials are sent. A default password will be set. Approval immediately enables login and community configuration; the admin can change the password in Profile. Any remaining balance stays recorded separately.",
+                              "Approve this application and record a simulated email. The applicant can then set their own password on the private registration page and sign in. Community operations unlock after the remaining 80% mock payment.",
                               () =>
                                 service.acceptAndNotify(a.id, {
                                   reason,
@@ -459,13 +449,13 @@ export function RegistrationsPage() {
                 </>
               )}
               {a.decision === "APPROVED" &&
-                (!a.activatedAt || !a.notifications?.length) && (
+                (!a.notifications?.length || a.status === "READY_FOR_ACTIVATION") && (
                   <Button
                     disabled={busy}
                     onClick={() =>
                       openConfirm(
                         "Retry simulated approval email?",
-                        "The application is already approved. This enables login if needed and records only a missing simulated notification; no real email is sent.",
+                        "Retry the simulated notification. If the applicant already set a password, this also retries enabling sign-in.",
                         () =>
                           service.acceptAndNotify(a.id, {
                             reason: "Retry simulated approval notification",

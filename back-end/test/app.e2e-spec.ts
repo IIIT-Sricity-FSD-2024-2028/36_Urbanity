@@ -63,6 +63,19 @@ describe('Urbanity API (e2e)', () => {
     communicationRating: rating,
     ...(feedback ? { feedback } : {}),
   });
+  const payForRepair = async (complaintId: string, workerToken: string, towerToken: string) => {
+    const path = `/complaints/${complaintId}`;
+    const { body } = await request(server).post(`${path}/estimate`).set('Authorization', workerToken).send({
+      inspection: 'The worker inspected the reported issue.', proposedResolution: 'Repair the reported issue and verify the result.',
+      notes: 'Test repair estimate.', completionHours: 1,
+      costs: [{ category: 'LABOUR', description: 'Repair', quantity: 1, unitPricePaise: 100 }],
+    }).expect(201);
+    const estimate = `${path}/estimates/${body.data.estimate.id}`;
+    await request(server).patch(`${estimate}/tower-decision`).set('Authorization', towerToken).send({ decision: 'APPROVE' }).expect(200);
+    const admin = bearer(RoleName.CommunityAdmin);
+    await request(server).patch(`${estimate}/admin-decision`).set('Authorization', admin).send({ decision: 'APPROVE' }).expect(200);
+    await request(server).post(`${estimate}/mock-payment`).set('Authorization', admin).send({ confirmed: true }).expect(201);
+  };
 
   beforeEach(async () => {
     logDirectory = await mkdtemp(join(tmpdir(), 'urbanity-logs-'));
@@ -1117,6 +1130,7 @@ describe('Urbanity API (e2e)', () => {
       .set('Authorization', bearer(RoleName.MaintenanceWorker))
       .send({ workerId: '50000000-0000-4000-8000-000000000002' })
       .expect(400);
+    await payForRepair(complaintId, bearer(RoleName.MaintenanceWorker), bearer(RoleName.TowerRepresentative));
     await request(server)
       .patch(`/complaints/${complaintId}/start`)
       .set('Authorization', bearer(RoleName.MaintenanceWorker))
@@ -1227,6 +1241,7 @@ describe('Urbanity API (e2e)', () => {
       .set('Authorization', towerBRepresentativeToken)
       .send({ workerId: '50000000-0000-4000-8000-000000000003' })
       .expect(201);
+    await payForRepair(complaintId, workerCToken, towerBRepresentativeToken);
     await request(server)
       .patch(`/complaints/${complaintId}/start`)
       .set('Authorization', workerCToken)
@@ -1327,6 +1342,7 @@ describe('Urbanity API (e2e)', () => {
     await request(server).patch(`/complaints/${id}/status`).set('Authorization', bearer(representative)).send({ status: 'UNDER_REVIEW' }).expect(200);
     await request(server).patch(`/complaints/${id}/status`).set('Authorization', bearer(representative)).send({ status: 'ASSIGNED' }).expect(400);
     await request(server).post(`/complaints/${id}/assign`).set('Authorization', bearer(representative)).send({ workerId: '50000000-0000-4000-8000-000000000001' }).expect(201);
+    await payForRepair(id, bearer(RoleName.MaintenanceWorker), bearer(representative));
     await request(server).patch(`/complaints/${id}/start`).set('Authorization', bearer(RoleName.MaintenanceWorker)).send({}).expect(200);
     await resolveWithProof(id, bearer(RoleName.MaintenanceWorker));
     await request(server).patch(`/complaints/${id}/status`).set('Authorization', bearer(representative)).send({ status: 'REVIEWED' }).expect(400);
@@ -1356,6 +1372,7 @@ describe('Urbanity API (e2e)', () => {
     expect(busyWorker.body.data.status).toBe('BUSY');
     await request(server).patch(`/complaints/${complaintId}/status`).set('Authorization', bearer(RoleName.TowerRepresentative)).send({ status: 'IN_PROGRESS' }).expect(400);
     await request(server).patch(`/complaints/${complaintId}/start`).set('Authorization', bearer(RoleName.MaintenanceWorker)).send({ workerId: '50000000-0000-4000-8000-000000000002' }).expect(400);
+    await payForRepair(complaintId, bearer(RoleName.MaintenanceWorker), bearer(RoleName.TowerRepresentative));
     await request(server).patch(`/complaints/${complaintId}/start`).set('Authorization', bearer(RoleName.MaintenanceWorker)).send({}).expect(200);
     const resolved = await resolveWithProof(complaintId, bearer(RoleName.MaintenanceWorker));
     expect(resolved.body.data.status).toBe('PENDING_VERIFICATION');
@@ -1381,6 +1398,7 @@ describe('Urbanity API (e2e)', () => {
     const resolveAndReview = async (id: string, rating: number, authorityToken = bearer(RoleName.TowerRepresentative), residentToken = bearer(RoleName.Resident)) => {
       await request(server).patch(`/complaints/${id}/status`).set('Authorization', authorityToken).send({ status: 'UNDER_REVIEW' }).expect(200);
       await request(server).post(`/complaints/${id}/assign`).set('Authorization', authorityToken).send({ workerId }).expect(201);
+      await payForRepair(id, bearer(RoleName.MaintenanceWorker), authorityToken);
       await request(server).patch(`/complaints/${id}/start`).set('Authorization', bearer(RoleName.MaintenanceWorker)).send({}).expect(200);
       await resolveWithProof(id, bearer(RoleName.MaintenanceWorker));
       await verifyResolution(id, authorityToken);

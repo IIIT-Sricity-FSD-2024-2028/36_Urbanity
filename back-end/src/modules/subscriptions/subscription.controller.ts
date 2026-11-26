@@ -7,6 +7,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { SubscriptionService } from './subscription.service';
 import { RequestUpgradeDto } from './subscription.dto';
+import { AllowPaymentPending } from '../auth/platform-access.guard';
 
 @UseGuards(RolesGuard)
 @Controller('subscriptions')
@@ -14,8 +15,10 @@ export class SubscriptionController {
   constructor(private readonly subscriptions: SubscriptionService) {}
   @Get() @Roles(RoleName.SuperAdmin) list(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.subscriptions.listForSuperAdmin(actor)); }
   @Roles(RoleName.CommunityAdmin)
+  @AllowPaymentPending()
   @Get('me') getMine(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.subscriptions.getForActor(actor)); }
   @Roles(RoleName.CommunityAdmin)
+  @AllowPaymentPending()
   @Post('me/mock-payment') pay(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.subscriptions.completeMockPayment(actor)); }
   @Post('me/upgrade') @Roles(RoleName.CommunityAdmin) requestUpgrade(@Body() dto: RequestUpgradeDto, @CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.subscriptions.requestUpgrade(actor, dto)); }
   @Post('me/upgrade/mock-payment') @Roles(RoleName.CommunityAdmin) payUpgrade(@CurrentUser() actor: AuthenticatedUser) { return apiResponse(this.subscriptions.completeMockUpgrade(actor)); }

@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAppDispatch } from "../../../app/reduxHooks.js";
 import { useAuth } from "../../../auth/useAuth.js";
+import { ROLES } from "../../../constants/roles.js";
+import { ComplaintEstimatePanel } from "../../complaint-estimates/components/ComplaintEstimatePanel.jsx";
 import { Badge, Button, Card, ConfirmDialog, ErrorState, LoadingState, useToast } from "../../../components/ui/index.js";
 import { PageHeader, RatingStars, StatusBadge } from "../../../components/data-display/index.js";
 import { ROUTES } from "../../../constants/routes.js";
@@ -175,6 +177,7 @@ export function ComplaintDetailsPage() {
             </dl>
           </Card>
 
+          <ComplaintEstimatePanel id={complaint.id} role={ROLES.TOWER_REPRESENTATIVE} onAssignmentReleased={refreshPage} />
           {complaint.resolutionProof && (
             <Card title="Resolution proof">
               <dl className="tr-details tr-details--single">

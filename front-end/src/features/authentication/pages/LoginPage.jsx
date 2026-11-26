@@ -13,7 +13,7 @@ function homeForRole(role) {
 }
 
 export function LoginPage() {
-  const { authenticated, loading, login, logout, user } = useAuth();
+  const { authenticated, loading, login, logout, user, platformPaymentRequired } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -25,7 +25,7 @@ export function LoginPage() {
   if (loading) return <LoadingState message="Restoring your session..." />;
 
   if (authenticated) {
-    return <Navigate to={homeForRole(user?.role) || ROUTES.UNAUTHORIZED} replace />;
+    return <Navigate to={platformPaymentRequired ? ROUTES.PLATFORM_PAYMENT : homeForRole(user?.role) || ROUTES.UNAUTHORIZED} replace />;
   }
 
   const handleSubmit = async (event) => {
@@ -59,7 +59,7 @@ export function LoginPage() {
         (requestedPath === roleHome || requestedPath.startsWith(`${roleHome}/`))
         ? requestedPath
         : roleHome;
-      navigate(destination, { replace: true });
+      navigate(response?.data?.user?.platformPaymentRequired ? ROUTES.PLATFORM_PAYMENT : destination, { replace: true });
     } catch (error) {
       setErrors({ form: error?.message || "Unable to sign in. Please try again." });
     } finally {
@@ -86,6 +86,7 @@ export function LoginPage() {
           <header className="login-form__header">
             <h2>Sign in</h2>
             <p>Use your Urbanity account to continue.</p>
+            <p>New Community Admin? Set your password from your approved registration page before signing in.</p>
           </header>
           {errors.form && <div className="login-form__message" role="alert" aria-live="polite">{errors.form}</div>}
           <form className="login-form" onSubmit={handleSubmit} noValidate>

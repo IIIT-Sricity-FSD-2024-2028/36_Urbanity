@@ -7,6 +7,7 @@ import {
   HttpException,
   Injectable,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Req,
@@ -31,8 +32,10 @@ import {
   SizeDto,
   MockPaymentDto,
   AcceptanceDto,
+  RemainingPlatformPaymentDto,
 } from './registration.dto';
 import { RegistrationService } from './registration.service';
+import { AllowPaymentPending } from '../auth/platform-access.guard';
 
 const cookieName = (id: string, setup = false) =>
   `urbanity_${setup ? 'setup' : 'registration'}_${id.replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -152,6 +155,34 @@ export class PublicRegistrationController {
     );
     res.clearCookie(cookieName(id, true), options);
     return apiResponse(result);
+  }
+}
+
+@Controller('platform-payments')
+@Roles(RoleName.CommunityAdmin)
+@AllowPaymentPending()
+@UseGuards(RolesGuard)
+export class PlatformPaymentController {
+  constructor(private readonly service: RegistrationService) {}
+
+  @Get('summary')
+  summary(@CurrentUser() actor: AuthenticatedUser) {
+    return apiResponse(this.service.platformSummary(actor));
+  }
+
+  @Get('history')
+  history(@CurrentUser() actor: AuthenticatedUser) {
+    return apiResponse(this.service.platformHistory(actor));
+  }
+
+  @Get('history/:paymentId')
+  receipt(@CurrentUser() actor: AuthenticatedUser, @Param('paymentId', ParseUUIDPipe) paymentId: string) {
+    return apiResponse(this.service.platformReceipt(actor, paymentId));
+  }
+
+  @Post('mock-balance')
+  pay(@CurrentUser() actor: AuthenticatedUser, @Body() dto: RemainingPlatformPaymentDto) {
+    return apiResponse(this.service.payPlatformBalance(actor, dto.confirmed));
   }
 }
 

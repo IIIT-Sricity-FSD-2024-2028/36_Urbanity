@@ -27,6 +27,7 @@ function getInitialSession() {
     token,
     user: token ? getStoredUser() : null,
     revision: getSessionRevision(),
+    platformPaymentRequired: null,
   };
 }
 
@@ -35,7 +36,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const markSignedOut = useCallback(() => {
-    setSession({ token: null, user: null, revision: getSessionRevision() });
+    setSession({ token: null, user: null, revision: getSessionRevision(), platformPaymentRequired: null });
     setLoading(false);
   }, []);
 
@@ -56,7 +57,7 @@ export function AuthProvider({ children }) {
     const response = await getCurrentUser();
     if (revision !== getSessionRevision()) return null;
     const user = saveSession(token, response?.data);
-    setSession({ token, user, revision: getSessionRevision() });
+    setSession({ token, user, revision: getSessionRevision(), platformPaymentRequired: response?.data?.platformPaymentRequired === true });
     return user;
   }, [clearAuthentication]);
 
@@ -67,7 +68,7 @@ export function AuthProvider({ children }) {
     const token = response?.data?.accessToken;
     const user = saveSession(token, response?.data?.user);
 
-    setSession({ token, user, revision: getSessionRevision() });
+    setSession({ token, user, revision: getSessionRevision(), platformPaymentRequired: response?.data?.user?.platformPaymentRequired === true });
     return response;
   }, []);
 
@@ -118,6 +119,7 @@ export function AuthProvider({ children }) {
       user: session.user,
       token: session.token,
       sessionRevision: session.revision,
+      platformPaymentRequired: session.platformPaymentRequired,
       authenticated: Boolean(session.token && session.user),
       loading,
       login,

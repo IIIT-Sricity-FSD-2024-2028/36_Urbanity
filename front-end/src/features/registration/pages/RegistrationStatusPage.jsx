@@ -94,6 +94,10 @@ export function RegistrationStatusPage() {
                 <dd>{money(a.pricing.initialMinor)}</dd>
               </div>
               <div>
+                <dt>Remaining installment (80%)</dt>
+                <dd>{money(a.pricing.totalMinor - a.pricing.initialMinor)}</dd>
+              </div>
+              <div>
                 <dt>Initial payment satisfied</dt>
                 <dd>{money(a.initialVerifiedMinor)}</dd>
               </div>
@@ -124,9 +128,8 @@ export function RegistrationStatusPage() {
             </dl>
             {a.decision === "APPROVED" && a.credentialSetupAt && (
               <p>
-                Your Community Admin account has been created with the default
-                password. Sign in now and change it under Profile / Edit
-                profile.
+                Your Community Admin password is ready.
+                {a.outstandingMinor > 0 && <> <Link to={ROUTES.LOGIN}>Sign in to pay the remaining 80% mock payment.</Link> Community operations become available after payment.</>}
               </p>
             )}
             {a.status === "ACTIVE" && (
@@ -149,19 +152,12 @@ export function RegistrationStatusPage() {
             )}
             {a.status === "READY_FOR_ACTIVATION" && (
               <p>
-                Your application is approved. Ask the Super Admin to retry
-                approval to enable your existing account.
+                Your password was set. Ask the Super Admin to retry enabling sign-in if your account is still unavailable.
               </p>
             )}
           </Card>
-          {a.decision !== "REJECTED" && a.payableMinor > 0 && (
-            <Card
-              title={
-                a.decision === "PENDING"
-                  ? "Initial mock payment"
-                  : "Remaining mock payment"
-              }
-            >
+          {a.decision === "PENDING" && a.payableMinor > 0 && (
+            <Card title="Initial mock payment">
               <p>
                 <strong>Mock Payment — Evaluation Only</strong>
               </p>
@@ -169,26 +165,23 @@ export function RegistrationStatusPage() {
                 No real money is transferred. Amount due:{" "}
                 <strong>{money(a.payableMinor)}</strong>.
               </p>
+              <p>{a.pricing.paymentInstructions}</p>
+              <p>Super Admin approval is required after the initial payment.</p>
               <Button
                 disabled={busy || a.pendingMinor > 0}
                 onClick={() => {
                   setError(null);
-                  setPaymentPhase(
-                    a.decision === "PENDING" ? "INITIAL" : "REMAINING",
-                  );
+                  setPaymentPhase("INITIAL");
                 }}
               >
-                {a.decision === "PENDING"
-                  ? "Pay Initial Amount"
-                  : "Pay Remaining Amount"}
+                Pay Initial Amount
               </Button>
             </Card>
           )}
           {a.decision === "APPROVED" && !a.credentialSetupAt && (
             <Card title="Set up your Community Admin password">
               <p>
-                A one-time setup session lasts one hour. Completing setup
-                enables login for your approved application.
+                Your application is approved. Set your own password using this private registration page, then sign in to pay the remaining 80% mock payment. The one-time setup session lasts one hour.
               </p>
               {!setupReady ? (
                 <Button
@@ -295,17 +288,7 @@ export function RegistrationStatusPage() {
         confirmLabel="Confirm Mock Payment"
         confirmVariant="primary"
         loading={busy}
-        message={
-          <>
-            <strong>Mock Payment — Evaluation Only</strong>
-            <p>
-              Confirm {money(a?.payableMinor || 0)} for the{" "}
-              {paymentPhase === "INITIAL" ? "initial" : "remaining"}{" "}
-              registration amount. No real money will be transferred.
-            </p>
-            {error && <ErrorState message={error.message} />}
-          </>
-        }
+        message={`Simulate the initial registration payment of ${money(a?.payableMinor || 0)}. No real money will be transferred.${error ? ` ${error.message}` : ""}`}
         onConfirm={() =>
           act(async () => {
             const phase = paymentPhase;
