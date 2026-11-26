@@ -92,13 +92,16 @@ export class ResolveWorkDto {
 export class VerifyResolutionDto {
   @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) authorityRating!: number;
 }
-export enum ComplaintAssignmentStatus { Assigned = 'ASSIGNED', InProgress = 'IN_PROGRESS', Completed = 'COMPLETED' }
+export enum ComplaintAssignmentStatus { Assigned = 'ASSIGNED', InProgress = 'IN_PROGRESS', Completed = 'COMPLETED', Cancelled = 'CANCELLED' }
 export class ComplaintAssignment {
   @ApiProperty() id!: string;
   @ApiProperty() complaintId!: string;
   @ApiProperty() workerId!: string;
+  workerUserId!: string;
+  workerNameAtAssignment!: string;
   @ApiProperty({ enum: ComplaintAssignmentStatus }) status!: ComplaintAssignmentStatus;
   @ApiProperty() assignedAt!: string;
+  assignmentAudit!: { actorId: string; actorRole: string; action: 'ASSIGN_WORKER' | 'REASSIGN_WORKER'; previousStatus: ComplaintStatus; newStatus: ComplaintStatus; timestamp: string; complaintId: string; assignmentId: string; workerId: string };
   @ApiPropertyOptional() startedAt?: string;
   @ApiPropertyOptional() completedAt?: string;
 }

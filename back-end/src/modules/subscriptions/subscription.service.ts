@@ -22,14 +22,22 @@ export class SubscriptionService {
     return this.crud.create({ ...(registrationApplicationId ? { registrationApplicationId } : {}), communityId, communityName, contractedTowers, contractedApartments, towerRate: TOWER_RATE, apartmentRate: APARTMENT_RATE, amount: contractedTowers * TOWER_RATE + contractedApartments * APARTMENT_RATE, status: SubscriptionStatus.PaymentPending, paymentStatus: PaymentStatus.Pending, createdAt: now, updatedAt: now });
   }
 
-  activateRegistration(communityId: string, applicationId: string, fullyPaid = true) {
+  activateRegistration(communityId: string, applicationId: string, fullyPaid: boolean) {
     const item = this.findByCommunityId(communityId);
     if (!item || item.registrationApplicationId !== applicationId) throw new ForbiddenException('Registration subscription mismatch');
-    return this.crud.update(item.id, { status: SubscriptionStatus.Active, paymentStatus: fullyPaid ? PaymentStatus.Success : PaymentStatus.Pending, updatedAt: new Date().toISOString() });
+    return this.crud.update(item.id, {
+      status: fullyPaid ? SubscriptionStatus.Active : SubscriptionStatus.PaymentPending,
+      paymentStatus: fullyPaid ? PaymentStatus.Success : PaymentStatus.Pending,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   delete(id: string) { return this.crud.delete(id); }
   findByCommunityId(communityId: string) { return this.crud.findAll().find((item) => item.communityId === communityId); }
+  requiresPayment(communityId: string) {
+    const subscription = this.findByCommunityId(communityId);
+    return Boolean(subscription && (subscription.status !== SubscriptionStatus.Active || subscription.paymentStatus !== PaymentStatus.Success));
+  }
   listForSuperAdmin(actor: AuthenticatedUser) {
     if (actor.role !== RoleName.SuperAdmin) throw new ForbiddenException('Only Super Admins can list subscriptions');
     return this.crud.findAll();
@@ -56,8 +64,7 @@ export class SubscriptionService {
     return this.crud.update(subscription.id, { contractedTowers: subscription.pendingContractedTowers, contractedApartments: subscription.pendingContractedApartments, amount, pendingContractedTowers: undefined, pendingContractedApartments: undefined, pendingUpgradeAmount: undefined, paymentStatus: PaymentStatus.Success, updatedAt: new Date().toISOString() });
   }
   assertCommunityActive(communityId: string) {
-    const subscription = this.findByCommunityId(communityId);
-    if (subscription && subscription.status !== SubscriptionStatus.Active) throw new ForbiddenException('Community setup is unavailable until payment is completed');
+    if (this.requiresPayment(communityId)) throw new ForbiddenException('Community setup is unavailable until payment is completed');
   }
   assertCapacityForTowers(communityId: string, count: number) {
     const subscription = this.findByCommunityId(communityId);

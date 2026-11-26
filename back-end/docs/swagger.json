@@ -425,6 +425,81 @@
         ]
       }
     },
+    "/platform-payments/summary": {
+      "get": {
+        "operationId": "PlatformPaymentController_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformPayment"
+        ]
+      }
+    },
+    "/platform-payments/history": {
+      "get": {
+        "operationId": "PlatformPaymentController_history",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformPayment"
+        ]
+      }
+    },
+    "/platform-payments/history/{paymentId}": {
+      "get": {
+        "operationId": "PlatformPaymentController_receipt",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformPayment"
+        ]
+      }
+    },
+    "/platform-payments/mock-balance": {
+      "post": {
+        "operationId": "PlatformPaymentController_pay",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemainingPlatformPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformPayment"
+        ]
+      }
+    },
     "/users": {
       "get": {
         "operationId": "UsersController_list",
@@ -3869,6 +3944,273 @@
         ]
       }
     },
+    "/complaints/estimates/queue": {
+      "get": {
+        "operationId": "ComplaintEstimatesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
+    "/complaints/{id}/estimate": {
+      "get": {
+        "operationId": "ComplaintEstimatesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      },
+      "post": {
+        "operationId": "ComplaintEstimatesController_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitComplaintEstimateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
+    "/complaints/{id}/estimates/{estimateId}/tower-decision": {
+      "patch": {
+        "operationId": "ComplaintEstimatesController_towerDecision",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estimateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TowerEstimateDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
+    "/complaints/{id}/estimates/{estimateId}/admin-decision": {
+      "patch": {
+        "operationId": "ComplaintEstimatesController_adminDecision",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estimateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminEstimateDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
+    "/complaints/{id}/estimates/{estimateId}/cancel": {
+      "patch": {
+        "operationId": "ComplaintEstimatesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estimateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelComplaintEstimateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
+    "/complaints/{id}/estimates/{estimateId}/mock-payment": {
+      "post": {
+        "operationId": "ComplaintEstimatesController_pay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estimateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteMockPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "complaint estimates"
+        ]
+      }
+    },
     "/complaints/{complaintId}/attachments": {
       "post": {
         "operationId": "AttachmentsController_upload",
@@ -6326,6 +6668,10 @@
         "type": "object",
         "properties": {}
       },
+      "RemainingPlatformPaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateUserDto": {
         "type": "object",
         "properties": {
@@ -7561,6 +7907,142 @@
           "speedRating",
           "qualityRating",
           "communicationRating"
+        ]
+      },
+      "EstimateCostDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "MATERIAL",
+              "LABOUR",
+              "ADDITIONAL"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "unitPricePaise": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          }
+        },
+        "required": [
+          "category",
+          "description",
+          "quantity",
+          "unitPricePaise"
+        ]
+      },
+      "SubmitComplaintEstimateDto": {
+        "type": "object",
+        "properties": {
+          "previousEstimateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inspection": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "proposedResolution": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "completionHours": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 8760
+          },
+          "costs": {
+            "minItems": 1,
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EstimateCostDto"
+            }
+          }
+        },
+        "required": [
+          "inspection",
+          "proposedResolution",
+          "notes",
+          "completionHours",
+          "costs"
+        ]
+      },
+      "TowerEstimateDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "REJECT",
+              "RETURN"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Required when rejecting or returning an estimate"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "AdminEstimateDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "REJECT"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Required when rejecting payment"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "CancelComplaintEstimateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ExecuteMockPaymentDto": {
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "type": "boolean",
+            "example": true,
+            "description": "Must be true to execute the mock payment"
+          }
+        },
+        "required": [
+          "confirmed"
         ]
       },
       "CreateAppointmentDto": {

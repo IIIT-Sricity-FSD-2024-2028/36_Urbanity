@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../../constants/routes.js";
 import { Badge, Button, Card, ErrorState, Input, LoadingState, useToast } from "../../../components/ui/index.js";
 import { PageHeader } from "../../../components/data-display/index.js";
 import { useCommunityResource } from "../hooks/useCommunityResource.js";
@@ -12,6 +14,7 @@ export function SubscriptionPage() {
   const act = async (request, message) => { setSaving(true); try { await request(); showToast({ type: "success", message }); await reload(); } catch (requestError) { showToast({ type: "error", message: requestError.message }); } finally { setSaving(false); } };
   const requestUpgrade = (event) => { event.preventDefault(); act(() => communityAdminService.requestUpgrade({ contractedTowers: Number(form.towers), contractedApartments: Number(form.apartments) }), "Upgrade request calculated. Complete the simulated payment to apply it."); };
   return <><PageHeader eyebrow="Plan and billing" title="Community subscription" description="Backend subscription capacity and its development-only simulated payment workflow." />
+    {data?.registrationApplicationId && <p><Link to={ROUTES.PLATFORM_PAYMENT}>View platform payment history</Link></p>}
     <Card><p className="ca-notice"><strong>Development simulation:</strong> Urbanity has no real payment gateway. The actions on this page call explicitly mocked backend endpoints and do not charge money.</p></Card>
     {loading && <LoadingState message="Loading subscription..." />}{error && <ErrorState message={error.message} onRetry={reload} />}
     {data && <div className="ca-grid ca-grid--2"><Card title="Current plan"><dl className="ca-details"><div><dt>Community</dt><dd>{data.communityName}</dd></div><div><dt>Status</dt><dd><Badge variant={data.status === "ACTIVE" ? "success" : "warning"}>{data.status.replaceAll("_", " ")}</Badge></dd></div><div><dt>Tower capacity</dt><dd>{data.contractedTowers}</dd></div><div><dt>Apartment capacity</dt><dd>{data.contractedApartments}</dd></div><div><dt>Plan amount</dt><dd>{money(data.amount)}</dd></div><div><dt>Payment state</dt><dd>{data.paymentStatus}</dd></div></dl>{data.status === "PAYMENT_PENDING" && <Button className="ca-card-action" loading={saving} onClick={() => act(() => communityAdminService.completeMockPayment(), "Simulated activation completed.")}>Complete simulated activation</Button>}</Card>

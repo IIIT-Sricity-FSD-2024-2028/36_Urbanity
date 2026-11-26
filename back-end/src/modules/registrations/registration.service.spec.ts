@@ -10,8 +10,9 @@ import { CommunityService } from '../community/community.service';
 import { SubscriptionService } from '../subscriptions/subscription.service';
 import { UserAccessService } from '../users/user-access.service';
 import { ApplicationDto } from './registration.dto';
-import { DEFAULT_COMMUNITY_ADMIN_PASSWORD } from './registration.constants';
 import { RegistrationService } from './registration.service';
+
+const applicantPassword = 'Individual-fixture-password';
 
 const actor = {
   id: 'super-admin',
@@ -59,6 +60,11 @@ describe('Community registration lifecycle and financial invariants', () => {
       confirmedAuthority: true,
     });
   };
+  const setup = (a: ReturnType<typeof submit>) => {
+    const { id } = a.application;
+    const grant = service.beginSetup(id, a.secret);
+    return service.setup(id, a.secret, grant.token, applicantPassword);
+  };
   beforeEach(() => {
     users = new CrudService(new CrudRepository<User>(), 'User');
     subscriptions = new SubscriptionService(users);
@@ -96,7 +102,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     });
     service.configure(actor, {
       enabled: true,
-      initialPercent: 50,
+      initialPercent: 20,
       paymentInstructions: 'New payment instructions for future requests',
     });
     expect(
@@ -239,7 +245,9 @@ describe('Community registration lifecycle and financial invariants', () => {
   });
   it('approval enables access once and preserves community scope', () => {
     const a = submit(),
-      v = approve(a);
+      approved = approve(a),
+      v = setup(a);
+    expect(approved.status).toBe('AWAITING_ACCOUNT_SETUP');
     const retry = service.review(actor, v.id, {
       decision: 'APPROVED',
       reason: 'Retry approval',
@@ -255,7 +263,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     });
     expect(() =>
       subscriptions.assertCommunityActive(v.communityId!),
-    ).not.toThrow();
+    ).toThrow(/payment is completed/);
     expect(() =>
       subscriptions.completeMockPayment({
         id: user.id,
@@ -274,7 +282,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     expect(() => communities.deleteCommunity(v.communityId!)).toThrow(
       /onboarding records/,
     );
-    expect(service.activate(actor, v.id).status).toBe('ACTIVE');
+    expect(service.activate(actor, v.id).status).toBe('AWAITING_REMAINING_PAYMENT');
   });
   it('rolls back failed provisioning and leaves the application reviewable', () => {
     const a = submit();
@@ -304,12 +312,12 @@ describe('Community registration lifecycle and financial invariants', () => {
       }).adminId,
     ).toBeTruthy();
   });
-  it('expires, rotates and consumes legacy setup grants before enabling approved login', () => {
+  it('expires, rotates and consumes setup grants before enabling approved login', () => {
     const a = submit(),
       v = approve(a);
-    service.applicant(v.id, a.secret).credentialSetupAt = undefined;
-    service.applicant(v.id, a.secret).activatedAt = undefined;
-    users.update(v.adminId!, { accountState: 'SETUP_REQUIRED' });
+    expect(users.findById(v.adminId!).accountState).toBe('SETUP_REQUIRED');
+    expect(() => service.activate(actor, v.id)).toThrow();
+    expect(() => service.beginSetup(v.id, 'wrong-registration-secret')).toThrow();
     const grant = service.beginSetup(v.id, a.secret);
     const second = service.beginSetup(v.id, a.secret);
     expect(() =>
@@ -321,6 +329,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     ).toThrow(/expired/);
     clock.mockRestore();
     const fresh = service.beginSetup(v.id, a.secret);
+    expect(() => service.setup(v.id, a.secret, fresh.token, '🔐'.repeat(19))).toThrow(/72 UTF-8 bytes/);
     service.setup(v.id, a.secret, fresh.token, 'secure-password');
     expect(
       compareSync('secure-password', users.findById(v.adminId!).passwordHash),
@@ -338,28 +347,32 @@ describe('Community registration lifecycle and financial invariants', () => {
       }).user.id,
     ).toBe(v.adminId);
   });
-  it('activates on approval and tracks later payments without duplicate records', () => {
-    const a = submit(),
-      v = approve(a);
+  it('enables sign-in after password setup and tracks later payments without duplicate records', () => {
+    const a = submit();
+    approve(a);
+    const v = setup(a);
     expect(
       compareSync(
-        DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        applicantPassword,
         users.findById(v.adminId!).passwordHash,
       ),
     ).toBe(true);
-    expect(service.activate(actor, v.id).status).toBe('ACTIVE');
-    const evidence = service.evidence(v.id, a.secret, {
+    expect(service.activate(actor, v.id).status).toBe('AWAITING_REMAINING_PAYMENT');
+    expect(() => service.evidence(v.id, a.secret, {
       requestId: randomUUID(),
       amountMinor: 184000,
       transactionReference: randomUUID(),
+    })).toThrow(/Sign in as Community Admin/);
+    const admin = users.findById(v.adminId!);
+    const failure = jest.spyOn(subscriptions, 'activateRegistration').mockImplementationOnce(() => {
+      throw new Error('Subscription update failed');
     });
-    expect(service.activate(actor, v.id).status).toBe('ACTIVE');
-    const verified = service.reviewPayment(
-      actor,
-      v.id,
-      evidence.payments.at(-1)!.id,
-      { decision: 'VERIFIED', reason: 'Full fee received' },
-    );
+    expect(() => service.payPlatformBalance(admin, true)).toThrow(/Subscription update failed/);
+    failure.mockRestore();
+    expect(service.platformHistory(admin)).toHaveLength(1);
+    expect(service.platformSummary(admin)).toMatchObject({ outstandingMinor: 184000, paymentStatus: 'BALANCE_PAYMENT_PENDING' });
+    service.payPlatformBalance(admin, true);
+    const verified = service.status(v.id, a.secret);
     expect(verified.status).toBe('ACTIVE');
     expect(verified.outstandingMinor).toBe(0);
     expect(subscriptions.findByCommunityId(v.communityId!)?.paymentStatus).toBe(
@@ -382,7 +395,7 @@ describe('Community registration lifecycle and financial invariants', () => {
         new JwtService({ secret: 'unit-test-secret' }),
       ).login({
         email: a.application.details.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       }).user.id,
     ).toBe(v.adminId);
   });
@@ -406,24 +419,18 @@ describe('Community registration lifecycle and financial invariants', () => {
     expect(() => service.beginSetup(rejected.id, a.secret)).toThrow();
     expect(() => service.activate(actor, rejected.id)).toThrow();
   });
-  it('handles 100 percent initial payment without charging a remainder', () => {
-    service.configure(actor, {
+  it('keeps the first installment at 20 percent with the agreed platform rates', () => {
+    expect(() => service.configure(actor, {
       enabled: true,
       initialPercent: 100,
       paymentInstructions: 'Pay the full platform fee',
-    });
-    const a = service.submit({ ...details(), pricingVersion: 3 });
-    initial(a);
-    expect(() => service.activate(actor, a.application.id)).toThrow();
-    const v = service.review(actor, a.application.id, {
-      decision: 'APPROVED',
-      reason: 'Authority verified',
-      confirmedAuthority: true,
-    });
-    expect(v.outstandingMinor).toBe(0);
-    expect(v.status).toBe('ACTIVE');
+    })).toThrow(/fixed at 20 percent/);
+    const quote = service.quote({ towers: 2, apartments: 250 });
+    expect(quote.totalMinor).toBe(450000);
+    expect(quote.initialMinor).toBe(90000);
+    expect(quote.totalMinor - quote.initialMinor).toBe(360000);
   });
-  it('records backend-priced mock phases once and enables access on approval', () => {
+  it('records backend-priced mock phases once and enables operations after balance payment', () => {
     const a = submit(),
       id = a.application.id,
       requestId = randomUUID();
@@ -461,27 +468,29 @@ describe('Community registration lifecycle and financial invariants', () => {
       confirmedAuthority: true,
     });
     expect(accepted.notificationStatus).toBe('SIMULATED');
-    expect(accepted.status).toBe('ACTIVE');
-    expect(service.activate(actor, id).status).toBe('ACTIVE');
+    expect(accepted.status).toBe('AWAITING_ACCOUNT_SETUP');
+    expect(() => service.payPlatformBalance(users.findById(accepted.adminId!), true)).toThrow(/enabled sign-in/);
+    setup(a);
+    expect(service.activate(actor, id).status).toBe('AWAITING_REMAINING_PAYMENT');
     expect(() =>
       service.mockPayment(id, a.secret, { requestId, phase: 'REMAINING' }),
-    ).toThrow(/already used/);
-    const remainder = service.mockPayment(id, a.secret, {
-      requestId: randomUUID(),
-      phase: 'REMAINING',
+    ).toThrow(/Sign in as Community Admin/);
+    const admin = users.findById(accepted.adminId!);
+    const receipt = service.payPlatformBalance(admin, true);
+    expect(receipt).toMatchObject({
+      amountMinor: 184000, phase: 'REMAINING', kind: 'MOCK', status: 'VERIFIED',
+      payer: { userId: admin.id },
     });
+    expect(receipt.transactionReference).not.toBe(first.payments[0].transactionReference);
+    expect(service.payPlatformBalance(admin, true)).toEqual(receipt);
+    const remainder = service.status(id, a.secret);
     expect(remainder).toMatchObject({
       verifiedMinor: 230000,
       mockVerifiedMinor: 230000,
       outstandingMinor: 0,
       status: 'ACTIVE',
     });
-    expect(
-      service.mockPayment(id, a.secret, {
-        requestId: randomUUID(),
-        phase: 'REMAINING',
-      }).payments,
-    ).toHaveLength(2);
+    expect(service.platformHistory(admin)).toHaveLength(2);
     expect(remainder.credentialSetupAt).toBeTruthy();
     expect(service.activate(actor, id).status).toBe('ACTIVE');
   });
@@ -500,7 +509,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     const first = service.acceptAndNotify(actor, id, dto);
     const second = service.acceptAndNotify(actor, id, dto);
     expect(first.message).toBe(
-      'Application accepted and email sent successfully.',
+      'Application accepted and simulated email recorded successfully.',
     );
     expect(second.notifications).toHaveLength(1);
     expect(second.notifications[0]).toMatchObject({
@@ -611,7 +620,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     expect(rejected.payments).toHaveLength(1);
     expect(rejected.reconciliationRequired).toBe(false);
   });
-  it('sets the default once and allows only the active owner to change it from Profile', () => {
+  it('requires an individual password and allows only the active owner to change it from Profile', () => {
     const a = submit(),
       id = a.application.id;
     service.mockPayment(id, a.secret, {
@@ -627,35 +636,36 @@ describe('Community registration lifecycle and financial invariants', () => {
       new JwtService({ secret: 'unit-test-secret' }),
     );
     const user = users.findById(approved.adminId!);
+    expect(approved.status).toBe('AWAITING_ACCOUNT_SETUP');
+    expect(compareSync('1234567890', user.passwordHash)).toBe(false);
+    expect(() => auth.login({ email: user.email, password: applicantPassword })).toThrow();
+    const configured = setup(a);
     expect(
-      compareSync(DEFAULT_COMMUNITY_ADMIN_PASSWORD, user.passwordHash),
+      compareSync(applicantPassword, user.passwordHash),
     ).toBe(true);
     expect(JSON.stringify(approved)).not.toContain(
-      DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+      applicantPassword,
     );
     expect(
       auth.login({
         email: user.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       }).user.id,
     ).toBe(user.id);
     expect(() => service.beginSetup(id, a.secret)).toThrow();
     const owner = { id: user.id, email: user.email, role: user.role };
     const access = new UserAccessService(users, communities, subscriptions);
-    expect(approved.status).toBe('ACTIVE');
+    expect(configured.status).toBe('AWAITING_REMAINING_PAYMENT');
     expect(approved.outstandingMinor).toBe(184000);
     expect(
       subscriptions.findByCommunityId(approved.communityId!)?.paymentStatus,
     ).toBe('PENDING');
-    service.mockPayment(id, a.secret, {
-      requestId: randomUUID(),
-      phase: 'REMAINING',
-    });
+    service.payPlatformBalance(owner, true);
     service.activate(actor, id);
     expect(
       auth.login({
         email: user.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       }).user.id,
     ).toBe(user.id);
     expect(() =>
@@ -675,7 +685,7 @@ describe('Community registration lifecycle and financial invariants', () => {
     expect(() =>
       auth.login({
         email: user.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       }),
     ).toThrow();
     expect(

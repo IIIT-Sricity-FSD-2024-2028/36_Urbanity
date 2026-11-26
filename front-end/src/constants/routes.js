@@ -4,6 +4,7 @@ export const ROUTES = Object.freeze({
   SUPER_ADMIN_REGISTRATIONS: "/super-admin/registrations",
   LOGIN: "/login",
   UNAUTHORIZED: "/unauthorized",
+  PLATFORM_PAYMENT: "/platform-payment",
   SUPER_ADMIN: "/super-admin",
   SUPER_ADMIN_COMMUNITIES: "/super-admin/communities",
   SUPER_ADMIN_USERS: "/super-admin/users",

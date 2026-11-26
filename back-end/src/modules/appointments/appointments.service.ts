@@ -39,7 +39,18 @@ type Slot = { date: string; timeSlot: AppointmentTimeSlot };
 @Injectable()
 export class AppointmentsService {
   private readonly crud = new CrudService(new CrudRepository<Appointment>([]), 'Appointment');
-  constructor(private readonly complaints: ComplaintsService, private readonly workforce: WorkforceService) {}
+  constructor(private readonly complaints: ComplaintsService, private readonly workforce: WorkforceService) {
+    this.complaints.registerWorkerAppointmentCancellation((id, actor, reason) => {
+      const appointment = this.activeForComplaint(id);
+      if (!appointment?.workerId) return;
+      const now = new Date().toISOString();
+      this.crud.update(appointment.id, {
+        status: AppointmentStatus.Cancelled, rescheduleRequest: undefined, updatedAt: now,
+        cancellation: { reason, cancelledAt: now, cancelledByRole: actor.role, cancelledByUserId: actor.id },
+        history: [...appointment.history, this.entry(actor, AppointmentAction.Cancelled, AppointmentStatus.Cancelled, now, { note: reason })],
+      });
+    });
+  }
 
   timeSlots() { return TIME_SLOT_DEFINITIONS; }
 
@@ -345,7 +356,7 @@ export class AppointmentsService {
     const complaint = this.complaints.findByIdForActor(actor, appointment.complaintId);
     return {
       ...appointment,
-      ...(appointment.workerId ? { workerName: this.workforce.getWorkerName(appointment.workerId) } : {}),
+      ...(appointment.workerId ? { workerName: this.complaints.assignedWorkerNameAtAssignment(appointment.complaintId, appointment.workerId) } : {}),
       complaint: {
         id: complaint.id, title: complaint.title, isEmergency: Boolean(complaint.isEmergency), description: complaint.description, type: complaint.type, status: complaint.status,
         requiredWorkType: complaint.requiredWorkType, assignedWorkerId: complaint.assignedWorkerId, location: complaint.location,

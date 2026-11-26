@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../auth/useAuth.js";
+import { ROLES } from "../../../constants/roles.js";
+import { ComplaintEstimateQueue } from "../../complaint-estimates/components/ComplaintEstimateQueue.jsx";
 import { Button, Card, ErrorState, Input, LoadingState, Select } from "../../../components/ui/index.js";
 import { PageHeader } from "../../../components/data-display/index.js";
 import { ComplaintTable } from "../components/ComplaintTable.jsx";
@@ -54,6 +56,7 @@ export function ComplaintsPage() {
         description="Apartment and tower complaints within your tower. Community-wide complaints are handled by the Community Admin."
         actions={<Button variant="secondary" onClick={reload} loading={loading && Boolean(data)} loadingLabel="Refreshing...">Refresh</Button>}
       />
+      <ComplaintEstimateQueue role={ROLES.TOWER_REPRESENTATIVE} />
       <Card className="tr-filters">
         <div className="tr-filter-row">
           <Input label="Search" type="search" placeholder="Title, apartment, or floor" value={search} onChange={(event) => setSearch(event.target.value)} />

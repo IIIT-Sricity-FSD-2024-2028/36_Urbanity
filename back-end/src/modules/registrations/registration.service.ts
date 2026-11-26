@@ -15,7 +15,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 import { hashSync } from 'bcryptjs';
-import { DEFAULT_COMMUNITY_ADMIN_PASSWORD } from './registration.constants';
+import { INITIAL_PLATFORM_PAYMENT_PERCENT } from './registration.constants';
 import { CrudService } from '../../common/crud/crud.service';
 import { RoleName } from '../../common/enums/roles.enum';
 import { User } from '../../data/schemas';
@@ -40,6 +40,7 @@ import {
 
 type Payment = EvidenceDto & {
   kind?: 'MANUAL' | 'MOCK';
+  payer?: { name: string; userId?: string };
   id: string;
   phase: 'INITIAL' | 'REMAINING';
   status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
@@ -99,7 +100,7 @@ export class RegistrationService {
   private readonly applications = new Map<string, Application>();
   private pricing = {
     enabled: true,
-    initialPercent: 20,
+    initialPercent: INITIAL_PLATFORM_PAYMENT_PERCENT,
     paymentInstructions:
       'Mock Payment - Evaluation Only. No real money is transferred.',
     version: 1,
@@ -128,6 +129,9 @@ export class RegistrationService {
   }
   configure(actor: AuthenticatedUser, dto: PricingDto) {
     this.requireAdmin(actor);
+    if (dto.initialPercent !== INITIAL_PLATFORM_PAYMENT_PERCENT) {
+      throw new BadRequestException('The initial platform payment is fixed at 20 percent');
+    }
     this.pricing = { ...dto, version: this.pricing.version + 1 };
     return this.publicPricing();
   }
@@ -240,6 +244,7 @@ export class RegistrationService {
     const a = this.applicant(id, secret);
     if (a.decision === 'REJECTED')
       throw new ConflictException('Rejected applications cannot make payments');
+    if (dto.phase !== 'INITIAL') throw new ForbiddenException('Sign in as Community Admin to pay the remaining platform balance');
     const request = a.payments.find((p) => p.requestId === dto.requestId);
     if (request && (request.kind !== 'MOCK' || request.phase !== dto.phase))
       throw new ConflictException(
@@ -248,10 +253,7 @@ export class RegistrationService {
     // Each phase has a stable server-side identity, even if a retry has a new request ID.
     if (a.payments.some((p) => p.kind === 'MOCK' && p.phase === dto.phase))
       return this.view(a);
-    if (
-      (dto.phase === 'INITIAL' && a.decision !== 'PENDING') ||
-      (dto.phase === 'REMAINING' && a.decision !== 'APPROVED')
-    )
+    if (a.decision !== 'PENDING')
       throw new ForbiddenException(
         'Payment phase does not match application approval status',
       );
@@ -259,31 +261,110 @@ export class RegistrationService {
       throw new ConflictException(
         'Resolve existing pending evidence before making a mock payment',
       );
-    const amountMinor =
-      (dto.phase === 'INITIAL'
-        ? a.pricing.initialMinor
-        : a.pricing.totalMinor) - this.paid(a);
+    const amountMinor = a.pricing.initialMinor - this.paid(a);
     if (amountMinor <= 0) return this.view(a);
-    a.payments.push({
-      id: randomUUID(),
-      requestId: dto.requestId,
-      kind: 'MOCK',
-      phase: dto.phase,
-      amountMinor,
-      transactionReference: `MOCK-${a.id}-${dto.phase}`,
-      status: 'VERIFIED',
-      createdAt: now(),
-      reviewedAt: now(),
-      reason: 'Mock Payment - Evaluation Only. No real money was transferred.',
+    const payment = this.mockReceipt('INITIAL', amountMinor, { name: a.details.fullName }, dto.requestId);
+    this.recordMockReceipt(a, payment);
+    return this.view(a);
+  }
+
+  platformSummary(actor: AuthenticatedUser) {
+    const { subscription, application } = this.ownPlatformRegistration(actor);
+    const paymentRequired = this.subscriptions.requiresPayment(subscription.communityId);
+    if (!application) return {
+      registrationLinked: false as const,
+      communityName: subscription.communityName,
+      totalMinor: subscription.amount * 100,
+      paidMinor: paymentRequired ? 0 : subscription.amount * 100,
+      outstandingMinor: paymentRequired ? subscription.amount * 100 : 0,
+      paymentStatus: paymentRequired ? 'BALANCE_PAYMENT_PENDING' : 'FULLY_PAID',
+    };
+    const paidMinor = this.paid(application);
+    return {
+      registrationLinked: true as const,
+      communityName: subscription.communityName,
+      totalMinor: application.pricing.totalMinor,
+      initialMinor: application.pricing.initialMinor,
+      initialVerifiedMinor: this.initialPaid(application),
+      paidMinor,
+      outstandingMinor: application.pricing.totalMinor - paidMinor,
+      paymentStatus: paymentRequired ? 'BALANCE_PAYMENT_PENDING' : 'FULLY_PAID',
+      pendingVerification: application.payments.some((payment) => payment.status === 'PENDING_VERIFICATION'),
+      previousReference: application.payments.findLast((payment) => payment.status === 'VERIFIED')?.transactionReference,
+    };
+  }
+
+  platformHistory(actor: AuthenticatedUser) {
+    const { application } = this.ownPlatformRegistration(actor);
+    return (application?.payments ?? []).map((payment) => this.paymentView(payment));
+  }
+
+  platformReceipt(actor: AuthenticatedUser, paymentId: string) {
+    const { application } = this.ownPlatformRegistration(actor);
+    const payment = application?.payments.find(({ id }) => id === paymentId);
+    if (!payment) throw new NotFoundException('Platform payment receipt was not found');
+    return this.paymentView(payment);
+  }
+
+  payPlatformBalance(actor: AuthenticatedUser, confirmed: boolean) {
+    if (confirmed !== true) throw new BadRequestException('Confirm the simulated payment to continue');
+    const { subscription, application: a } = this.ownPlatformRegistration(actor);
+    if (!a || this.initialPaid(a) < a.pricing.initialMinor) {
+      throw new ForbiddenException('A verified initial payment and approved registration are required');
+    }
+    const existing = a.payments.find((payment) =>
+      payment.kind === 'MOCK' && payment.phase === 'REMAINING' && payment.status === 'VERIFIED');
+    if (existing) return this.paymentView(existing);
+    if (a.payments.some((payment) => payment.status === 'PENDING_VERIFICATION')) {
+      throw new ConflictException('Resolve existing pending evidence before making a mock payment');
+    }
+    const amountMinor = a.pricing.totalMinor - this.paid(a);
+    if (amountMinor <= 0) throw new ConflictException('The platform fee has already been fully paid');
+    const payment = this.mockReceipt('REMAINING', amountMinor, {
+      userId: actor.id, name: this.users.findById(actor.id).name,
     });
-    this.syncSubscriptionPayment(a);
+    // With no await between these writes, both records update together in the current process.
+    this.subscriptions.activateRegistration(subscription.communityId, a.id, true);
+    this.recordMockReceipt(a, payment);
+    return this.paymentView(payment);
+  }
+
+  private ownPlatformRegistration(actor: AuthenticatedUser) {
+    const subscription = this.subscriptions.getForActor(actor);
+    if (!subscription.registrationApplicationId) return { subscription };
+    const application = this.find(subscription.registrationApplicationId);
+    if (application.communityId !== subscription.communityId || application.decision !== 'APPROVED' || !application.activatedAt) {
+      throw new ForbiddenException('Approved registration and enabled sign-in are required');
+    }
+    return { subscription, application };
+  }
+
+  private mockReceipt(phase: Payment['phase'], amountMinor: number, payer: NonNullable<Payment['payer']>, requestId: string = randomUUID()): Payment {
+    const id = randomUUID();
+    const timestamp = now();
+    return {
+      id,
+      requestId,
+      kind: 'MOCK',
+      phase,
+      amountMinor,
+      payer,
+      transactionReference: `MOCK-${id}`,
+      status: 'VERIFIED',
+      createdAt: timestamp,
+      reviewedAt: timestamp,
+      reason: 'Mock Payment - Evaluation Only. No real money was transferred.',
+    };
+  }
+
+  private recordMockReceipt(a: Application, payment: Payment) {
+    a.payments.push(payment);
     this.audit(
       a,
       'MOCK_PAYMENT_RECORDED',
-      undefined,
-      `${dto.phase}: ${amountMinor} paise (evaluation only)`,
+      payment.payer?.userId,
+      `${payment.phase}: ${payment.amountMinor} paise (evaluation only)`,
     );
-    return this.view(a);
   }
   acceptAndNotify(actor: AuthenticatedUser, id: string, dto: AcceptanceDto) {
     this.review(actor, id, { ...dto, decision: 'APPROVED' });
@@ -292,7 +373,7 @@ export class RegistrationService {
       return {
         ...this.view(this.find(id)),
         notificationStatus: 'SIMULATED' as const,
-        message: 'Application accepted and email sent successfully.',
+        message: 'Application accepted and simulated email recorded successfully.',
       };
     } catch {
       return {
@@ -353,18 +434,21 @@ export class RegistrationService {
     }
     if (a.decision === 'REJECTED')
       throw new ConflictException('Application no longer accepts payments');
+    if (a.decision === 'APPROVED')
+      throw new ForbiddenException('Sign in as Community Admin to pay the remaining platform balance');
+    if (/^mock-/i.test(dto.transactionReference))
+      throw new BadRequestException('Mock transaction references are generated by Urbanity');
     if (
       !Number.isSafeInteger(dto.amountMinor) ||
       dto.amountMinor <= 0 ||
       dto.amountMinor % 100
     )
       throw new BadRequestException('Use a positive whole INR payment amount');
-    const phase = a.decision === 'APPROVED' ? 'REMAINING' : 'INITIAL';
+    const phase = 'INITIAL';
     const committed = a.payments
       .filter((p) => p.status !== 'REJECTED')
       .reduce((n, p) => n + p.amountMinor, 0);
-    const limit =
-      phase === 'INITIAL' ? a.pricing.initialMinor : a.pricing.totalMinor;
+    const limit = a.pricing.initialMinor;
     if (committed + dto.amountMinor > limit)
       throw new BadRequestException(
         'Payment exceeds the amount currently due, including evidence awaiting verification',
@@ -423,7 +507,7 @@ export class RegistrationService {
     this.requireAdmin(actor);
     const a = this.find(id);
     if (a.decision === dto.decision)
-      return dto.decision === 'APPROVED'
+      return dto.decision === 'APPROVED' && a.credentialSetupAt
         ? this.activate(actor, id)
         : this.view(a);
     if (a.decision !== 'PENDING')
@@ -431,7 +515,7 @@ export class RegistrationService {
     if (dto.decision === 'APPROVED') {
       if (
         !dto.confirmedAuthority ||
-        this.paid(a) < a.pricing.initialMinor ||
+        this.initialPaid(a) < a.pricing.initialMinor ||
         a.payments.some((p) => p.status === 'PENDING_VERIFICATION')
       )
         throw new BadRequestException(
@@ -446,24 +530,19 @@ export class RegistrationService {
           description: d.description,
           adminName: d.fullName,
           adminEmail: d.email,
-          adminPassword: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+          adminPassword: randomBytes(32).toString('base64url'),
           contractedTowers: d.towers,
           contractedApartments: d.apartments,
         },
         a.id,
-        true,
       );
       a.communityId = provisioned.community.id;
       a.adminId = provisioned.admin.id;
       if (d.phone) this.users.update(a.adminId, { phone: d.phone });
-      a.credentialSetupAt = now();
-      this.audit(a, 'DEFAULT_CREDENTIALS_PROVISIONED', actor.id);
     }
     a.decision = dto.decision;
     this.audit(a, dto.decision, actor.id, dto.reason);
-    return dto.decision === 'APPROVED'
-      ? this.activate(actor, id)
-      : this.view(a);
+    return this.view(a);
   }
   beginSetup(id: string, secret?: string) {
     const a = this.applicant(id, secret);
@@ -493,6 +572,13 @@ export class RegistrationService {
       throw new UnauthorizedException(
         'Credential setup has expired or was already used. Start setup again.',
       );
+    if (password.trim().length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
+      throw new BadRequestException('Use at least 8 characters and at most 72 UTF-8 bytes for your password');
+    }
+    const user = this.users.findById(a.adminId);
+    if (user.registrationApplicationId !== id || user.communityId !== a.communityId || user.role !== RoleName.CommunityAdmin) {
+      throw new ConflictException('Provisioned account does not match this registration');
+    }
     this.users.update(a.adminId, {
       passwordHash: hashSync(password, 10),
       accountState: 'AWAITING_ACTIVATION',
@@ -541,27 +627,25 @@ export class RegistrationService {
   private view(a: Application) {
     const verifiedMinor = this.paid(a),
       outstandingMinor = a.pricing.totalMinor - verifiedMinor;
-    const initialVerifiedMinor = a.payments
-      .filter((p) => p.phase === 'INITIAL' && p.status === 'VERIFIED')
-      .reduce((n, p) => n + p.amountMinor, 0);
+    const initialVerifiedMinor = this.initialPaid(a);
     const pendingMinor = a.payments
       .filter((p) => p.status === 'PENDING_VERIFICATION')
       .reduce((n, p) => n + p.amountMinor, 0);
-    const status = a.activatedAt
+    const status = a.activatedAt && !outstandingMinor
       ? 'ACTIVE'
       : a.decision === 'REJECTED'
         ? 'REJECTED'
         : a.decision === 'PENDING'
-          ? verifiedMinor >= a.pricing.initialMinor
+          ? initialVerifiedMinor >= a.pricing.initialMinor
             ? 'AWAITING_REVIEW'
             : pendingMinor
               ? 'PAYMENT_UNDER_REVIEW'
               : 'AWAITING_INITIAL_PAYMENT'
-          : outstandingMinor
-            ? 'AWAITING_REMAINING_PAYMENT'
-            : !a.credentialSetupAt
-              ? 'AWAITING_ACCOUNT_SETUP'
-              : 'READY_FOR_ACTIVATION';
+          : !a.credentialSetupAt
+            ? 'AWAITING_ACCOUNT_SETUP'
+            : !a.activatedAt
+              ? 'READY_FOR_ACTIVATION'
+              : 'AWAITING_REMAINING_PAYMENT';
     const { requestId: _requestId, ...details } = a.details;
     void _requestId;
     return {
@@ -571,10 +655,7 @@ export class RegistrationService {
       decision: a.decision,
       status,
       createdAt: a.createdAt,
-      payments: a.payments.map(({ requestId: _requestId, ...p }) => {
-        void _requestId;
-        return { ...p };
-      }),
+      payments: a.payments.map((payment) => this.paymentView(payment)),
       audit: a.audit.map((e) => ({ ...e })),
       notifications: a.notifications.map((n) => ({ ...n })),
       mockVerifiedMinor: a.payments
@@ -613,6 +694,13 @@ export class RegistrationService {
     return a.payments
       .filter((p) => p.status === 'VERIFIED')
       .reduce((n, p) => n + p.amountMinor, 0);
+  }
+  private initialPaid(a: Application) {
+    return a.payments.filter((payment) => payment.phase === 'INITIAL' && payment.status === 'VERIFIED')
+      .reduce((sum, payment) => sum + payment.amountMinor, 0);
+  }
+  private paymentView({ requestId: _requestId, ...payment }: Payment) {
+    return payment;
   }
   private find(id: string) {
     const a = this.applications.get(id);

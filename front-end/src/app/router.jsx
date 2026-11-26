@@ -14,6 +14,7 @@ import { SuperAdminRoutes } from "../features/super-admin/routes.jsx";
 import { MaintenanceWorkerRoutes } from "../features/maintenance-worker/routes.jsx";
 import { TowerRepresentativeRoutes } from "../features/tower-representative/routes.jsx";
 import { ResidentRoutes } from "../features/resident/routes.jsx";
+import { PlatformPaymentPage } from "../features/community-admin/pages/PlatformPaymentPage.jsx";
 
 function PublicPlaceholder({ title, message }) {
   return (
@@ -64,6 +65,8 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
+      { path: ROUTES.PLATFORM_PAYMENT, element: <PlatformPaymentPage /> },
+      { path: `${ROUTES.PLATFORM_PAYMENT}/receipts/:paymentId`, element: <PlatformPaymentPage /> },
       {
         path: `${ROUTES.SUPER_ADMIN}/*`,
         element: <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}><PortalLayout><SuperAdminRoutes /></PortalLayout></RoleRoute>,

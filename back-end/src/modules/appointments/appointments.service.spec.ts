@@ -4,7 +4,8 @@ import { Test } from '@nestjs/testing';
 import { RoleName } from '../../common/enums/roles.enum';
 import { ComplaintStatus } from '../../common/enums/status.enum';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interface';
-import { ComplaintType } from '../complaints/complaints.dto';
+import { ComplaintAssignmentStatus, ComplaintType } from '../complaints/complaints.dto';
+import { ComplaintEstimatesService } from '../complaints/complaint-estimates.service';
 import { ComplaintsService } from '../complaints/complaints.service';
 import { WorkType, WorkerStatus } from '../workforce/workforce.dto';
 import { WorkforceService } from '../workforce/workforce.service';
@@ -38,6 +39,7 @@ describe('AppointmentsService', () => {
   let service: AppointmentsService;
   let complaints: ComplaintsService;
   let workforce: WorkforceService;
+  let estimates: ComplaintEstimatesService;
 
   const reviewed = (id = TOWER_A_COMPLAINT) => complaints.transitionStatus(id, { status: ComplaintStatus.UnderReview }, representative);
   const requested = (date = TOMORROW, timeSlot = S0900, complaintId = TOWER_A_COMPLAINT) => service.request(resident, { complaintId, preferredDate: date, timeSlot });
@@ -46,8 +48,22 @@ describe('AppointmentsService', () => {
     const appointment = requested(date, timeSlot);
     return service.confirm(representative, appointment.id, { workerId: PLUMBER_PROFILE });
   };
-  const resolveComplaintWork = (complaintId: string) => {
-    complaints.startWork(complaintId, plumber);
+  const resolveComplaintWork = (complaintId: string, legacy = false) => {
+    if (legacy) {
+      complaints.findById(complaintId).status = ComplaintStatus.InProgress;
+      complaints.assignmentForComplaint(complaintId)!.status = ComplaintAssignmentStatus.InProgress;
+    } else {
+      const result = estimates.submit(plumber, complaintId, {
+        inspection: 'The drain trap is cracked.', proposedResolution: 'Replace the trap and check for leaks.', notes: 'Inspection completed.',
+        completionHours: 1, costs: [{ category: 'LABOUR', description: 'Repair', quantity: 1, unitPricePaise: 100 }],
+      });
+      if (!('estimate' in result) || !result.estimate) throw new Error('Estimate missing');
+      const id = result.estimate.id;
+      estimates.decideAsTower(representative, complaintId, id, { decision: 'APPROVE' });
+      estimates.decideAsAdmin(communityAdmin, complaintId, id, { decision: 'APPROVE' });
+      estimates.pay(communityAdmin, complaintId, id, true);
+      complaints.startWork(complaintId, plumber);
+    }
     const proofId = '70000000-0000-4000-8000-000000000001';
     complaints.addAttachment(complaintId, { id: proofId, originalName: 'proof.png', storedName: 'proof.png', relativePath: 'complaints/proof.png', mimeType: 'image/png', size: 9, uploadedAt: new Date().toISOString(), uploadedByRole: RoleName.MaintenanceWorker, purpose: 'RESOLUTION_PROOF', retrievalUrl: '' });
     complaints.resolveWork(complaintId, { problemFound: 'Leak', resolutionSummary: 'Fixed', proofAttachmentIds: [proofId] }, plumber);
@@ -60,6 +76,7 @@ describe('AppointmentsService', () => {
     service = moduleRef.get(AppointmentsService);
     complaints = moduleRef.get(ComplaintsService);
     workforce = moduleRef.get(WorkforceService);
+    estimates = moduleRef.get(ComplaintEstimatesService);
   });
   afterEach(() => { jest.useRealTimers(); });
 
@@ -260,9 +277,27 @@ describe('AppointmentsService', () => {
       expect(service.recordOutcome(plumber, appointment.id, { outcome: AppointmentOutcome.Completed, notes: 'Fixed' }).status).toBe(AppointmentStatus.Completed);
     });
 
+    it('cancels the unavailable worker’s arrived visit when the tower releases an unpaid assignment', () => {
+      const appointment = confirmed(TODAY, S1100);
+      setClock(11, 5);
+      service.recordArrival(plumber, appointment.id);
+      const submitted = estimates.submit(plumber, TOWER_A_COMPLAINT, {
+        inspection: 'The drain trap is cracked.', proposedResolution: 'Replace the drain trap and check for leaks.', notes: 'Inspected at the visit.',
+        completionHours: 1, costs: [{ category: 'LABOUR', description: 'Repair', quantity: 1, unitPricePaise: 100 }],
+      });
+      if (!('estimate' in submitted) || !submitted.estimate) throw new Error('Estimate missing');
+      workforce.deactivate(PLUMBER_PROFILE);
+      estimates.cancel(representative, TOWER_A_COMPLAINT, submitted.estimate.id, 'Worker is no longer available');
+      expect(service.findForActor(resident, appointment.id)).toMatchObject({
+        workerName: 'Kabir Das', status: AppointmentStatus.Cancelled,
+        cancellation: { reason: 'Worker is no longer available', cancelledByUserId: representative.id },
+      });
+      expect(service.workerSchedule(representative, PLUMBER_PROFILE, TODAY).bookedSlots).toEqual([]);
+    });
+
     it('releases worker slots held by appointments of deleted complaints', () => {
       confirmed(TOMORROW, S0900);
-      resolveComplaintWork(TOWER_A_COMPLAINT);
+      resolveComplaintWork(TOWER_A_COMPLAINT, true);
       complaints.delete(communityAdmin, TOWER_A_COMPLAINT);
       expect(service.workerSchedule(representative, PLUMBER_PROFILE, TOMORROW).bookedSlots).toEqual([]);
       const complaint = complaints.create(resident, { type: ComplaintType.Apartment, title: 'Tap', description: 'Tap drips', requiredWorkType: WorkType.Plumbing });

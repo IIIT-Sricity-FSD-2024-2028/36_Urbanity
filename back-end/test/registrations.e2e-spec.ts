@@ -13,13 +13,14 @@ import { LOG_DIRECTORY } from '../src/common/logging/logging.constants';
 import { LoggingService } from '../src/common/logging/logging.service';
 import { validationPipe } from '../src/common/pipes/validation.pipe';
 import { configureHttpSecurity } from '../src/config/security.config';
-import { DEFAULT_COMMUNITY_ADMIN_PASSWORD } from '../src/modules/registrations/registration.constants';
 import { RegistrationService } from '../src/modules/registrations/registration.service';
+import { SubscriptionService } from '../src/modules/subscriptions/subscription.service';
 
 type Application = ReturnType<RegistrationService['status']>;
 const data = <T>(r: Response) => (r.body as { data: T }).data;
 const cookies = (r: Response) =>
   (r.headers['set-cookie'] as unknown as string[]).map((c) => c.split(';')[0]);
+const applicantPassword = 'Individual-api-fixture-password';
 
 describe('Public registration and Super Admin onboarding API', () => {
   let app: INestApplication, logs: string;
@@ -89,6 +90,14 @@ describe('Public registration and Super Admin onboarding API', () => {
       decision: 'VERIFIED',
       reason: 'Bank receipt matched',
     }).expect(201);
+  };
+  const configureApplicantPassword = async (item: Awaited<ReturnType<typeof submit>>) => {
+    const path = `/community-registrations/${item.a.id}`;
+    const grant = await request(server()).post(`${path}/setup-session`).set('Cookie', item.cookie).send({}).expect(201);
+    const setup = await request(server()).post(`${path}/credential-setup`)
+      .set('Cookie', [...item.cookie, ...cookies(grant)]).send({ password: applicantPassword }).expect(201);
+    expect(data(setup)).not.toHaveProperty('passwordHash');
+    expect(JSON.stringify(data(setup))).not.toContain(applicantPassword);
   };
   beforeEach(async () => {
     logs = await mkdtemp(join(tmpdir(), 'urbanity-registration-'));
@@ -258,17 +267,17 @@ describe('Public registration and Super Admin onboarding API', () => {
     await request(server())
       .get('/auth/me')
       .set('Authorization', forged)
-      .expect(200);
+      .expect(401);
     await request(server())
       .post('/subscriptions/me/mock-payment')
       .set('Authorization', forged)
       .send({})
-      .expect(403);
+      .expect(401);
     await request(server())
       .post('/towers')
       .set('Authorization', auth())
       .send({ communityId: approved.communityId, name: 'Early', code: 'EARLY' })
-      .expect(201);
+      .expect(403);
     await request(server())
       .patch(`/users/${approved.adminId}`)
       .set('Authorization', auth())
@@ -292,6 +301,8 @@ describe('Public registration and Super Admin onboarding API', () => {
       .set('Cookie', item.cookie)
       .send({ password: 'secure-password' })
       .expect(401);
+    await request(server()).post('/auth/login').send({ email: item.body.email, password: '1234567890' }).expect(401);
+    await configureApplicantPassword(item);
     await request(server())
       .post(`/community-registrations/${id}/setup-session`)
       .set('Cookie', item.cookie)
@@ -301,12 +312,11 @@ describe('Public registration and Super Admin onboarding API', () => {
       .post('/auth/login')
       .send({
         email: item.body.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       })
       .expect(201);
     await adminPost(`/${id}/activate`).expect(201);
-    const payment = data<Application>(
-      await request(server())
+    await request(server())
         .post(`/community-registrations/${id}/payments`)
         .set('Cookie', item.cookie)
         .send({
@@ -314,17 +324,9 @@ describe('Public registration and Super Admin onboarding API', () => {
           amountMinor: approved.outstandingMinor,
           transactionReference: 'REMAINING-TRANSFER-1',
         })
-        .expect(201),
-    ).payments.at(-1)!;
-    await adminPost(`/${id}/activate`).expect(201);
-    await adminPost(`/${id}/payments/${payment.id}/review`, {
-      decision: 'VERIFIED',
-      reason: 'Full balance confirmed in bank',
-    }).expect(201);
-    await adminPost(`/${id}/payments/${payment.id}/review`, {
-      decision: 'VERIFIED',
-      reason: 'Verification retry',
-    }).expect(201);
+        .expect(403);
+    await request(server()).post('/platform-payments/mock-balance')
+      .set('Authorization', forged).send({ confirmed: true }).expect(201);
     const activated = data<Application>(
       await adminPost(`/${id}/activate`).expect(201),
     );
@@ -336,7 +338,7 @@ describe('Public registration and Super Admin onboarding API', () => {
       .post('/auth/login')
       .send({
         email: item.body.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       })
       .expect(201);
     const token = `Bearer ${data<{ accessToken: string }>(login).accessToken}`;
@@ -477,7 +479,7 @@ describe('Public registration and Super Admin onboarding API', () => {
     );
     expect(accepted.adminId).toBe(partial.adminId);
     expect(accepted.message).toBe(
-      'Application accepted and email sent successfully.',
+      'Application accepted and simulated email recorded successfully.',
     );
     expect(accepted.notifications).toHaveLength(1);
     expect(accepted.notifications[0].status).toBe('SIMULATED');
@@ -486,24 +488,49 @@ describe('Public registration and Super Admin onboarding API', () => {
     );
     expect(retry.notifications).toHaveLength(1);
     expect(retry.audit.filter((e) => e.action === 'APPROVED')).toHaveLength(1);
-    expect(accepted.status).toBe('ACTIVE');
-    await request(server())
+    expect(accepted.status).toBe('AWAITING_ACCOUNT_SETUP');
+    await configureApplicantPassword(item);
+    const pendingLogin = await request(server())
       .post('/auth/login')
       .send({
         email: item.body.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       })
       .expect(201);
-    const paid = data<Application>(
-      await pay({ requestId: randomUUID(), phase: 'REMAINING' }).expect(201),
-    );
-    expect(paid.outstandingMinor).toBe(0);
-    expect(paid.mockVerifiedMinor).toBe(220000);
-    expect(
-      data<Application>(
-        await pay({ requestId: randomUUID(), phase: 'REMAINING' }).expect(201),
-      ).payments,
-    ).toHaveLength(2);
+    const pendingToken = `Bearer ${data<{ accessToken: string }>(pendingLogin).accessToken}`;
+    expect(data(pendingLogin)).toMatchObject({ user: { platformPaymentRequired: true } });
+    await request(server()).get('/auth/me').set('Authorization', pendingToken)
+      .expect(200).expect((response) => expect(data(response)).toMatchObject({ platformPaymentRequired: true }));
+    await request(server()).get('/dashboard/summary').set('Authorization', pendingToken).expect(403);
+    await request(server()).get('/complaints').set('Authorization', pendingToken).expect(403);
+    await request(server()).get('/dashboard/summary').set('Authorization', auth()).expect(200);
+    await request(server()).get('/dashboard/summary').set('Authorization', auth('community.admin.b@urbanity.local')).expect(200);
+    await request(server()).get('/platform-payments/summary').set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).toMatchObject({ totalMinor: 220000, initialVerifiedMinor: 44000, outstandingMinor: 176000, paymentStatus: 'BALANCE_PAYMENT_PENDING' }));
+    await request(server()).get('/platform-payments/history').set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).toHaveLength(1));
+    await pay({ requestId: randomUUID(), phase: 'REMAINING' }).expect(403);
+    const balance = (body: object, token = pendingToken) => request(server()).post('/platform-payments/mock-balance')
+      .set('Authorization', token).send(body);
+    await balance({ confirmed: true }, auth('community.admin.b@urbanity.local')).expect(403);
+    await balance({ confirmed: true }, auth()).expect(403);
+    await balance({ confirmed: false }).expect(400);
+    await balance({ confirmed: true, amountMinor: 1, communityId: accepted.communityId }).expect(400);
+    const receipts = await Promise.all(Array.from({ length: 5 }, () => balance({ confirmed: true }).expect(201)));
+    const receipt = data<Application['payments'][number]>(receipts[0]);
+    expect(receipt).toMatchObject({ kind: 'MOCK', phase: 'REMAINING', amountMinor: 176000, status: 'VERIFIED', payer: { userId: accepted.adminId } });
+    expect(receipt.transactionReference).not.toBe(initial.payments[0].transactionReference);
+    expect(receipts.map(data)).toEqual(Array(5).fill(receipt));
+    await request(server()).get(`/platform-payments/history/${receipt.id}`).set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).toEqual(receipt));
+    await request(server()).get(`/platform-payments/history/${receipt.id}`).set('Authorization', auth('community.admin.b@urbanity.local')).expect(403);
+    await request(server()).get('/platform-payments/history').set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).toHaveLength(2));
+    await request(server()).get('/platform-payments/summary').set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).toMatchObject({ paidMinor: 220000, outstandingMinor: 0, paymentStatus: 'FULLY_PAID' }));
+    await request(server()).get('/dashboard/summary').set('Authorization', pendingToken).expect(200);
+    await request(server()).get('/auth/me').set('Authorization', pendingToken).expect(200)
+      .expect((response) => expect(data(response)).not.toHaveProperty('platformPaymentRequired'));
     expect(
       data<Application>(await adminPost(`/${id}/activate`).expect(201)).status,
     ).toBe('ACTIVE');
@@ -511,7 +538,7 @@ describe('Public registration and Super Admin onboarding API', () => {
       .post('/auth/login')
       .send({
         email: item.body.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       })
       .expect(201);
     const token = `Bearer ${data<{ accessToken: string }>(login).accessToken}`;
@@ -525,7 +552,7 @@ describe('Public registration and Super Admin onboarding API', () => {
       .post('/auth/login')
       .send({
         email: item.body.email,
-        password: DEFAULT_COMMUNITY_ADMIN_PASSWORD,
+        password: applicantPassword,
       })
       .expect(401);
     await request(server())
@@ -535,7 +562,105 @@ describe('Public registration and Super Admin onboarding API', () => {
     await request(server())
       .patch(`/users/${accepted.adminId}`)
       .set('Authorization', auth())
-      .send({ password: DEFAULT_COMMUNITY_ADMIN_PASSWORD })
+      .send({ password: applicantPassword })
       .expect(403);
   });
+
+  it('enforces platform access for each community role without blocking Super Admin or unrelated communities', async () => {
+    const admin = SEEDED_USERS.find((user) => user.email === 'community.admin@urbanity.local')!;
+    app.get(SubscriptionService).createPending(admin.communityId!, 'Pending community', 3, 12);
+    const scopedRoles = [
+      'community.admin@urbanity.local',
+      'tower.representative@urbanity.local',
+      'resident@urbanity.local',
+      'maintenance.worker@urbanity.local',
+    ];
+    for (const email of scopedRoles) {
+      await request(server()).get('/auth/me').set('Authorization', auth(email)).expect(200)
+        .expect((response) => expect(data(response)).toMatchObject({ platformPaymentRequired: true }));
+      await request(server()).get('/complaints').set('Authorization', auth(email)).expect(403);
+      await request(server()).get('/platform-payments/summary').set('Authorization', auth(email))
+        .expect(email === admin.email ? 200 : 403);
+    }
+    await request(server()).get('/complaints').set('Authorization', auth()).expect(200);
+    await request(server()).get('/complaints').set('Authorization', auth('community.admin.b@urbanity.local')).expect(200);
+    await request(server()).post('/subscriptions/me/mock-payment').set('Authorization', auth(admin.email)).send({}).expect(201);
+    for (const email of scopedRoles) {
+      await request(server()).get('/complaints').set('Authorization', auth(email)).expect(200);
+      await request(server()).get('/registration-administration').set('Authorization', auth(email)).expect(403);
+    }
+  });
+
+  it('keeps the platform installments and complaint worker compensation in separate ledgers for the same community', async () => {
+    const item = await submit();
+    const { id } = item.a;
+    await request(server()).post(`/community-registrations/${id}/mock-payments`)
+      .set('Cookie', item.cookie).send({ requestId: randomUUID(), phase: 'INITIAL' }).expect(201);
+    const approval = data<Application>(await adminPost(`/${id}/review`, {
+      decision: 'APPROVED', reason: 'Authority verified', confirmedAuthority: true,
+    }).expect(201));
+    await configureApplicantPassword(item);
+    const jwt = app.get(JwtService);
+    const bearer = (userId: string) => `Bearer ${jwt.sign({ sub: userId })}`;
+    const admin = bearer(approval.adminId!);
+    const post = (path: string, body: object, token = admin) =>
+      request(server()).post(path).set('Authorization', token).send(body);
+    const patch = (path: string, body: object, token: string) =>
+      request(server()).patch(path).set('Authorization', token).send(body);
+    const platformHistory = async () => data<Application['payments']>(
+      await request(server()).get('/platform-payments/history').set('Authorization', admin).expect(200),
+    );
+    const workerPaymentPath = (complaintId: string, estimateId: string) =>
+      `/complaints/${complaintId}/estimates/${estimateId}/mock-payment`;
+
+    await post(workerPaymentPath(randomUUID(), randomUUID()), { confirmed: true }).expect(403);
+    expect(await platformHistory()).toEqual([expect.objectContaining({ phase: 'INITIAL', amountMinor: 44000 })]);
+    const balance = data<Application['payments'][number]>(await post('/platform-payments/mock-balance', { confirmed: true }).expect(201));
+    const installments = await platformHistory();
+    expect(installments).toEqual([expect.objectContaining({ phase: 'INITIAL', amountMinor: 44000 }), balance]);
+    expect(balance).toMatchObject({ phase: 'REMAINING', amountMinor: 176000 });
+
+    const tower = data<{ id: string }>(await post('/towers', { communityId: approval.communityId, name: 'Test tower', code: 'T1' }).expect(201));
+    const floor = data<{ id: string }>(await post('/floors', { towerId: tower.id, floorNumber: 1, label: 'One' }).expect(201));
+    const apartment = data<{ id: string }>(await post('/apartments', { floorId: floor.id, apartmentNumber: '101', label: '101' }).expect(201));
+    const account = async (role: string, scope: object) => data<{ id: string }>(await post('/users', {
+      role, ...scope, name: 'Integration fixture', email: `${randomUUID()}@example.test`, password: randomUUID(),
+    }).expect(201));
+    const representative = bearer((await account('TOWER_REPRESENTATIVE', { towerId: tower.id })).id);
+    const resident = bearer((await account('RESIDENT', { apartmentId: apartment.id, residentSituation: 'OWNER_OCCUPANT' })).id);
+    const workerAccount = await account('MAINTENANCE_WORKER', { communityId: approval.communityId });
+    const worker = bearer(workerAccount.id);
+    const profile = data<{ id: string }>(await post('/workforce/workers', { userId: workerAccount.id, specialization: 'PLUMBING' }).expect(201));
+    const complaint = data<{ id: string }>(await post('/complaints', {
+      type: 'APARTMENT', title: 'Integration leak', description: 'The sink drain has a leak.', requiredWorkType: 'PLUMBING',
+    }, resident).expect(201));
+    const path = `/complaints/${complaint.id}`;
+    await patch(`${path}/status`, { status: 'UNDER_REVIEW' }, representative).expect(200);
+    await post(`${path}/assign`, { workerId: profile.id }, representative).expect(201);
+    const submitted = data<{ estimate: { id: string } }>(await post(`${path}/estimate`, {
+      inspection: 'The drain trap leaks under the sink.',
+      proposedResolution: 'Replace the drain trap and verify the repair.',
+      notes: 'The sink is accessible.',
+      completionHours: 2,
+      costs: [{ category: 'MATERIAL', description: 'Drain trap', quantity: 1, unitPricePaise: 12550 }],
+    }, worker).expect(201));
+    const estimateId = submitted.estimate.id;
+    const revision = `${path}/estimates/${estimateId}`;
+    await patch(`${revision}/tower-decision`, { decision: 'APPROVE' }, representative).expect(200);
+    await patch(`${revision}/admin-decision`, { decision: 'APPROVE' }, admin).expect(200);
+    await post(workerPaymentPath(complaint.id, balance.id), { confirmed: true }).expect(409);
+    const receipt = data<{ id: string; reference: string }>(await post(workerPaymentPath(complaint.id, estimateId), { confirmed: true }).expect(201));
+    expect(receipt).toMatchObject({
+      complaintId: complaint.id, estimateId, workerId: profile.id, initiatedBy: approval.adminId,
+      amountPaise: 12550, status: 'SUCCESS',
+    });
+    expect(receipt.reference).not.toBe(balance.transactionReference);
+    expect(await platformHistory()).toEqual(installments);
+    await request(server()).get(`/platform-payments/history/${receipt.id}`).set('Authorization', admin).expect(404);
+    expect(data(await post('/platform-payments/mock-balance', { confirmed: true }).expect(201))).toEqual(balance);
+    await request(server()).get('/platform-payments/summary').set('Authorization', admin).expect(200)
+      .expect((response) => expect(data(response)).toMatchObject({ paymentStatus: 'FULLY_PAID', paidMinor: 220000 }));
+    await request(server()).get(`${path}/estimate`).set('Authorization', admin).expect(200)
+      .expect((response) => expect(data(response)).toMatchObject({ status: 'PAID', payment: receipt, complaint: { status: 'ASSIGNED' } }));
+  }, 30_000);
 });

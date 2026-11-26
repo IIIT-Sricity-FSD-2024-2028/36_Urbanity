@@ -206,7 +206,7 @@ export function RegistrationPage() {
                 <>
                   <p>
                     Proposed totals only. Your admin will configure actual
-                    towers, floors and apartments after activation.
+                    towers, floors and apartments after the remaining mock payment.
                   </p>
                   <div className="registration-grid">
                     {field("towers", "Number of towers", {

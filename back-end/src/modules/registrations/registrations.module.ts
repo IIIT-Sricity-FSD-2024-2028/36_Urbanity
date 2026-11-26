@@ -7,11 +7,12 @@ import {
   PublicRegistrationController,
   RegistrationAbuseGuard,
   RegistrationAdminController,
+  PlatformPaymentController,
 } from './registration.controller';
 
 @Module({
   imports: [UsersModule, CommunityModule, SubscriptionModule],
-  controllers: [PublicRegistrationController, RegistrationAdminController],
+  controllers: [PublicRegistrationController, RegistrationAdminController, PlatformPaymentController],
   providers: [RegistrationService, RegistrationAbuseGuard],
   exports: [RegistrationService],
 })

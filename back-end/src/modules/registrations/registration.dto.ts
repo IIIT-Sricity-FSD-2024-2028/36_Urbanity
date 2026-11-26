@@ -15,6 +15,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { INITIAL_PLATFORM_PAYMENT_PERCENT } from './registration.constants';
 
 const Trim = () =>
   Transform(({ value }: { value: unknown }) =>
@@ -47,7 +48,7 @@ export class ApplicationDto extends SizeDto {
 }
 export class PricingDto {
   @IsBoolean() enabled!: boolean;
-  @IsInt() @Min(1) @Max(100) initialPercent!: number;
+  @Equals(INITIAL_PLATFORM_PAYMENT_PERCENT) initialPercent!: number;
   @Trim()
   @IsString()
   @MinLength(10)
@@ -77,6 +78,10 @@ export class SetupDto {
 export class MockPaymentDto {
   @IsUUID('4') requestId!: string;
   @IsIn(['INITIAL', 'REMAINING']) phase!: 'INITIAL' | 'REMAINING';
+}
+
+export class RemainingPlatformPaymentDto {
+  @Equals(true) confirmed!: true;
 }
 
 export class AcceptanceDto {

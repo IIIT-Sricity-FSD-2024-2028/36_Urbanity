@@ -22,6 +22,8 @@ const iconPaths = {
   eye: ["M15 12a3 3 0 11-6 0 3 3 0 016 0z", "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"],
   group: ["M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"],
   clock: ["M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"],
+  clipboard: ["M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2", "M9 5a2 2 0 012-2h2a2 2 0 012 2v2H9V5z", "M9 12h6m-6 4h6"],
+  home: ["M3 10l9-7 9 7M5 9v11h14V9M10 20v-6h4v6"],
   mail: ["M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"],
   telephone: ["M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 15.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"],
 };
@@ -36,6 +38,7 @@ const heroCards = [
   ["building", "Community Management", "#3B9EFF"],
   ["users", "Paid Services", "#4CAF50"],
   ["clock", "Amenity Bookings", "#FF9800"],
+  ["clipboard", "Complaint Management", "#9C27B0"],
 ];
 
 const features = [
@@ -44,6 +47,7 @@ const features = [
   ["clock", "Amenity Bookings", "Check availability, reserve facilities and manage community booking rules.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
   ["users", "Paid Services", "Request services from existing community maintenance workers and track progress.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
   ["shield", "Clear Oversight", "Keep community administration separate from platform management with scoped access.", "#00BCD4", "rgba(0, 188, 212, 0.08)"],
+  ["home", "Resident Services", "Access community services, track requests and manage everyday resident needs.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
 ];
 
 const stats = [
@@ -55,9 +59,9 @@ const stats = [
 
 const steps = [
   ["1", "chat", "Register", "Apply as your community's authorized representative and review the platform fee.", "#3B9EFF", "rgba(59, 158, 255, 0.08)"],
-  ["2", "search", "Review", "Submit initial payment evidence for Super Admin verification and application review.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
-  ["3", "shield", "Complete Setup", "After approval, set your password and submit the remaining payment for verification.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
-  ["4", "check", "Get Activated", "The Super Admin activates eligible communities. Then configure your community in the portal.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
+  ["2", "search", "Pay 20% and Await Approval", "Complete the initial 20% mock payment for evaluation and wait for the Super Admin to approve your application.", "#9C27B0", "rgba(156, 39, 176, 0.08)"],
+  ["3", "shield", "Set Password and Sign In", "After approval, return to your registration page to set your own Community Admin password and sign in.", "#FF9800", "rgba(255, 152, 0, 0.08)"],
+  ["4", "check", "Pay 80% and Get Full Access", "Complete the remaining 80% mock payment for evaluation to unlock your community portal.", "#4CAF50", "rgba(76, 175, 80, 0.08)"],
 ];
 
 const residentFeatures = [
